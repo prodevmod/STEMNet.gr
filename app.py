@@ -27,6 +27,9 @@ from flask import (
 )
 from werkzeug.security import check_password_hash, generate_password_hash
 from itsdangerous import URLSafeTimedSerializer
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+
 
 def get_serializer():
     return URLSafeTimedSerializer(app.secret_key)
@@ -120,6 +123,13 @@ SCHEMA = BASE_DIR / "schema.sql"
 
 # Flask App Initialization
 app = Flask(__name__)
+# Force secure cookies in production (when not running locally on localhost)
+if not app.debug:
+    app.config.update(
+        SESSION_COOKIE_SECURE=True,
+        SESSION_COOKIE_HTTPONLY=True,
+        SESSION_COOKIE_SAMESITE='Lax',
+    )
 app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "fallback-dev-key-change-in-prod")
 csrf = CSRFProtect(app)  
 
@@ -142,6 +152,28 @@ def get_db() -> sqlite3.Connection:
         connection.row_factory = sqlite3.Row
         g.db = connection
     return g.db
+
+# Initialize limiter
+limiter = Limiter(
+    app=app,
+    key_func=get_remote_address,
+    default_limits=["200 per day", "50 per hour"],
+    storage_uri="memory://" # Keeps track of requests in memory
+)
+
+# Apply strict limit to login (e.g., max 5 attempts per minute per IP)
+@app.route("/login", methods=["GET", "POST"])
+@limiter.limit("5 per minute")
+def login():
+    # your existing login logic...
+    pass
+
+# Apply strict limit to registration to prevent spam accounts
+@app.route("/register", methods=["GET", "POST"])
+@limiter.limit("3 per hour")
+def register():
+    # your existing registration logic...
+    pass
 
 # ---------------------------------------------------------
 # 1. Database Hook (MUST be @app.before_request)
