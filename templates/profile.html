@@ -4,6 +4,16 @@
 
 {% block content %}
 <div class="card" style="margin-bottom: 2rem;">
+    <!-- Profile Picture Header Display -->
+    <div style="margin-bottom: 15px;">
+        {% if profile_user['profile_pic'] %}
+            <img src="{{ url_for('static', filename=profile_user['profile_pic']) }}" alt="{{ profile_user['username'] }}" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 2px solid var(--border-color);">
+        {% else %}
+            <!-- Default avatar fallback -->
+            <img src="{{ url_for('static', filename='uploads/default_avatar.png') }}" alt="Default Avatar" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 2px solid var(--border-color);">
+        {% endif %}
+    </div>
+
     <h2>@{{ profile_user.username }}</h2>
     
     <!-- Follower & Following Interactive Metrics -->
@@ -25,13 +35,6 @@
         </form>
         {% endif %}
     </div>
-
-    {% if post.profile_pic %}
-    <img src="{{ url_for('static', filename=post.profile_pic) }}" alt="{{ post.username }}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
-    {% else %}
-        <!-- Default avatar fallback -->
-        <img src="{{ url_for('static', filename='uploads/default_avatar.png') }}" alt="Default" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
-    {% endif %}
 
     <!-- Bio Description Display -->
     {% if profile_user['bio'] %}
@@ -96,7 +99,6 @@
         </small>
     </div>
     
-    
     <!-- Category Badge -->
     {% if post['category'] %}
     <div style="margin-top: 8px; margin-bottom: 4px;">
@@ -106,39 +108,39 @@
     </div>
     {% endif %}
    
-            <p style="margin-top: 10px; white-space: pre-line;">{{ post['content'] }}</p>
+    <p style="margin-top: 10px; white-space: pre-line;">{{ post['content'] }}</p>
 
-            <!-- Media rendering if any -->
-            {% if post['media_path'] %}
-                {% if post['media_path'].endswith(('mp4', 'webm')) %}
-                    <video controls style="max-width: 100%; max-height: 400px; margin-top: 10px;">
-                        <source src="{{ url_for('static', filename=post['media_path']) }}">
-                    </video>
-                {% else %}
-                    <img src="{{ url_for('static', filename=post['media_path']) }}" alt="Media" style="max-width: 100%; max-height: 400px; margin-top: 10px; border-radius: 5px;">
-                {% endif %}
-            {% endif %}
+    <!-- Media rendering if any -->
+    {% if post['media_path'] %}
+        {% if post['media_path'].endswith(('mp4', 'webm')) %}
+            <video controls style="max-width: 100%; max-height: 400px; margin-top: 10px;">
+                <source src="{{ url_for('static', filename=post['media_path']) }}">
+            </video>
+        {% else %}
+            <img src="{{ url_for('static', filename=post['media_path']) }}" alt="Media" style="max-width: 100%; max-height: 400px; margin-top: 10px; border-radius: 5px;">
+        {% endif %}
+    {% endif %}
 
-            <!-- Like and Reply Action Bar -->
-            <div style="display: flex; gap: 15px; margin-top: 15px; align-items: center;">
-                <button type="button" 
-                        data-post-id="{{ post['id'] }}" 
-                        onclick="toggleLike(this.dataset.postId)" 
-                        id="like-btn-{{ post['id'] }}" 
-                        style="background: none; border: none; cursor: pointer; display: flex; align-items: center; gap: 5px; padding: 0;">
-                    <img id="like-icon-{{ post['id'] }}" 
-                         src="{{ url_for('static', filename='liked.svg' if post['user_liked'] > 0 else 'like.svg') }}" 
-                         data-like-url="{{ url_for('static', filename='like.svg') }}"
-                         data-liked-url="{{ url_for('static', filename='liked.svg') }}"
-                         width="20" height="20" alt="Like">
-                    <span id="like-count-{{ post['id'] }}">{{ post['like_count'] if post['like_count'] > 0 else 'Like' }}</span>
-                </button>
+    <!-- Like and Reply Action Bar -->
+    <div style="display: flex; gap: 15px; margin-top: 15px; align-items: center;">
+        <button type="button" 
+                data-post-id="{{ post['id'] }}" 
+                onclick="toggleLike(this.dataset.postId)" 
+                id="like-btn-{{ post['id'] }}" 
+                style="background: none; border: none; cursor: pointer; display: flex; align-items: center; gap: 5px; padding: 0;">
+            <img id="like-icon-{{ post['id'] }}" 
+                 src="{{ url_for('static', filename='liked.svg' if post['user_liked'] > 0 else 'like.svg') }}" 
+                 data-like-url="{{ url_for('static', filename='like.svg') }}"
+                 data-liked-url="{{ url_for('static', filename='liked.svg') }}"
+                 width="20" height="20" alt="Like">
+            <span id="like-count-{{ post['id'] }}">{{ post['like_count'] if post['like_count'] > 0 else 'Like' }}</span>
+        </button>
 
-                <a href="{{ url_for('create_post', reply_to=post['id']) }}" style="text-decoration: none; display: flex; align-items: center;">
-                    <img src="{{ url_for('static', filename='comment.svg') }}" width="20" height="20" alt="Comment">
-                </a>
-            </div>
-        </div>
+        <a href="{{ url_for('create_post', reply_to=post['id']) }}" style="text-decoration: none; display: flex; align-items: center;">
+            <img src="{{ url_for('static', filename='comment.svg') }}" width="20" height="20" alt="Comment">
+        </a>
+    </div>
+</div>
     {% endfor %}
 {% else %}
     <p>This user hasn't published any posts yet.</p>
