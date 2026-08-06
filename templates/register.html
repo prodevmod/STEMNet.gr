@@ -1,0 +1,116 @@
+{% extends "layout.html" %}
+
+{% block title %}Register - STEMNet Greece{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 560px; margin: 0 auto;">
+    <h2 style="margin-bottom: 0.5rem;">Join STEMNet</h2>
+    <p style="color: #64748b; margin-bottom: 1.5rem; font-size: 0.9rem;">
+        Create an account to showcase your STEM projects and connect with Greek robotics teams.
+    </p>
+
+    <form action="{{ url_for('register') }}" method="POST">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        <!-- Account Credentials -->
+        <div class="form-group">
+            <label for="username">Username *</label>
+            <input type="text" id="username" name="username" required autocomplete="off" placeholder="e.g. robotics_nikos">
+        </div>
+
+        <div class="form-group">
+            <label for="email">Email Address *</label>
+            <!-- Removed class="form-control" here so it perfectly matches the username field -->
+            <input type="email" id="email" name="email" required autocomplete="off" placeholder="example@email.com">
+        </div>
+
+        <div class="form-group">
+            <label for="password">Password *</label>
+            <input type="password" id="password" name="password" required placeholder="Min 8 chars, 1 number, 1 special char">
+        </div>
+
+        <div class="form-group">
+            <label for="confirm_password">Confirm Password *</label>
+            <input type="password" id="confirm_password" name="confirm_password" required placeholder="Re-enter password">
+        </div>
+
+        <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 0.5rem 0;">
+
+        <!-- Student Details -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div class="form-group">
+                <label for="age">Age *</label>
+                <input type="number" id="age" name="age" min="10" max="100" required placeholder="16">
+            </div>
+
+            <div class="form-group">
+                <label for="grade">School Grade *</label>
+                <select id="grade" name="grade" required style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: var(--radius);">
+                    <option value="" disabled selected>Select Grade</option>
+                    <option value="Gymnasium">Gymnasium (A-C)</option>
+                    <option value="A Lyceum">A' Lyceum</option>
+                    <option value="B Lyceum">B' Lyceum</option>
+                    <option value="C Lyceum">C' Lyceum</option>
+                    <option value="University / Mentor">University / Mentor</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="interest">Main STEM Interest *</label>
+            <select id="interest" name="interest" required style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: var(--radius);">
+                <option value="" disabled selected>Select Primary Interest</option>
+                <option value="3D Modeling & CAD">3D Modeling & CAD</option>
+                <option value="Robotics & Microcontrollers">Robotics & Microcontrollers (Arduino/Raspberry Pi)</option>
+                <option value="Software & Web Engineering">Software & Web Engineering</option>
+                <option value="Electronics & PCB Design">Electronics & PCB Design</option>
+                <option value="AI & Data Science">AI & Data Science</option>
+                <option value="Physics & Applied Math">Physics & Applied Math</option>
+            </select>
+        </div>
+
+        <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 0.5rem 0;">
+
+        <!-- Social Profiles & Custom Links (Optional) -->
+        <p style="font-weight: 600; font-size: 0.95rem; margin-bottom: -0.5rem;">Socials & Portfolio (Optional)</p>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div class="form-group">
+                <label for="github_user">GitHub Username</label>
+                <input type="text" id="github_user" name="github_user" placeholder="alex-robotics">
+            </div>
+
+            <div class="form-group">
+                <label for="linkedin_url">LinkedIn URL</label>
+                <input type="url" id="linkedin_url" name="linkedin_url" placeholder="https://linkedin.com/in/...">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="custom_link_1">Discord / Tag</label>
+            <input type="text" id="custom_link_1" name="custom_link_1" placeholder="Discord Tag or Server Link">
+        </div>
+
+        <div class="form-group">
+            <label for="custom_link_2">Instagram Profile</label>
+            <input type="text" id="custom_link_2" name="custom_link_2" placeholder="https://instagram.com/...">
+        </div>
+
+        <div class="form-group">
+            <label for="custom_link_3">Slack Workspace Link</label>
+            <input type="text" id="custom_link_3" name="custom_link_3" placeholder="Slack Channel or Invite Link">
+        </div>
+
+        <div class="form-group">
+            <label for="custom_link_4">Personal Website / CAD Portfolio</label>
+            <input type="text" id="custom_link_4" name="custom_link_4" placeholder="https://myroboticslab.gr">
+        </div>
+
+        <div class="form-group">
+            <label for="custom_link_5">Other Custom Link</label>
+            <input type="text" id="custom_link_5" name="custom_link_5" placeholder="Any link or handle">
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 0.5rem;">Register Account</button>
+    </form>
+</div>
+{% endblock %}

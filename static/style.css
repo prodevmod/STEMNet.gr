@@ -1,0 +1,415 @@
+/* STEMNet Global Variables & Theme */
+:root {
+
+    --bg-color: #f4f4f5;         
+    --text-color: #2b2b2b;       
+    --card-bg: #ffffff;         
+    --border-color: #d4d4d4;     
+    --dark-bg: #2b2b2b;         
+
+
+    --primary-color: #ccff00;    
+    --primary-hover: #b3e600;    
+    --primary-text: #000000;     
+    --accent-color: #dfff00;     
+    --danger-color: #ef4444;     
+    /* Typography & Layout Setup */
+    --font-main: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+
+    --max-width: 720px;
+    --radius: 6px;               /* Modern, slightly sharper edges */
+    --shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+/* Base Styles */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+
+/* Global Reset to Prevent Horizontal Scrolling on Mobile */
+html, body {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    font-family: var(--font-main);
+    line-height: 1.6;
+    padding-bottom: 2rem;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden !important;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+*, *:before, *:after {
+    box-sizing: inherit;
+}
+
+/* Ensure media and large containers never break mobile viewports */
+img, video, canvas, svg {
+    max-width: 100%;
+    height: auto;
+}
+
+*, *:before, *:after {
+    box-sizing: inherit;
+}
+/* Header & Navigation Bar */
+header {
+    background-color: #0f172a;
+    color: #ffffff;
+    padding: 1rem 0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    margin-bottom: 2rem;
+    position: relative;
+}
+
+nav {
+    max-width: var(--max-width);
+    margin: 0 auto;
+    padding: 0 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
+}
+
+.nav-links {
+    display: flex;
+    gap: 1.25rem;
+    align-items: center;
+}
+nav a {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-size: 0.95rem;
+    font-weight: 500;
+}
+
+nav a:hover {
+    color: #ffffff !important;
+    transform: translate(-2px, -2px);       /* Slight pop-up effect on hover */
+    box-shadow: 6px 6px 0px #000000;
+}
+
+.brand {
+    font-weight: 700;
+    font-size: 1.25rem;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* Main Container */
+main {
+    max-width: var(--max-width);
+    margin: 0 auto;
+    padding: 0 1rem;
+}
+
+/* Flash Messages */
+.flash-container {
+    margin-bottom: 1.5rem;
+}
+
+.flash {
+    padding: 0.75rem 1rem;
+    border-radius: var(--radius);
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+}
+/* Completely hidden on wide/desktop screens */
+.menu-toggle {
+    display: none;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+}
+
+/* Responsive behavior for smaller screens */
+@media (max-width: 768px) {
+    .menu-toggle {
+        display: block;
+        background: transparent;
+        border: none;
+    }
+
+    .nav-links {
+        display: none;
+        flex-direction: column;
+        width: 100%;
+        position: absolute;
+        top: 100%; 
+        left: 0;
+        background-color: #0f172a;
+        padding: 1.5rem 1rem;
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+        gap: 1rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        z-index: 1000;
+    }
+
+    .nav-links.active {
+        display: flex;
+    }
+
+    .nav-links a {
+        font-size: 1.1rem;
+        padding: 0.5rem 0;
+    }
+
+    /* FIX: Make the button look great and span cleanly inside the mobile dropdown */
+    .nav-links .btn {
+        display: block;
+        width: 100%;
+        text-align: center;
+        padding: 0.75rem 1rem;
+        margin-top: 0.25rem;
+        box-sizing: border-box;
+    }
+}
+.flash.info { background-color: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; }
+.flash.warning { background-color: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
+.flash.danger { background-color: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
+.flash.success { background-color: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
+
+/* Cards & Feeds */
+.card, article {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    margin-bottom: 1.25rem;
+    box-shadow: var(--shadow);
+}
+
+.post-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+}
+
+.username {
+    font-weight: bold;
+    color: black;
+    font-size: 24;
+    text-decoration: none;
+}
+
+
+.username:hover {
+    text-decoration: underline;
+}
+
+.timestamp {
+    font-size: 0.85rem;
+    color: #64748b;
+    font-family: var(--font-mono);
+}
+
+.post-title {
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.post-body {
+    color: #334155;
+    margin-bottom: 1rem;
+    white-space: pre-wrap;
+}
+
+/* Form Styling */
+form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+label {
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+input[type="text"],
+input[type="password"],
+input[type="url"],
+textarea {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    font-family: inherit;
+    font-size: 1rem;
+    background-color: #ffffff;
+}
+
+input:focus, textarea:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+textarea {
+    resize: vertical;
+    min-height: 120px;
+}
+
+/* Buttons */
+.btn {
+    display: inline-block;
+    padding: 0.6rem 1.2rem;
+    border-radius: var(--radius);
+    font-weight: 600;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    font-size: 0.95rem;
+    text-align: center;
+}
+
+.btn-primary {
+    background-color: var(--primary-color); /* #CCFF00 */
+    color: #000000 !important;              /* Sharp black text for max contrast */
+    font-weight: 700;                       /* Bold weight makes neon buttons pop */
+    border: 2px solid #000000;              /* Neo-brutalist sharp black border */
+    border-radius: var(--radius);
+    box-shadow: 4px 4px 0px #000000;        /* Solid black offset shadow */
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.btn-primary:hover {
+    background-color: var(--primary-hover); /* #B3E600 */
+    color: #ffffff !important;
+    transform: translate(-2px, -2px);       /* Slight pop-up effect on hover */
+    box-shadow: 6px 6px 0px #000000;
+}
+
+.btn-primary:active {
+    transform: translate(2px, 2px);         /* Pressed effect */
+    box-shadow: 2px 2px 0px #000000;
+}
+
+.hero .btn-outline {
+    background-color: transparent;
+    border: 2px solid #ffffff;
+    color: #ffffff;
+    font-weight: 600;
+    transition: all 0.2s ease-in-out;
+}
+
+.hero .btn-outline:hover {
+    background-color: transparent !important;
+    border-color: var(--primary-color) !important;
+    color: var(--primary-color) !important;
+}
+
+.btn .btn-outline:hover {
+    background-color: transparent !important;
+    border-color: var(--primary-color) !important;
+    color: var(--primary-color) !important;
+}
+
+.btn-github {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background-color: #24292e;
+    color: #ffffff;
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+}
+
+.btn-github:hover {
+    background-color: #000000;
+}
+
+/* Landing Section for Non-Logged Users */
+.hero {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    color: #ffffff;
+    padding: 2.5rem 2rem;
+    border-radius: var(--radius);
+    margin-bottom: 2rem;
+}
+
+.hero h1 {
+    font-size: 1.8rem;
+    margin-bottom: 0.75rem;
+}
+
+.hero p {
+    color: #94a3b8;
+    margin-bottom: 1.5rem;
+    font-size: 1.05rem;
+}
+
+.hero-buttons {
+    display: flex;
+    gap: 1rem;
+}
+
+input[type="text"],
+input[type="password"],
+input[type="email"],
+input[type="number"],
+input[type="url"],
+input[type="file"],
+select,
+textarea {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    font-family: inherit;
+    font-size: 1rem;
+    background-color: #ffffff;
+}
+.category-filter-bar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 1.5rem;
+    overflow-x: auto;
+    padding-bottom: 5px;
+    white-space: nowrap;
+}
+
+.category-pill {
+    background-color: whitesmoke;
+    color: dimgray;
+    border: 1px solid silver;
+    font-size: 0.85rem;
+    padding: 0.4rem 1rem;
+    text-decoration: none;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+.category-pill:hover {
+    background-color: #e2e8f0;
+    color: #1e293b;
+}
+
+.category-pill.active {
+    background-color: #00ff66; /* Neon green */
+    color: #0f172a; /* Deep dark text for maximum contrast */
+    border-color: #00cc52;
+    font-weight: 600;
+    box-shadow: 0 0 12px rgba(0, 255, 102, 0.6); /* Neon glow effect to make it pop out */
+}

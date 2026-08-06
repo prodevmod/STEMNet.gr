@@ -1,0 +1,16 @@
+# Python virtual environment
+venv/
+env/
+__pycache__/
+*.pyc
+
+# Database files
+*.db
+instance/
+
+# Environment variables & secrets
+.env
+
+# User-uploaded media
+static/uploads/*
+!static/uploads/.gitkeep

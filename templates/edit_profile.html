@@ -1,0 +1,193 @@
+{% extends "layout.html" %}
+
+{% block title %}Edit Profile - STEMNet Greece{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 560px; margin: 0 auto;">
+    <h2 style="margin-bottom: 0.5rem;">Edit Your Profile</h2>
+    <p style="color: #64748b; margin-bottom: 1.5rem; font-size: 0.9rem;">
+        Update your academic details, robotics interests, and portfolio links.
+    </p>
+
+    <form action="{{ url_for('edit_profile') }}" method="POST" onsubmit="updateGitHubUrl()">
+        <!-- CSRF Security Token -->
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
+        <!-- Student Details -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div class="form-group">
+                <label for="age">Age *</label>
+                <input type="number" id="age" name="age" min="10" max="100" required value="{{ profile_user['age'] }}">
+            </div>
+
+            <div class="form-group">
+                <label for="grade">School Grade *</label>
+                <select id="grade" name="grade" required style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: var(--radius);">
+                    <option value="Gymnasium" {% if profile_user['grade'] == 'Gymnasium' %}selected{% endif %}>Gymnasium (A-C)</option>
+                    <option value="A Lyceum" {% if profile_user['grade'] == "A Lyceum" %}selected{% endif %}>A' Lyceum</option>
+                    <option value="B Lyceum" {% if profile_user['grade'] == "B Lyceum" %}selected{% endif %}>B' Lyceum</option>
+                    <option value="C Lyceum" {% if profile_user['grade'] == "C Lyceum" %}selected{% endif %}>C' Lyceum</option>
+                    <option value="University / Mentor" {% if profile_user['grade'] == 'University / Mentor' %}selected{% endif %}>University / Mentor</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="interest">Main STEM Interest *</label>
+            <select id="interest" name="interest" required style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: var(--radius);">
+                <option value="3D Modeling & CAD" {% if profile_user['interest'] == '3D Modeling & CAD' %}selected{% endif %}>3D Modeling & CAD</option>
+                <option value="Robotics & Microcontrollers" {% if profile_user['interest'] == 'Robotics & Microcontrollers' %}selected{% endif %}>Robotics & Microcontrollers (Arduino/Raspberry Pi)</option>
+                <option value="Software & Web Engineering" {% if profile_user['interest'] == 'Software & Web Engineering' %}selected{% endif %}>Software & Web Engineering</option>
+                <option value="Electronics & PCB Design" {% if profile_user['interest'] == 'Electronics & PCB Design' %}selected{% endif %}>Electronics & PCB Design</option>
+                <option value="AI & Data Science" {% if profile_user['interest'] == 'AI & Data Science' %}selected{% endif %}>AI & Data Science</option>
+                <option value="Physics & Applied Math" {% if profile_user['interest'] == 'Physics & Applied Math' %}selected{% endif %}>Physics & Applied Math</option>
+            </select>
+        </div>
+
+        <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 0.5rem 0;">
+
+        <!-- Official Profiles -->
+        <p style="font-weight: 600; font-size: 0.95rem; margin-bottom: 0.5rem;">Official Profiles</p>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <!-- GitHub Locked Prefix Field -->
+            <div class="form-group">
+                <label for="github_handle">GitHub Profile *</label>
+                <input type="hidden" id="github_user" name="github_user" value="{{ profile_user['github_user'] or '' }}">
+                
+                <div style="display: flex; align-items: center; border: 1px solid var(--border-color); border-radius: var(--radius); background: #fff;">
+                    <span style="padding: 0.75rem 0.5rem 0.75rem 0.75rem; background: #f1f5f9; color: #475569; font-size: 0.8rem; font-family: monospace; border-right: 1px solid var(--border-color); border-top-left-radius: var(--radius); border-bottom-left-radius: var(--radius); user-select: none; white-space: nowrap;">
+                        https://github.com/
+                    </span>
+                    <input type="text" id="github_handle" value="{{ profile_user['github_user'] | replace('https://github.com/', '') if profile_user['github_user'] else '' }}" placeholder="username" required style="border: none; outline: none; padding: 0.75rem; flex: 1; background: transparent; font-size: 0.95rem;" oninput="updateGitHubUrl()">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="linkedin_url">LinkedIn URL</label>
+                <input type="url" id="linkedin_url" name="linkedin_url" value="{{ profile_user['linkedin_url'] or '' }}" placeholder="https://linkedin.com/in/...">
+            </div>
+        </div>
+
+        <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 0.5rem 0;">
+        <div class="form-group" style="margin-top: 1rem;">
+            <label for="bio">Bio Description</label>
+            <textarea id="bio" name="bio" rows="3" placeholder="Tell other robotics teams about your club, projects, or goals..." style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: var(--radius); font-family: inherit; resize: vertical;">{{ profile_user['bio'] or '' }}</textarea>
+        </div>
+        <!-- Dynamic Custom Links (Up to 5 slots, enforced URL validation) -->
+        <p style="font-weight: 600; font-size: 0.95rem; margin-bottom: 0.5rem;">Custom Links (Discord, Instagram, Portfolio, etc.)</p>
+        
+        <div id="custom-links-container">
+            <!-- Link 1 (Always visible) -->
+            <div class="form-group custom-link-group" data-index="1">
+                <label for="custom_link_1">Custom Link 1</label>
+                <input type="url" id="custom_link_1" name="custom_link_1" value="{{ profile_user['custom_link_1'] or '' }}" placeholder="https://example.com">
+            </div>
+
+            <!-- Link 2 -->
+            <div class="form-group custom-link-group" data-index="2" {% if not profile_user['custom_link_2'] %}style="display: none;"{% endif %}>
+                <label for="custom_link_2">Custom Link 2</label>
+                <input type="url" id="custom_link_2" name="custom_link_2" value="{{ profile_user['custom_link_2'] or '' }}" placeholder="https://example.com">
+            </div>
+
+            <!-- Link 3 -->
+            <div class="form-group custom-link-group" data-index="3" {% if not profile_user['custom_link_3'] %}style="display: none;"{% endif %}>
+                <label for="custom_link_3">Custom Link 3</label>
+                <input type="url" id="custom_link_3" name="custom_link_3" value="{{ profile_user['custom_link_3'] or '' }}" placeholder="https://example.com">
+            </div>
+
+            <!-- Link 4 -->
+            <div class="form-group custom-link-group" data-index="4" {% if not profile_user['custom_link_4'] %}style="display: none;"{% endif %}>
+                <label for="custom_link_4">Custom Link 4</label>
+                <input type="url" id="custom_link_4" name="custom_link_4" value="{{ profile_user['custom_link_4'] or '' }}" placeholder="https://example.com">
+            </div>
+
+            <!-- Link 5 -->
+            <div class="form-group custom-link-group" data-index="5" {% if not profile_user['custom_link_5'] %}style="display: none;"{% endif %}>
+                <label for="custom_link_5">Custom Link 5</label>
+                <input type="url" id="custom_link_5" name="custom_link_5" value="{{ profile_user['custom_link_5'] or '' }}" placeholder="https://example.com">
+            </div>
+        </div>
+
+        <!-- Add Link Button -->
+        <button type="button" id="add-link-btn" class="btn btn-outline" onclick="revealNextLink()" style="width: 100%; margin-bottom: 1rem; border-style: dashed; font-size: 0.9rem; display: none;">
+            + Add Another Link
+        </button>
+
+        <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+            <button type="submit" class="btn btn-primary" style="flex: 1;">Save Changes</button>
+            <a href="{{ url_for('profile') }}" class="btn btn-outline" style="background: #e2e8f0; color: #1e293b; text-align: center; text-decoration: none; padding: 0.75rem 1rem; border-radius: var(--radius); font-weight: 600;">Cancel</a>
+        </div>
+    </form>
+</div>
+
+<script>
+function updateGitHubUrl() {
+    const handleInput = document.getElementById('github_handle');
+    const hiddenInput = document.getElementById('github_user');
+    let value = handleInput.value.trim();
+    
+    value = value.replace(/^https?:\/\/(www\.)?github\.com\//, '').replace(/^\/+/, '');
+    handleInput.value = value;
+    
+    if (value) {
+        hiddenInput.value = 'https://github.com/' + value;
+    } else {
+        hiddenInput.value = '';
+    }
+}
+
+function updateAddButtonState() {
+    const groups = document.querySelectorAll('.custom-link-group');
+    const addBtn = document.getElementById('add-link-btn');
+    
+    let lastVisibleGroup = null;
+    let hasHiddenGroups = false;
+
+    groups.forEach(group => {
+        if (group.style.display !== 'none') {
+            lastVisibleGroup = group;
+        } else {
+            hasHiddenGroups = true;
+        }
+    });
+
+    if (!hasHiddenGroups) {
+        addBtn.style.display = 'none';
+        return;
+    }
+
+    if (lastVisibleGroup) {
+        const input = lastVisibleGroup.querySelector('input');
+        // Only show button if the field contains text AND passes valid URL formatting check
+        if (input.value.trim() !== '' && input.checkValidity()) {
+            addBtn.style.display = 'block';
+        } else {
+            addBtn.style.display = 'none';
+        }
+    }
+}
+
+function revealNextLink() {
+    const groups = document.querySelectorAll('.custom-link-group');
+    for (let group of groups) {
+        if (group.style.display === 'none') {
+            group.style.display = 'block';
+            break;
+        }
+    }
+    updateAddButtonState();
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+    updateGitHubUrl();
+    
+    const groups = document.querySelectorAll('.custom-link-group');
+    groups.forEach(group => {
+        const input = group.querySelector('input');
+        input.addEventListener('input', updateAddButtonState);
+    });
+    updateAddButtonState();
+});
+</script>
+{% endblock %}
