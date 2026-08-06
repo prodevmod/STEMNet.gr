@@ -70,7 +70,7 @@ SCHEMA = BASE_DIR / "schema.sql"
 # Flask App Initialization
 app = Flask(__name__)
 app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "fallback-dev-key-change-in-prod")
-csrf = CSRFProtect(app)  # Protects all POST forms automatically
+csrf = CSRFProtect(app)  
 
 UPLOAD_FOLDER = 'static/uploads'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'mp4', 'webm'}
@@ -97,6 +97,7 @@ def set_security_headers(response):
     response.headers["X-XSS-Protection"] = "1; mode=block"
     
     return response
+@app.after_request
 def upgrade_database():
     # Only run this check once when the app boots up
     if getattr(app, '_db_checked', False):
