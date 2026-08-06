@@ -87,25 +87,34 @@ def get_db() -> sqlite3.Connection:
         g.db = connection
     return g.db
 
-def init_db():
-    db = get_db()
-    with app.open_resource("schema.sql", mode="r") as f:
-        db.cursor().executescript(f.read())
-    db.commit()
+# ---------------------------------------------------------
+# Bulletproof Database Migration Hook
+# ---------------------------------------------------------
+@app.before_request
+def upgrade_database():
+    # Only run this check once when the app boots up
+    if getattr(app, '_db_checked', False):
+        return
 
-# Robust startup check & migration
-with app.app_context():
     db = get_db()
+    
     try:
-        # Check if 'posts' table exists
+        # 1. Check if 'posts' exists
         cursor = db.execute("PRAGMA table_info(posts);")
         columns = [row["name"] for row in cursor.fetchall()]
         
+        # 2. If table doesn't exist at all, initialize from schema.sql
         if not columns:
-            # Table doesn't exist yet, initialize everything
-            init_db()
-        else:
-            # Table exists, ensure all necessary columns are present
+            with app.open_resource("schema.sql", mode="r") as f:
+                db.cursor().executescript(f.read())
+            db.commit()
+            
+            # Re-fetch columns after creation just to be safe
+            cursor = db.execute("PRAGMA table_info(posts);")
+            columns = [row["name"] for row in cursor.fetchall()]
+
+        # 3. Check columns and forcefully patch if anything is missing
+        if columns:
             if "parent_id" not in columns:
                 db.execute("ALTER TABLE posts ADD COLUMN parent_id INTEGER;")
             if "event_type" not in columns:
@@ -115,9 +124,13 @@ with app.app_context():
             if "event_location" not in columns:
                 db.execute("ALTER TABLE posts ADD COLUMN event_location TEXT;")
             db.commit()
-    except sqlite3.OperationalError:
-        init_db()
-        
+            
+    except Exception as e:
+        print(f"Database initialization error: {e}")
+
+    # Mark as checked so it doesn't run on every single page load
+    app._db_checked = True
+
 @app.context_processor
 def utility_processor():
     def get_unread_notifications():
@@ -136,13 +149,6 @@ def close_db(exception: BaseException | None) -> None:
     db = g.pop("db", None)
     if db is not None:
         db.close()
-
-def ensure_db() -> None:
-    if not DATABASE.exists():
-        init_db()
-
-
-ensure_db()
 
 
 # User Session Management
