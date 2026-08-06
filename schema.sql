@@ -21,21 +21,15 @@ CREATE TABLE IF NOT EXISTS users (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, 
     bio TEXT
 );
+
 CREATE TABLE IF NOT EXISTS posts (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER NOT NULL,
+    title TEXT NOT NULL,
     content TEXT NOT NULL,
-    media_path TEXT,
-    github_link TEXT,
-    category TEXT,          -- New column for tracking the STEM interest
-    parent_id INTEGER,
+    category TEXT NOT NULL,
+    event_type TEXT,  
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    event_type TEXT,
-    event_time TEXT,
-    event_location TEXT,
-    event_type TEXT,
-    event_time TEXT,
-    event_location TEXT,
+    user_id INTEGER,
     FOREIGN KEY (user_id) REFERENCES users (id)
 );
 
