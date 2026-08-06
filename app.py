@@ -88,39 +88,28 @@ def get_db() -> sqlite3.Connection:
         g.db = connection
     return g.db
 
-
-@app.after_request
-def set_security_headers(response):
-    response.headers["X-Content-Type-Options"] = "nosniff"
-    response.headers["X-Frame-Options"] = "SAMEORIGIN"
-    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
-    response.headers["X-XSS-Protection"] = "1; mode=block"
-    
-    return response
-@app.after_request
+# ---------------------------------------------------------
+# 1. Database Hook (MUST be @app.before_request)
+# ---------------------------------------------------------
+@app.before_request
 def upgrade_database():
-    # Only run this check once when the app boots up
     if getattr(app, '_db_checked', False):
         return
 
     db = get_db()
     
     try:
-        
         cursor = db.execute("PRAGMA table_info(posts);")
         columns = [row["name"] for row in cursor.fetchall()]
-        
         
         if not columns:
             with app.open_resource("schema.sql", mode="r") as f:
                 db.cursor().executescript(f.read())
             db.commit()
             
-            
             cursor = db.execute("PRAGMA table_info(posts);")
             columns = [row["name"] for row in cursor.fetchall()]
 
-        #
         if columns:
             if "parent_id" not in columns:
                 db.execute("ALTER TABLE posts ADD COLUMN parent_id INTEGER;")
@@ -135,8 +124,18 @@ def upgrade_database():
     except Exception as e:
         print(f"Database initialization error: {e}")
 
-    # Mark as checked so it doesn't run on every single page load
     app._db_checked = True
+
+# ---------------------------------------------------------
+# 2. Security Headers (MUST be @app.after_request)
+# ---------------------------------------------------------
+@app.after_request
+def set_security_headers(response):
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "SAMEORIGIN"
+    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    return response
 
 @app.context_processor
 def utility_processor():
