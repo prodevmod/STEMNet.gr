@@ -171,8 +171,100 @@ def login():
 @app.route("/register", methods=["GET", "POST"])
 @limiter.limit("3 per hour")
 def register():
-    # your existing registration logic...
-    pass
+    if request.method == "POST":
+        username = request.form.get("username", "").strip()
+        email = request.form.get("email", "").strip()  # Capture email
+        password = request.form.get("password", "")
+        confirm_password = request.form.get("confirm_password", "")
+        age_str = request.form.get("age", "").strip()
+        grade = request.form.get("grade", "").strip()
+        interest = request.form.get("interest", "").strip()
+
+        # Specific Social Profiles
+        github_user = request.form.get("github_user", "").strip() or None
+        linkedin_url = request.form.get("linkedin_url", "").strip() or None
+
+        # 5 Custom Link Slots
+        custom_link_1 = request.form.get("custom_link_1", "").strip() or None
+        custom_link_2 = request.form.get("custom_link_2", "").strip() or None
+        custom_link_3 = request.form.get("custom_link_3", "").strip() or None
+        custom_link_4 = request.form.get("custom_link_4", "").strip() or None
+        custom_link_5 = request.form.get("custom_link_5", "").strip() or None
+
+        # Validation Checks
+        if not username or not email or not password or not confirm_password or not age_str or not grade or not interest:
+            flash("Please fill out all required fields.", "danger")
+        elif password != confirm_password:
+            flash("Passwords do not match.", "danger")
+        elif len(password) < 8:
+            flash("Password must be at least 8 characters long.", "danger")
+        elif not any(c.isdigit() for c in password):
+            flash("Password must contain at least one number.", "danger")
+        elif not any(not c.isalnum() for c in password):
+            flash("Password must contain at least one special character.", "danger")
+        else:
+            try:
+                age = int(age_str)
+                if age < 10 or age > 100:
+                    flash("Please enter a realistic age.", "danger")
+                    return render_template("register.html")
+            except ValueError:
+                flash("Age must be a valid number.", "danger")
+                return render_template("register.html")
+
+            db = get_db()
+            
+            # Pre-check for existing email or username to give the specific error message
+            existing_user = db.execute(
+                "SELECT username, email FROM users WHERE username = ? OR email = ?",
+                (username, email)
+            ).fetchone()
+
+            if existing_user:
+                if existing_user["email"] == email:
+                    flash("Email already registered.", "danger")
+                elif existing_user["username"] == username:
+                    flash("That username is already taken.", "danger")
+                return render_template("register.html")
+
+            try:
+                db.execute(
+                    """
+                    INSERT INTO users (
+                        username, email, password_hash, age, grade, interest, 
+                        github_user, linkedin_url,
+                        custom_link_1, custom_link_2, custom_link_3, custom_link_4, custom_link_5
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        username,
+                        email,  
+                        generate_password_hash(password),
+                        age,
+                        grade,
+                        interest,
+                        github_user,
+                        linkedin_url,
+                        custom_link_1,
+                        custom_link_2,
+                        custom_link_3,
+                        custom_link_4,
+                        custom_link_5,
+                    ),
+                )
+                db.commit()
+
+                # Generate token and send verification email
+                token = generate_verification_token(email)
+                send_verification_email(email, token)
+
+            except sqlite3.IntegrityError:
+                flash("Registration failed due to a database error.", "danger")
+            else:
+                flash("Registration successful! Please check your email to verify your account before logging in.", "success")
+                return redirect(url_for("login"))
+
+    return render_template("register.html")
 
 # ---------------------------------------------------------
 # 1. Database Hook (MUST be @app.before_request)
@@ -301,102 +393,7 @@ def index():
     return render_template("index.html", posts=posts, selected_category=selected_category)
 
 
-@app.route("/register", methods=("GET", "POST"))
-def register():
-    if request.method == "POST":
-        username = request.form.get("username", "").strip()
-        email = request.form.get("email", "").strip()  # Capture email
-        password = request.form.get("password", "")
-        confirm_password = request.form.get("confirm_password", "")
-        age_str = request.form.get("age", "").strip()
-        grade = request.form.get("grade", "").strip()
-        interest = request.form.get("interest", "").strip()
 
-        # Specific Social Profiles
-        github_user = request.form.get("github_user", "").strip() or None
-        linkedin_url = request.form.get("linkedin_url", "").strip() or None
-
-        # 5 Custom Link Slots
-        custom_link_1 = request.form.get("custom_link_1", "").strip() or None
-        custom_link_2 = request.form.get("custom_link_2", "").strip() or None
-        custom_link_3 = request.form.get("custom_link_3", "").strip() or None
-        custom_link_4 = request.form.get("custom_link_4", "").strip() or None
-        custom_link_5 = request.form.get("custom_link_5", "").strip() or None
-
-        # Validation Checks
-        if not username or not email or not password or not confirm_password or not age_str or not grade or not interest:
-            flash("Please fill out all required fields.", "danger")
-        elif password != confirm_password:
-            flash("Passwords do not match.", "danger")
-        elif len(password) < 8:
-            flash("Password must be at least 8 characters long.", "danger")
-        elif not any(c.isdigit() for c in password):
-            flash("Password must contain at least one number.", "danger")
-        elif not any(not c.isalnum() for c in password):
-            flash("Password must contain at least one special character.", "danger")
-        else:
-            try:
-                age = int(age_str)
-                if age < 10 or age > 100:
-                    flash("Please enter a realistic age.", "danger")
-                    return render_template("register.html")
-            except ValueError:
-                flash("Age must be a valid number.", "danger")
-                return render_template("register.html")
-
-            db = get_db()
-            
-            # Pre-check for existing email or username to give the specific error message
-            existing_user = db.execute(
-                "SELECT username, email FROM users WHERE username = ? OR email = ?",
-                (username, email)
-            ).fetchone()
-
-            if existing_user:
-                if existing_user["email"] == email:
-                    flash("Email already registered.", "danger")
-                elif existing_user["username"] == username:
-                    flash("That username is already taken.", "danger")
-                return render_template("register.html")
-
-            try:
-                db.execute(
-                    """
-                    INSERT INTO users (
-                        username, email, password_hash, age, grade, interest, 
-                        github_user, linkedin_url,
-                        custom_link_1, custom_link_2, custom_link_3, custom_link_4, custom_link_5
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    """,
-                    (
-                        username,
-                        email,  
-                        generate_password_hash(password),
-                        age,
-                        grade,
-                        interest,
-                        github_user,
-                        linkedin_url,
-                        custom_link_1,
-                        custom_link_2,
-                        custom_link_3,
-                        custom_link_4,
-                        custom_link_5,
-                    ),
-                )
-                db.commit()
-
-                # Generate token and send verification email
-                token = generate_verification_token(email)
-                send_verification_email(email, token)
-
-            except sqlite3.IntegrityError:
-                flash("Registration failed due to a database error.", "danger")
-            else:
-                flash("Registration successful! Please check your email to verify your account before logging in.", "success")
-                return redirect(url_for("login"))
-
-    return render_template("register.html")
 
 @app.route("/verify/<token>")
 def verify_email(token):
