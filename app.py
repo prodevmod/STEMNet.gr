@@ -123,7 +123,6 @@ SCHEMA = BASE_DIR / "schema.sql"
 
 # Flask App Initialization
 app = Flask(__name__)
-# Force secure cookies in production (when not running locally on localhost)
 if not app.debug:
     app.config.update(
         SESSION_COOKIE_SECURE=True,
