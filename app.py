@@ -80,6 +80,7 @@ def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 # Database Helper Functions
+# Database Helper Functions
 def get_db() -> sqlite3.Connection:
     if "db" not in g:
         connection = sqlite3.connect(DATABASE)
@@ -87,15 +88,20 @@ def get_db() -> sqlite3.Connection:
         g.db = connection
     return g.db
 
+def init_db():
+    db = get_db()
+    with app.open_resource("schema.sql", mode="r") as f:
+        db.cursor().executescript(f.read())
+    db.commit()
+
+# Ensure database and tables exist on startup
 with app.app_context():
     db = get_db()
     try:
-        db.execute("ALTER TABLE posts ADD COLUMN parent_id INTEGER;")
-        db.commit()
+        db.execute("SELECT 1 FROM posts")
     except sqlite3.OperationalError:
-        # Column already exists, safe to ignore
-        pass
-
+        # Table doesn't exist yet, run schema initialization
+        init_db()
 @app.context_processor
 def utility_processor():
     def get_unread_notifications():
@@ -114,13 +120,6 @@ def close_db(exception: BaseException | None) -> None:
     db = g.pop("db", None)
     if db is not None:
         db.close()
-
-
-def init_db():
-    db = get_db()
-    with app.open_resource("schema.sql", mode="r") as f:
-        db.cursor().executescript(f.read())
-    db.commit()
 
 def ensure_db() -> None:
     if not DATABASE.exists():
