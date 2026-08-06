@@ -1,3 +1,5 @@
-Flask>=3.0,<4
-Werkzeug>=3.0,<4
-gunicorn>=21.0.0
+Traceback (most recent call last):
+  File "/opt/render/project/src/app.py", line 3, in <module>
+    from flask_wtf.csrf import CSRFProtect
+ModuleNotFoundError: No module named 'flask_wtf'
+==> Exited with status 1
