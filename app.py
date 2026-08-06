@@ -75,11 +75,12 @@ csrf = CSRFProtect(app)  # Protects all POST forms automatically
 UPLOAD_FOLDER = 'static/uploads'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'mp4', 'webm'}
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-# Database Helper Functions
+
 def get_db() -> sqlite3.Connection:
     if "db" not in g:
         connection = sqlite3.connect(DATABASE)
@@ -87,10 +88,15 @@ def get_db() -> sqlite3.Connection:
         g.db = connection
     return g.db
 
-# ---------------------------------------------------------
-# Bulletproof Database Migration Hook
-# ---------------------------------------------------------
-@app.before_request
+
+@app.after_request
+def set_security_headers(response):
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "SAMEORIGIN"
+    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    
+    return response
 def upgrade_database():
     # Only run this check once when the app boots up
     if getattr(app, '_db_checked', False):
@@ -99,21 +105,21 @@ def upgrade_database():
     db = get_db()
     
     try:
-        # 1. Check if 'posts' exists
+        
         cursor = db.execute("PRAGMA table_info(posts);")
         columns = [row["name"] for row in cursor.fetchall()]
         
-        # 2. If table doesn't exist at all, initialize from schema.sql
+        
         if not columns:
             with app.open_resource("schema.sql", mode="r") as f:
                 db.cursor().executescript(f.read())
             db.commit()
             
-            # Re-fetch columns after creation just to be safe
+            
             cursor = db.execute("PRAGMA table_info(posts);")
             columns = [row["name"] for row in cursor.fetchall()]
 
-        # 3. Check columns and forcefully patch if anything is missing
+        #
         if columns:
             if "parent_id" not in columns:
                 db.execute("ALTER TABLE posts ADD COLUMN parent_id INTEGER;")
@@ -825,6 +831,12 @@ def delete_post(post_id):
     db.execute("DELETE FROM notifications WHERE post_id = ?", (post_id,))
     db.execute("DELETE FROM posts WHERE id = ?", (post_id,))
     db.commit()
+
+    if post["media_path"]:
+        file_name = post["media_path"].replace("uploads/", "")
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], file_name)
+        if os.path.exists(file_path):
+            os.remove(file_path)
     
     flash("Post deleted successfully.", "success")
     return redirect(url_for("index"))
