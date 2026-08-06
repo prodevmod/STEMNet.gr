@@ -853,6 +853,7 @@ def post_detail(post_id):
     ).fetchall()
 
     return render_template("post_detail.html", post=post, replies=replies)
+
 @app.route("/post/<int:post_id>/edit", methods=("GET", "POST"))
 def edit_post(post_id):
     if g.get("user") is None:
@@ -962,5 +963,7 @@ def events_feed():
     ).fetchall()
     
     return render_template("events.html", posts=posts)
+
 if __name__ == "__main__":
+    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
     app.run(debug=True)
