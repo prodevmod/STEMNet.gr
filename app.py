@@ -670,7 +670,7 @@ def edit_profile():
             profile_pic_path = g.user["profile_pic"]  # Keep existing PFP if no new file uploaded
             
             if file and file.filename != '':
-                if allowed_file(file.filename):
+                if allowed_pfp_file(file.filename):
                     filename = secure_filename(file.filename)
                     unique_filename = f"pfp_{user_id}_{int(time.time())}_{filename}"
                     file_path = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
