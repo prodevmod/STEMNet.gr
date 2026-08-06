@@ -113,13 +113,14 @@ def init_db():
         db.cursor().executescript(f.read())
     db.commit()
 
-# Automatically create tables on startup if they are missing
 with app.app_context():
     db = get_db()
     try:
-        db.execute("SELECT 1 FROM users")
+        db.execute("ALTER TABLE posts ADD COLUMN parent_id INTEGER;")
+        db.commit()
     except sqlite3.OperationalError:
-        init_db()
+        # Column already exists, safe to ignore
+        pass
 
 
 def ensure_db() -> None:
