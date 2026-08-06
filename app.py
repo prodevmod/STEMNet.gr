@@ -4,10 +4,16 @@ from flask_wtf.csrf import CSRFProtect
 import urllib.parse
 from werkzeug.utils import secure_filename
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
 import sqlite3
 from pathlib import Path
 import smtplib
 from email.message import EmailMessage
+import requests
+
 
 from flask import (
     Flask,
@@ -38,35 +44,33 @@ def confirm_verification_token(token, expiration=3600): # Expires in 1 hour (360
     return email
 
 def send_verification_email(user_email, token):
-    # Set these in your Render Environment Variables!
-    smtp_server = "smtp.gmail.com"
-    smtp_port = 587
-    sender_email = os.environ.get("MAIL_USERNAME")
-    sender_password = os.environ.get("MAIL_PASSWORD")
-
+    resend_api_key = os.environ.get("RESEND_API_KEY")
     verify_url = url_for('verify_email', token=token, _external=True)
 
-    msg = EmailMessage()
-    msg.set_subject("Verify your STEMNet Greece Account")
-    msg.set_from(sender_email)
-    msg.set_to(user_email)
+    headers = {
+        "Authorization": f"Bearer {resend_api_key}",
+        "Content-Type": "application/json"
+    }
     
-    msg.set_content(f"""
-    Welcome to STEMNet Greece! 
-    Please click the link below to verify your email address and activate your account:
-    
-    {verify_url}
-    
-    If you did not sign up for this, please ignore this email.
-    """)
+    data = {
+        "from": "STEMNet Greece <onboarding@resend.dev>",  # Use onboarding@resend.dev for testing
+        "to": [user_email],
+        "subject": "Verify your STEMNet Greece Account",
+        "html": f"""
+            <h2>Welcome to STEMNet Greece!</h2>
+            <p>Please click the link below to verify your email address and activate your account:</p>
+            <p><a href="{verify_url}" style="padding: 10px 15px; background: #2563eb; color: white; text-decoration: none; border-radius: 5px;">Verify Email</a></p>
+            <p>If you did not sign up for this, please ignore this email.</p>
+        """
+    }
 
     try:
-        with smtplib.SMTP(smtp_server, smtp_port) as server:
-            server.starttls()
-            server.login(sender_email, sender_password)
-            server.send_message(msg)
+        response = requests.post("https://api.resend.com/emails", headers=headers, json=data)
+        if response.status_code not in [200, 201]:
+            print(f"Failed to send email: {response.text}")
     except Exception as e:
         print(f"Error sending email: {e}")
+
 BLOCKED_DOMAINS = {
     # IP Grabbers / Trackers
     "iplogger.org", "iplogger.com", "iplogger.ru", "2no.co", "yip.su", 
