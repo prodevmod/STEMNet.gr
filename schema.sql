@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS users (
     username TEXT UNIQUE NOT NULL,
     email TEXT UNIQUE NOT NULL,  
     password_hash TEXT NOT NULL,
+    is_verified INTEGER DEFAULT 0,
     age INTEGER NOT NULL,
     grade TEXT NOT NULL,
     interest TEXT NOT NULL,
@@ -24,13 +25,18 @@ CREATE TABLE IF NOT EXISTS users (
 
 CREATE TABLE IF NOT EXISTS posts (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    title TEXT NOT NULL,
+    user_id INTEGER NOT NULL,
     content TEXT NOT NULL,
+    media_path TEXT,
+    github_link TEXT,
     category TEXT NOT NULL,
-    event_type TEXT,  
+    parent_id INTEGER,
+    event_type TEXT,
+    event_time TEXT,
+    event_location TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    user_id INTEGER,
-    FOREIGN KEY (user_id) REFERENCES users (id)
+    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
+    FOREIGN KEY (parent_id) REFERENCES posts (id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS likes (
@@ -53,11 +59,11 @@ CREATE TABLE IF NOT EXISTS follows (
 
 CREATE TABLE IF NOT EXISTS notifications (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER NOT NULL,          -- Who receives the notification
-    actor_id INTEGER NOT NULL,         -- Who triggered the notification
-    type TEXT NOT NULL,                -- 'follow', 'reply', or 'post'
-    post_id INTEGER,                   -- Related post if applicable
-    is_read INTEGER DEFAULT 0,         -- 0 for unread, 1 for read
+    user_id INTEGER NOT NULL,        -- Who receives the notification
+    actor_id INTEGER NOT NULL,       -- Who triggered the notification
+    type TEXT NOT NULL,              -- 'follow', 'reply', or 'post'
+    post_id INTEGER,                 -- Related post if applicable
+    is_read INTEGER DEFAULT 0,       -- 0 for unread, 1 for read
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users (id),
     FOREIGN KEY (actor_id) REFERENCES users (id),

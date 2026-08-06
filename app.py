@@ -6,6 +6,8 @@ from werkzeug.utils import secure_filename
 import os
 import sqlite3
 from pathlib import Path
+import smtplib
+from email.message import EmailMessage
 
 from flask import (
     Flask,
@@ -18,8 +20,53 @@ from flask import (
     url_for,
 )
 from werkzeug.security import check_password_hash, generate_password_hash
+from itsdangerous import URLSafeTimedSerializer
 
+def get_serializer():
+    return URLSafeTimedSerializer(app.secret_key)
 
+def generate_verification_token(email):
+    serializer = get_serializer()
+    return serializer.dumps(email, salt='email-verification-salt')
+
+def confirm_verification_token(token, expiration=3600): # Expires in 1 hour (3600 seconds)
+    serializer = get_serializer()
+    try:
+        email = serializer.loads(token, salt='email-verification-salt', max_age=expiration)
+    except Exception:
+        return None
+    return email
+
+def send_verification_email(user_email, token):
+    # Set these in your Render Environment Variables!
+    smtp_server = "smtp.gmail.com"
+    smtp_port = 587
+    sender_email = os.environ.get("MAIL_USERNAME")
+    sender_password = os.environ.get("MAIL_PASSWORD")
+
+    verify_url = url_for('verify_email', token=token, _external=True)
+
+    msg = EmailMessage()
+    msg.set_subject("Verify your STEMNet Greece Account")
+    msg.set_from(sender_email)
+    msg.set_to(user_email)
+    
+    msg.set_content(f"""
+    Welcome to STEMNet Greece! 
+    Please click the link below to verify your email address and activate your account:
+    
+    {verify_url}
+    
+    If you did not sign up for this, please ignore this email.
+    """)
+
+    try:
+        with smtplib.SMTP(smtp_server, smtp_port) as server:
+            server.starttls()
+            server.login(sender_email, sender_password)
+            server.send_message(msg)
+    except Exception as e:
+        print(f"Error sending email: {e}")
 BLOCKED_DOMAINS = {
     # IP Grabbers / Trackers
     "iplogger.org", "iplogger.com", "iplogger.ru", "2no.co", "yip.su", 
@@ -283,7 +330,7 @@ def register():
                     """,
                     (
                         username,
-                        email,  # Insert email into DB
+                        email,  
                         generate_password_hash(password),
                         age,
                         grade,
@@ -298,13 +345,43 @@ def register():
                     ),
                 )
                 db.commit()
+
+                # Generate token and send verification email
+                token = generate_verification_token(email)
+                send_verification_email(email, token)
+
             except sqlite3.IntegrityError:
                 flash("Registration failed due to a database error.", "danger")
             else:
-                flash("Account created successfully! Please log in.", "success")
+                flash("Registration successful! Please check your email to verify your account before logging in.", "success")
                 return redirect(url_for("login"))
 
     return render_template("register.html")
+
+@app.route("/verify/<token>")
+def verify_email(token):
+    email = confirm_verification_token(token)
+    if not email:
+        flash("The verification link is invalid or has expired.", "danger")
+        return redirect(url_for("login"))
+
+    db = get_db()
+    user = db.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
+    
+    if not user:
+        flash("User not found.", "danger")
+        return redirect(url_for("login"))
+
+    if user["is_verified"] == 1:
+        flash("Account already verified. Please log in.", "info")
+        return redirect(url_for("login"))
+
+    # Mark user as verified
+    db.execute("UPDATE users SET is_verified = 1 WHERE email = ?", (email,))
+    db.commit()
+    
+    flash("Email verified successfully! You can now log in.", "success")
+    return redirect(url_for("login"))
 
 @app.route("/login", methods=("GET", "POST"))
 def login():
@@ -329,6 +406,9 @@ def login():
             flash("Invalid username/email or password.", "danger")
         elif not check_password_hash(user["password_hash"], password):
             flash("Invalid username/email or password.", "danger")
+        elif user["is_verified"] == 0:
+            flash("Please verify your email address before logging in. Check your inbox.", "warning")
+            return render_template("login.html")
         else:
             session.clear()
             session["user_id"] = user["id"]
@@ -336,7 +416,6 @@ def login():
             return redirect(url_for("index"))
 
     return render_template("login.html")
-
 
 @app.route("/logout")
 def logout():
