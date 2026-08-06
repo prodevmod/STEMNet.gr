@@ -966,6 +966,49 @@ def events_feed():
     
     return render_template("events.html", posts=posts)
 
+@app.route("/search")
+def search():
+    query = request.args.get("q", "").strip()
+    db = get_db()
+    current_user_id = g.user["id"] if g.get("user") else 0
+    
+    posts = []
+    users = []
+    
+    if query:
+        search_term = f"%{query}%"
+        
+        # 1. Search posts (content, categories, etc.)
+        posts = db.execute(
+            """
+            SELECT posts.*, users.username,
+                   parent_posts.content AS parent_content,
+                   parent_users.username AS parent_username,
+                   (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id) AS like_count,
+                   (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id AND likes.user_id = ?) AS user_liked
+            FROM posts 
+            JOIN users ON posts.user_id = users.id 
+            LEFT JOIN posts AS parent_posts ON posts.parent_id = parent_posts.id 
+            LEFT JOIN users AS parent_users ON parent_posts.user_id = parent_users.id 
+            WHERE posts.content LIKE ? OR posts.category LIKE ?
+            ORDER BY posts.created_at DESC
+            """,
+            (current_user_id, search_term, search_term)
+        ).fetchall()
+
+        # 2. Search users (by username or bio)
+        users = db.execute(
+            """
+            SELECT id, username, profile_pic, bio, grade, interest 
+            FROM users 
+            WHERE username LIKE ? OR bio LIKE ? OR interest LIKE ?
+            ORDER BY username ASC
+            """,
+            (search_term, search_term, search_term)
+        ).fetchall()
+
+    return render_template("search.html", posts=posts, users=users, query=query)
+
 if __name__ == "__main__":
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
     app.run(debug=True)

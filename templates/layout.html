@@ -28,10 +28,16 @@
                                 <img src="{{ url_for('static',filename='events.svg' ) }}" width="22" height="22" alt="Events">
                         <a href="{{ url_for('notifications') }}" style="display: flex; align-items: center;" title="Notifications">
                                 <img src="{{ url_for('static', filename='notification_on.svg' if has_unread_notifications else 'bell.svg') }}" width="22" height="22" alt="Notifications">
-                        <a href="{{ url_for('profile') }}" style="display: flex; align-items: center;" title="Profile">
+                        </a>
+                                <a href="{{ url_for('profile') }}" style="display: flex; align-items: center;" title="Profile">
                                 <img src="{{ url_for('static', filename='profile.svg') }}" width="22" height="22" alt="Profile">
                             </a>
-                            </a>
+                        <a href="{{ url_for('search') }}" title="Search" style="display: inline-flex; align-items: center; text-decoration: none; padding: 5px;">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #64748b;">
+                                <circle cx="11" cy="11" r="8"></circle>
+                                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                            </svg>
+                        </a>
                         <a href="{{ url_for('create_post') }}" class="btn btn-primary">+ New Post</a>
                         <a href="{{ url_for('logout') }}">Logout</a>
                 {% else %}
