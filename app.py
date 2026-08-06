@@ -87,6 +87,15 @@ def get_db() -> sqlite3.Connection:
         g.db = connection
     return g.db
 
+with app.app_context():
+    db = get_db()
+    try:
+        db.execute("ALTER TABLE posts ADD COLUMN parent_id INTEGER;")
+        db.commit()
+    except sqlite3.OperationalError:
+        # Column already exists, safe to ignore
+        pass
+
 @app.context_processor
 def utility_processor():
     def get_unread_notifications():
@@ -112,16 +121,6 @@ def init_db():
     with app.open_resource("schema.sql", mode="r") as f:
         db.cursor().executescript(f.read())
     db.commit()
-
-with app.app_context():
-    db = get_db()
-    try:
-        db.execute("ALTER TABLE posts ADD COLUMN parent_id INTEGER;")
-        db.commit()
-    except sqlite3.OperationalError:
-        # Column already exists, safe to ignore
-        pass
-
 
 def ensure_db() -> None:
     if not DATABASE.exists():
