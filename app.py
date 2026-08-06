@@ -164,8 +164,37 @@ limiter = Limiter(
 @app.route("/login", methods=["GET", "POST"])
 @limiter.limit("5 per minute")
 def login():
-    # your existing login logic...
-    pass
+    if request.method == "POST":
+        # Capture the input, which could be either a username or an email
+        identifier = request.form.get("username_or_email", "").strip()
+        password = request.form.get("password", "")
+
+        if not identifier or not password:
+            flash("Please enter both your username/email and password.", "danger")
+            return render_template("login.html")
+
+        db = get_db()
+        
+        # Check if the identifier matches EITHER the username OR the email
+        user = db.execute(
+            "SELECT * FROM users WHERE username = ? OR email = ?", 
+            (identifier, identifier)
+        ).fetchone()
+
+        if user is None:
+            flash("Invalid username/email or password.", "danger")
+        elif not check_password_hash(user["password_hash"], password):
+            flash("Invalid username/email or password.", "danger")
+        elif user["is_verified"] == 0:
+            flash("Please verify your email address before logging in. Check your inbox.", "warning")
+            return render_template("login.html")
+        else:
+            session.clear()
+            session["user_id"] = user["id"]
+            flash("Logged in successfully!", "success")
+            return redirect(url_for("index"))
+
+    return render_template("login.html")
 
 # Apply strict limit to registration to prevent spam accounts
 @app.route("/register", methods=["GET", "POST"])
@@ -420,39 +449,7 @@ def verify_email(token):
     flash("Email verified successfully! You can now log in.", "success")
     return redirect(url_for("login"))
 
-@app.route("/login", methods=("GET", "POST"))
-def login():
-    if request.method == "POST":
-        # Capture the input, which could be either a username or an email
-        identifier = request.form.get("username_or_email", "").strip()
-        password = request.form.get("password", "")
 
-        if not identifier or not password:
-            flash("Please enter both your username/email and password.", "danger")
-            return render_template("login.html")
-
-        db = get_db()
-        
-        # Check if the identifier matches EITHER the username OR the email
-        user = db.execute(
-            "SELECT * FROM users WHERE username = ? OR email = ?", 
-            (identifier, identifier)
-        ).fetchone()
-
-        if user is None:
-            flash("Invalid username/email or password.", "danger")
-        elif not check_password_hash(user["password_hash"], password):
-            flash("Invalid username/email or password.", "danger")
-        elif user["is_verified"] == 0:
-            flash("Please verify your email address before logging in. Check your inbox.", "warning")
-            return render_template("login.html")
-        else:
-            session.clear()
-            session["user_id"] = user["id"]
-            flash("Logged in successfully!", "success")
-            return redirect(url_for("index"))
-
-    return render_template("login.html")
 
 @app.route("/logout")
 def logout():
