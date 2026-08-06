@@ -131,6 +131,9 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+ALLOWED_PFP_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
+def allowed_pfp_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_PFP_EXTENSIONS
 
 def get_db() -> sqlite3.Connection:
     if "db" not in g:
@@ -545,8 +548,6 @@ def toggle_like(post_id):
     
     return jsonify({"liked": liked, "count": count})
 
-
-@app.route("/profile")
 @app.route("/profile")
 @app.route("/profile/<username>")
 def profile(username: str | None = None):
@@ -648,6 +649,7 @@ def edit_profile():
         custom_link_3 = request.form.get("custom_link_3", "").strip() or None
         custom_link_4 = request.form.get("custom_link_4", "").strip() or None
         custom_link_5 = request.form.get("custom_link_5", "").strip() or None
+        bio = request.form.get("bio", "").strip()
 
         if not age_str or not grade or not interest:
             flash("Please fill out all required fields.", "danger")
@@ -663,21 +665,35 @@ def edit_profile():
                 profile_user = db.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
                 return render_template("edit_profile.html", profile_user=profile_user)
 
-            # Secure parameterized update query restricted to current user's ID
-            bio = request.form.get("bio", "").strip()
+            # Handle Profile Picture Upload
+            file = request.files.get("profile_pic")
+            profile_pic_path = g.user["profile_pic"]  # Keep existing PFP if no new file uploaded
+            
+            if file and file.filename != '':
+                if allowed_file(file.filename):
+                    filename = secure_filename(file.filename)
+                    unique_filename = f"pfp_{user_id}_{int(time.time())}_{filename}"
+                    file_path = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
+                    file.save(file_path)
+                    profile_pic_path = f"uploads/{unique_filename}"
+                else:
+                    flash("Invalid image file type. Allowed: png, jpg, jpeg, gif, webp", "danger")
+                    profile_user = db.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
+                    return render_template("edit_profile.html", profile_user=profile_user)
 
+            # Secure parameterized update query restricted to current user's ID
             db.execute(
                 """
                 UPDATE users 
                 SET age = ?, grade = ?, interest = ?, github_user = ?, linkedin_url = ?, 
-                    custom_link_1 = ?, custom_link_2 = ?, custom_link_3 = ?, custom_link_4 = ?, custom_link_5 = ?, bio = ?
+                    custom_link_1 = ?, custom_link_2 = ?, custom_link_3 = ?, custom_link_4 = ?, custom_link_5 = ?, bio = ?, profile_pic = ?
                 WHERE id = ?
-                            """,
-                            (
-                                age, grade, interest, github_user, linkedin_url, 
-                                custom_link_1, custom_link_2, custom_link_3, custom_link_4, custom_link_5, 
-                                bio, g.user["id"]
-                            )
+                """,
+                (
+                    age, grade, interest, github_user, linkedin_url, 
+                    custom_link_1, custom_link_2, custom_link_3, custom_link_4, custom_link_5, 
+                    bio, profile_pic_path, user_id
+                )
             )
             db.commit()
 

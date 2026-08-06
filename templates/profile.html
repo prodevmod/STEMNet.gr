@@ -26,6 +26,13 @@
         {% endif %}
     </div>
 
+    {% if post.profile_pic %}
+    <img src="{{ url_for('static', filename=post.profile_pic) }}" alt="{{ post.username }}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
+    {% else %}
+        <!-- Default avatar fallback -->
+        <img src="{{ url_for('static', filename='uploads/default_avatar.png') }}" alt="Default" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
+    {% endif %}
+
     <!-- Bio Description Display -->
     {% if profile_user['bio'] %}
     <p style="margin: 12px 0; color: #334155; white-space: pre-line; line-height: 1.5; font-size: 0.95rem;">

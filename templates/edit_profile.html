@@ -9,9 +9,19 @@
         Update your academic details, robotics interests, and portfolio links.
     </p>
 
-    <form action="{{ url_for('edit_profile') }}" method="POST" onsubmit="updateGitHubUrl()">
-        <!-- CSRF Security Token -->
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+    <form action="{{ url_for('edit_profile') }}" method="POST" enctype="multipart/form-data">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <!-- Profile Picture Upload Field -->
+        <div class="form-group">
+            <label for="profile_pic">Profile Picture</label>
+            {% if g.user['profile_pic'] %}
+                <div style="margin-bottom: 0.5rem;">
+                    <img src="{{ url_for('static', filename=g.user['profile_pic']) }}" alt="Current PFP" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover;">
+                </div>
+            {% endif %}
+            <input type="file" id="profile_pic" name="profile_pic" accept="image/*" style="width: 100%; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: var(--radius);">
+        </div>
 
         <!-- Student Details -->
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">

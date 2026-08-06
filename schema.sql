@@ -1,5 +1,8 @@
 PRAGMA foreign_keys = ON;
 
+DROP TABLE IF EXISTS notifications;
+DROP TABLE IF EXISTS follows;
+DROP TABLE IF EXISTS likes;
 DROP TABLE IF EXISTS posts;
 DROP TABLE IF EXISTS users;
 
@@ -9,6 +12,7 @@ CREATE TABLE IF NOT EXISTS users (
     email TEXT UNIQUE NOT NULL,  
     password_hash TEXT NOT NULL,
     is_verified INTEGER DEFAULT 0,
+    profile_pic TEXT,
     age INTEGER NOT NULL,
     grade TEXT NOT NULL,
     interest TEXT NOT NULL,
