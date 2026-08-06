@@ -181,6 +181,7 @@ def upgrade_database():
 
     app._db_checked = True
 
+
 # ---------------------------------------------------------
 # 2. Security Headers (MUST be @app.after_request)
 # ---------------------------------------------------------
@@ -220,7 +221,7 @@ def load_current_user() -> None:
         g.user = None
     else:
         g.user = get_db().execute(
-            "SELECT id, username FROM users WHERE id = ?", (user_id,)
+            "SELECT * FROM users WHERE id = ?", (user_id,)
         ).fetchone()
 
 
