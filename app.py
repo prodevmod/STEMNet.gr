@@ -80,7 +80,6 @@ def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 # Database Helper Functions
-# Database Helper Functions
 def get_db() -> sqlite3.Connection:
     if "db" not in g:
         connection = sqlite3.connect(DATABASE)
@@ -94,14 +93,31 @@ def init_db():
         db.cursor().executescript(f.read())
     db.commit()
 
-# Ensure database and tables exist on startup
+# Robust startup check & migration
 with app.app_context():
     db = get_db()
     try:
-        db.execute("SELECT 1 FROM posts")
+        # Check if 'posts' table exists
+        cursor = db.execute("PRAGMA table_info(posts);")
+        columns = [row["name"] for row in cursor.fetchall()]
+        
+        if not columns:
+            # Table doesn't exist yet, initialize everything
+            init_db()
+        else:
+            # Table exists, ensure all necessary columns are present
+            if "parent_id" not in columns:
+                db.execute("ALTER TABLE posts ADD COLUMN parent_id INTEGER;")
+            if "event_type" not in columns:
+                db.execute("ALTER TABLE posts ADD COLUMN event_type TEXT;")
+            if "event_time" not in columns:
+                db.execute("ALTER TABLE posts ADD COLUMN event_time TEXT;")
+            if "event_location" not in columns:
+                db.execute("ALTER TABLE posts ADD COLUMN event_location TEXT;")
+            db.commit()
     except sqlite3.OperationalError:
-        # Table doesn't exist yet, run schema initialization
         init_db()
+        
 @app.context_processor
 def utility_processor():
     def get_unread_notifications():
