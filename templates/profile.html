@@ -7,7 +7,7 @@
     <!-- Profile Picture Header Display -->
     <div style="margin-bottom: 15px;">
         {% if profile_user['profile_pic'] %}
-            <img src="{{ url_for('static', filename=profile_user['profile_pic']) }}" alt="{{ profile_user['username'] }}" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 2px solid var(--border-color);">
+            <img src="{{ url_for('static', filename=profile_user['profile_pic']) }}" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 2px solid var(--border-color);">
         {% else %}
             <!-- Default avatar fallback -->
             <img src="{{ url_for('static', filename='uploads/default_avatar.svg') }}" alt="Default Avatar" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 2px solid var(--border-color);">
