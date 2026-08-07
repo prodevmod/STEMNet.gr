@@ -41,6 +41,7 @@ Posts can be organized and filtered into dedicated categories:
 * Software
 * Electronics
 * Artificial Intelligence
+* Events
 * Other
 
 ### Rich Post Creation
