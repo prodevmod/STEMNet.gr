@@ -265,7 +265,6 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
-        # Capture the input, which could be either a username or an email
         identifier = request.form.get("username_or_email", "").strip()
         password = request.form.get("password", "")
 
@@ -275,27 +274,36 @@ def login():
 
         db = get_db()
         
-        # Check if the identifier matches EITHER the username OR the email
-        user = db.execute(
-            "SELECT * FROM users WHERE username = ? OR email = ?", 
-            (identifier, identifier)
-        ).fetchone()
+        try:
+            # Check if the identifier matches EITHER the username OR the email
+            user = db.execute(
+                "SELECT * FROM users WHERE username = ? OR email = ?", 
+                (identifier, identifier)
+            ).fetchone()
 
-        if user is None:
-            flash("Invalid username/email or password.", "danger")
-        elif not check_password_hash(user["password_hash"], password):
-            flash("Invalid username/email or password.", "danger")
-        elif user["is_verified"] == 0:
-            flash("Please verify your email address before logging in. Check your inbox.", "warning")
+            if user is None:
+                flash("Invalid username/email or password.", "danger")
+            elif not check_password_hash(user["password_hash"], password):
+                flash("Invalid username/email or password.", "danger")
+            elif user["is_verified"] == 0:
+                flash("Please verify your email address before logging in. Check your inbox.", "warning")
+                return render_template("login.html")
+            else:
+                session.clear()
+                session["user_id"] = user["id"]
+                flash("Logged in successfully!", "success")
+                return redirect(url_for("index"))
+                
+        except (sqlite3.Error, psycopg2.Error) as e:
+            print(f"Login DB Error: {e}")
+            if hasattr(db, 'rollback'):
+                db.rollback()
+            elif hasattr(db, 'conn'):
+                db.conn.rollback()
+            flash("An unexpected database error occurred. Please try again.", "danger")
             return render_template("login.html")
-        else:
-            session.clear()
-            session["user_id"] = user["id"]
-            flash("Logged in successfully!", "success")
-            return redirect(url_for("index"))
 
     return render_template("login.html")
-
 
 @app.route("/register", methods=["GET", "POST"])
 def register():
