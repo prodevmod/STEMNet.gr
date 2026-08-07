@@ -712,26 +712,37 @@ def toggle_like(post_id):
         return jsonify({"error": "Unauthorized"}), 401
     
     db = get_db()
+    cursor = db.cursor()  # Must use cursor for psycopg2
     user_id = g.user["id"]
     
-    existing_like = db.execute(
-        "SELECT * FROM likes WHERE user_id = ? AND post_id = ?",
-        (user_id, post_id)
-    ).fetchone()
-    
-    if existing_like:
-        db.execute("DELETE FROM likes WHERE user_id = ? AND post_id = ?", (user_id, post_id))
-        liked = False
-    else:
-        db.execute("INSERT INTO likes (user_id, post_id) VALUES (?, ?)", (user_id, post_id))
-        liked = True
-    
-    db.commit()
-    
-    count_row = db.execute("SELECT COUNT(*) FROM likes WHERE post_id = ?", (post_id,)).fetchone()
-    count = count_row[0] if count_row else 0
-    
-    return jsonify({"liked": liked, "count": count})
+    try:
+        cursor.execute(
+            "SELECT 1 FROM likes WHERE user_id = %s AND post_id = %s",
+            (user_id, post_id)
+        )
+        existing_like = cursor.fetchone()
+        
+        if existing_like:
+            cursor.execute("DELETE FROM likes WHERE user_id = %s AND post_id = %s", (user_id, post_id))
+            liked = False
+        else:
+            cursor.execute("INSERT INTO likes (user_id, post_id) VALUES (%s, %s)", (user_id, post_id))
+            liked = True
+        
+        db.commit()
+        
+        cursor.execute("SELECT COUNT(*) AS count FROM likes WHERE post_id = %s", (post_id,))
+        count_row = cursor.fetchone()
+        count = count_row["count"] if count_row else 0
+        
+        return jsonify({"liked": liked, "count": count})
+    except Exception as e:
+        db.rollback()
+        print(f"Error in toggle_like: {e}")  # Prints directly to app.log
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cursor.close()
+
 
 @app.route("/profile")
 @app.route("/profile/<username>")

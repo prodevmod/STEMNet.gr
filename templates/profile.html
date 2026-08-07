@@ -128,18 +128,18 @@
 
     <!-- Like and Reply Action Bar -->
     <div style="display: flex; gap: 15px; margin-top: 15px; align-items: center; flex-wrap: wrap;">
-        <button type="button" 
-                data-post-id="{{ post['id'] }}" 
-                onclick="toggleLike(this.dataset.postId)" 
-                id="like-btn-{{ post['id'] }}" 
-                style="background: none; border: none; cursor: pointer; display: flex; align-items: center; gap: 5px; padding: 0;">
-            <img id="like-icon-{{ post['id'] }}" 
-                 src="{{ url_for('static', filename='liked.svg' if post['user_liked'] > 0 else 'like.svg') }}" 
-                 data-like-url="{{ url_for('static', filename='like.svg') }}"
-                 data-liked-url="{{ url_for('static', filename='liked.svg') }}"
-                 width="20" height="20" alt="Like">
-            <span id="like-count-{{ post['id'] }}">{{ post['like_count'] if post['like_count'] > 0 else 'Like' }}</span>
-        </button>
+            <button type="button" 
+                    data-post-id="{{ reply['id'] }}" 
+                    onclick="toggleLike(event, this.dataset.postId)" 
+                    id="like-btn-{{ reply['id'] }}" 
+                    style="background: none; border: none; display: flex; align-items: center; gap: 0.35rem; cursor: pointer; color: #64748b; font-weight: 500;">
+                <img id="like-icon-{{ reply['id'] }}" 
+                    src="{{ url_for('static', filename='liked.svg' if reply['user_liked'] > 0 else 'like.svg') }}" 
+                    data-like-url="{{ url_for('static', filename='like.svg') }}"
+                    data-liked-url="{{ url_for('static', filename='liked.svg') }}"
+                    width="16" height="16" alt="Like">
+                <span id="like-count-{{ reply['id'] }}">{{ reply['like_count'] if reply['like_count'] > 0 else 'Like' }}</span>
+            </button>
 
         <a href="{{ url_for('create_post', reply_to=post['id']) }}" style="text-decoration: none; display: flex; align-items: center;">
             <img src="{{ url_for('static', filename='comment.svg') }}" width="20" height="20" alt="Comment">
@@ -152,18 +152,15 @@
 {% endif %}
 
 <script>
-async function toggleLike(postId) {
+async function toggleLike(event, postId) {
+    if (event) event.preventDefault(); // Prevents page refresh if inside a form
+    
+    console.log("Toggling like for ID:", postId);
+    
     try {
-        // Fetch CSRF token from page meta tag or existing form input
-        const csrfToken = document.querySelector('input[name="csrf_token"]')?.value || '';
-
-        const response = await fetch(`/like/${postId}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': csrfToken
-            }
-        });
+        const response = await fetch(`/like/${postId}`, { method: 'POST' });
+        
+        console.log("Server status:", response.status);
 
         if (response.status === 401) {
             alert('Please log in to like posts.');
@@ -171,20 +168,26 @@ async function toggleLike(postId) {
         }
 
         if (!response.ok) {
-            console.error(`Server error: ${response.status}`);
+            const errText = await response.text();
+            console.error("Server error response:", errText);
             return;
         }
 
         const data = await response.json();
+        console.log("Received data:", data);
+
         const icon = document.getElementById(`like-icon-${postId}`);
         const countSpan = document.getElementById(`like-count-${postId}`);
-
-        if (icon && countSpan) {
-            countSpan.textContent = data.count > 0 ? data.count : 'Like';
-            icon.src = data.liked ? icon.dataset.likedUrl : icon.dataset.likeUrl;
+        
+        if (!icon || !countSpan) {
+            console.error(`DOM element mismatch: could not find #like-icon-${postId} or #like-count-${postId}`);
+            return;
         }
+
+        countSpan.textContent = data.count > 0 ? data.count : 'Like';
+        icon.src = data.liked ? icon.dataset.likedUrl : icon.dataset.likeUrl;
     } catch (err) {
-        console.error('Error toggling like:', err);
+        console.error('Fetch error:', err);
     }
 }
 </script>
