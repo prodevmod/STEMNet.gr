@@ -166,6 +166,28 @@ def allowed_pfp_file(filename):
 
 
 # --- UPDATED DATABASE CONNECTION LOGIC ---
+
+class PostgresWrapper:
+    """
+    This wrapper makes PostgreSQL act exactly like SQLite so you don't 
+    have to rewrite any of your existing db.execute() queries.
+    """
+    def __init__(self, conn):
+        self.conn = conn
+
+    def execute(self, query, params=()):
+        cursor = self.conn.cursor()
+        # Automatically translate SQLite '?' placeholders to PostgreSQL '%s'
+        postgres_query = query.replace("?", "%s")
+        cursor.execute(postgres_query, params)
+        return cursor # Returns the cursor so .fetchall() or .fetchone() works
+
+    def commit(self):
+        self.conn.commit()
+
+    def close(self):
+        self.conn.close()
+
 def get_db():
     if "db" not in g:
         db_url = os.environ.get("DATABASE_URL")
@@ -177,12 +199,15 @@ def get_db():
             
             # Connect to Supabase PostgreSQL using psycopg2
             connection = psycopg2.connect(db_url, cursor_factory=psycopg2.extras.RealDictCursor)
+            
+            # Wrap the PostgreSQL connection so it behaves like SQLite
+            g.db = PostgresWrapper(connection)
         else:
-            # Fallback to local SQLite if no DATABASE_URL is found (for local testing)
+            # Fallback to local SQLite if no DATABASE_URL is found
             connection = sqlite3.connect(DATABASE)
             connection.row_factory = sqlite3.Row
+            g.db = connection
             
-        g.db = connection
     return g.db
 
 @app.teardown_appcontext
@@ -191,8 +216,6 @@ def close_db(exception):
     if db is not None:
         if hasattr(db, 'close'):
             db.close()
-
-
 db_url = os.environ.get("DATABASE_URL", "sqlite:///app.db")
 if db_url.startswith("postgres://"):
     db_url = db_url.replace("postgres://", "postgresql://", 1)
