@@ -31,7 +31,11 @@ from flask import (
 )
 from werkzeug.security import check_password_hash, generate_password_hash
 from itsdangerous import URLSafeTimedSerializer
+from supabase import create_client, Client
 
+SUPABASE_URL = os.environ.get("SUPABASE_URL")
+SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 def get_serializer():
     return URLSafeTimedSerializer(app.secret_key)
@@ -635,20 +639,38 @@ def create_post():
             flash("Post content cannot be empty.", "danger")
             return render_template("create.html", parent_post=parent_post)
 
-        # Handle file/media upload
+        # Handle file/media upload to Supabase Storage
         file = request.files.get("media")
         if file and file.filename != '':
             if allowed_file(file.filename):
                 filename = secure_filename(file.filename)
                 unique_filename = f"{g.user['id']}_{int(time.time())}_{filename}"
-                os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-                file.save(os.path.join(app.config['UPLOAD_FOLDER'], unique_filename))
-                media_path = f"uploads/{unique_filename}"
+                file_bytes = file.read()
+                
+                try:
+                    # Upload directly to the Supabase Storage bucket named 'uploads'
+                    supabase.storage.from_("uploads").upload(
+                        path=unique_filename,
+                        file=file_bytes,
+                        file_options={"content-type": file.content_type, "upsert": "false"}
+                    )
+                    
+                    # Fetch the permanent public URL
+                    public_url_response = supabase.storage.from_("uploads").get_public_url(unique_filename)
+                    
+                    if isinstance(public_url_response, dict):
+                        media_path = public_url_response.get("publicUrl")
+                    else:
+                        media_path = public_url_response
+                except Exception as e:
+                    app.logger.error(f"Supabase upload error: {e}")
+                    flash("Failed to upload media file to cloud storage.", "danger")
+                    return render_template("create.html", parent_post=parent_post)
             else:
                 flash("Invalid file type. Allowed: images (png, jpg, gif) and short videos (mp4, webm).", "danger")
                 return render_template("create.html", parent_post=parent_post)
 
-        # Insert into database with event fields
+        # Insert into database with event fields and cloud media URL
         cursor = db.execute(
             """
             INSERT INTO posts (user_id, content, media_path, github_link, category, parent_id, event_type, event_time, event_location) 
@@ -658,7 +680,7 @@ def create_post():
         )
         post_id = cursor.lastrowid
 
-        # Notification loops (Replies & Followers) remain the same...
+        # Notification loops
         if parent_id:
             parent_author = db.execute("SELECT user_id FROM posts WHERE id = ?", (parent_id,)).fetchone()
             if parent_author and parent_author["user_id"] != g.user["id"]:
