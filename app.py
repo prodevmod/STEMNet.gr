@@ -464,9 +464,8 @@ def upgrade_database():
             db.conn.rollback()
 
     app._db_checked = True
-# ---------------------------------------------------------
-# 2. Security Headers (MUST be @app.after_request)
-# ---------------------------------------------------------
+
+
 @app.after_request
 def set_security_headers(response):
     response.headers["X-Content-Type-Options"] = "nosniff"
@@ -763,14 +762,16 @@ def profile(username: str | None = None):
         (current_user_id, profile_user["id"])
     ).fetchall()
 
-    # 5. Fetch Follower and Following counts
-    followers_count = db.execute(
+    # 5. Fetch Follower and Following counts safely (handles both dict and tuple rows)
+    followers_row = db.execute(
         "SELECT COUNT(*) FROM follows WHERE following_id = ?", (profile_user["id"],)
-    ).fetchone()[0]
+    ).fetchone()
+    followers_count = next(iter(followers_row.values())) if isinstance(followers_row, dict) else followers_row[0]
     
-    following_count = db.execute(
+    following_row = db.execute(
         "SELECT COUNT(*) FROM follows WHERE follower_id = ?", (profile_user["id"],)
-    ).fetchone()[0]
+    ).fetchone()
+    following_count = next(iter(following_row.values())) if isinstance(following_row, dict) else following_row[0]
 
     # 6. Check if current user is following this profile user
     is_following = False
