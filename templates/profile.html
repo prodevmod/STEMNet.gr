@@ -18,12 +18,15 @@
     
     <!-- Follower & Following Interactive Metrics -->
     <div style="display: flex; gap: 20px; margin: 10px 0; font-size: 0.95rem; align-items: center;">
-        <a href="{{ url_for('followers_list', username=profile_user.username) }}" style="text-decoration: none; color: #64748b;">
-            <strong>{{ followers_count }}</strong> Followers
-        </a>
-        <a href="{{ url_for('following_list', username=profile_user.username) }}" style="text-decoration: none; color: #64748b;">
-            <strong>{{ following_count }}</strong> Following
-        </a>
+            <!-- Followers Link -->
+            <a href="{{ url_for('followers', username=profile_user.username) }}" style="text-decoration: none; color: #64748b;">
+                <strong>{{ followers_count }}</strong> Followers
+            </a>
+
+            <!-- Following Link -->
+            <a href="{{ url_for('following', username=profile_user.username) }}" style="text-decoration: none; color: #64748b; margin-left: 15px;">
+                <strong>{{ following_count }}</strong> Following
+            </a>
 
         <!-- Follow / Unfollow Button (Hidden if viewing your own profile) -->
         {% if g.user and g.user.id != profile_user.id %}

@@ -949,9 +949,14 @@ def notifications():
 
     return render_template("notifications.html", notifications=notifs)
 
-@app.route("/user/<int:user_id>/followers")
-def followers(user_id):
-    # Fetch all users who follow this user ID
+@app.route("/user/<username>/followers")
+def followers(username):
+    db = get_db()
+    user = db.execute("SELECT id FROM users WHERE username = %s", (username,)).fetchone()
+    if not user:
+        flash("User not found.", "danger")
+        return redirect(url_for("index"))
+
     followers_list = db.execute(
         """
         SELECT users.id, users.username, users.profile_pic 
@@ -959,14 +964,20 @@ def followers(user_id):
         JOIN users ON follows.follower_id = users.id 
         WHERE follows.following_id = %s
         """,
-        (user_id,)
+        (user["id"],)
     ).fetchall()
     
-    return render_template("followers.html", followers=followers_list)
+    return render_template("followers.html", followers=followers_list, profile_user=user)
 
-@app.route("/user/<int:user_id>/following")
-def following(user_id):
-    # Fetch all users that this user ID is following
+
+@app.route("/user/<username>/following")
+def following(username):
+    db = get_db()
+    user = db.execute("SELECT id FROM users WHERE username = %s", (username,)).fetchone()
+    if not user:
+        flash("User not found.", "danger")
+        return redirect(url_for("index"))
+
     following_list = db.execute(
         """
         SELECT users.id, users.username, users.profile_pic 
@@ -974,10 +985,10 @@ def following(user_id):
         JOIN users ON follows.following_id = users.id 
         WHERE follows.follower_id = %s
         """,
-        (user_id,)
+        (user["id"],)
     ).fetchall()
     
-    return render_template("following.html", following=following_list)
+    return render_template("following.html", following=following_list, profile_user=user)
 
 @app.route("/post/<int:post_id>")
 def post_detail(post_id):
