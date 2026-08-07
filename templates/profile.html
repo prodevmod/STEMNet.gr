@@ -3,7 +3,7 @@
 {% block title %}@{{ profile_user['username'] }} - Profile{% endblock %}
 
 {% block content %}
-<div class="card" style="margin-bottom: 2rem;">
+<div class="card" style="margin-bottom: 2rem; word-break: break-word; overflow-wrap: break-word;">
     <!-- Profile Picture Header Display -->
     <div style="margin-bottom: 15px;">
         {% if profile_user['profile_pic'] %}
@@ -16,28 +16,28 @@
 
     <h2>@{{ profile_user.username }}</h2>
     
-    <!-- Follower & Following Interactive Metrics -->
-    <div style="display: flex; gap: 20px; margin: 10px 0; font-size: 0.95rem; align-items: center;">
-            <!-- Followers Link -->
-            <a href="{{ url_for('followers', username=profile_user.username) }}" style="text-decoration: none; color: #64748b;">
-                <strong>{{ followers_count }}</strong> Followers
-            </a>
+    <!-- Follower & Following Interactive Metrics (Layered & Mobile-Responsive) -->
+    <div style="display: flex; flex-wrap: wrap; gap: 15px; margin: 12px 0; font-size: 0.95rem; align-items: center;">
+        <!-- Followers Link -->
+        <a href="{{ url_for('followers', username=profile_user.username) }}" style="text-decoration: none; color: #64748b;">
+            <strong>{{ followers_count }}</strong> Followers
+        </a>
 
-            <!-- Following Link -->
-            <a href="{{ url_for('following', username=profile_user.username) }}" style="text-decoration: none; color: #64748b; margin-left: 15px;">
-                <strong>{{ following_count }}</strong> Following
-            </a>
+        <!-- Following Link -->
+        <a href="{{ url_for('following', username=profile_user.username) }}" style="text-decoration: none; color: #64748b;">
+            <strong>{{ following_count }}</strong> Following
+        </a>
+
         <!-- Follow / Unfollow Button (Hidden if viewing your own profile) -->
-                {% if g.user and g.user.id != profile_user.id %}
-                
-                <!-- Notice the inline if-statement inside url_for to swap between follow/unfollow -->
-                <form action="{{ url_for('unfollow' if is_following else 'follow', user_id=profile_user.id) }}" method="POST" style="margin: 0;">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <button type="submit" class="btn {% if is_following %}btn-outline{% else %}btn-primary{% endif %}" style="padding: 0.3rem 0.8rem; font-size: 0.85rem;">
-                        {{ 'Unfollow' if is_following else 'Follow' }}
-                    </button>
-                </form>
-                {% endif %}
+        {% if g.user and g.user.id != profile_user.id %}
+        <form action="{{ url_for('unfollow' if is_following else 'follow', user_id=profile_user.id) }}" method="POST" style="margin: 0;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn {% if is_following %}btn-outline{% else %}btn-primary{% endif %}" style="padding: 0.3rem 0.8rem; font-size: 0.85rem;">
+                {{ 'Unfollow' if is_following else 'Follow' }}
+            </button>
+        </form>
+        {% endif %}
+    </div>
 
     <!-- Bio Description Display -->
     {% if profile_user['bio'] %}
@@ -49,7 +49,7 @@
     <!-- Member Since -->
     <p style="color: gray; font-size: 0.85rem; margin-top: 10px;">Member since {{ profile_user['created_at'] }}</p>
 
-    <!-- Affiliate Links -->
+    <!-- Affiliate Links Layer -->
     <div style="display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap;">
         {% if profile_user['github_user'] %}
         <a href="{{ profile_user['github_user'] }}" target="_blank" class="btn btn-outline" style="display: inline-flex; align-items: center; text-decoration: none;">
@@ -87,8 +87,8 @@
 <h3>Posts by @{{ profile_user['username'] }}</h3>
 {% if posts %}
     {% for post in posts %}
-<div class="card" style="margin-bottom: 15px;">
-    <div style="display: flex; justify-content: space-between; align-items: center;">
+<div class="card" style="margin-bottom: 15px; word-break: break-word; overflow-wrap: break-word;">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
         <!-- Clickable Username Link -->
         <a href="{{ url_for('profile', username=post['username']) }}" class="username">
             @{{ post['username'] }}
@@ -113,21 +113,21 @@
    
     <p style="margin-top: 10px; white-space: pre-line;">{{ post['content'] }}</p>
 
-<!-- Optional Media Attachment -->
-                {% if post['media_path'] %}
-                <div style="margin-bottom: 0.75rem; border-radius: var(--radius); overflow: hidden; max-height: 350px;">
-                    {% if post['media_path'].endswith(('mp4', 'webm')) %}
-                    <video controls style="width: 100%; max-height: 350px; object-fit: cover;">
-                        <source src="{{ post['media_path'] }}" type="video/mp4">
-                    </video>
-                    {% else %}
-                    <img src="{{ post['media_path'] }}" alt="Post media" style="width: 100%; max-height: 350px; object-fit: cover;">
-                    {% endif %}
-                </div>
-                {% endif %}
+    <!-- Optional Media Attachment -->
+    {% if post['media_path'] %}
+    <div style="margin-bottom: 0.75rem; border-radius: var(--radius); overflow: hidden; max-height: 350px;">
+        {% if post['media_path'].endswith(('mp4', 'webm')) %}
+        <video controls style="width: 100%; max-height: 350px; object-fit: cover;">
+            <source src="{{ post['media_path'] }}" type="video/mp4">
+        </video>
+        {% else %}
+        <img src="{{ post['media_path'] }}" alt="Post media" style="width: 100%; max-height: 350px; object-fit: cover;">
+        {% endif %}
+    </div>
+    {% endif %}
 
     <!-- Like and Reply Action Bar -->
-    <div style="display: flex; gap: 15px; margin-top: 15px; align-items: center;">
+    <div style="display: flex; gap: 15px; margin-top: 15px; align-items: center; flex-wrap: wrap;">
         <button type="button" 
                 data-post-id="{{ post['id'] }}" 
                 onclick="toggleLike(this.dataset.postId)" 
