@@ -1222,6 +1222,8 @@ def search():
 
     return render_template("search.html", posts=posts, users=users, query=query)
 
+
+
 if __name__ == "__main__":
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
     app.run(host="0.0.0.0", port=80)

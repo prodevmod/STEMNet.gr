@@ -154,20 +154,34 @@
 <script>
 async function toggleLike(postId) {
     try {
-        const response = await fetch(`/like/${postId}`, { method: 'POST' });
+        // Fetch CSRF token from page meta tag or existing form input
+        const csrfToken = document.querySelector('input[name="csrf_token"]')?.value || '';
+
+        const response = await fetch(`/like/${postId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            }
+        });
+
         if (response.status === 401) {
             alert('Please log in to like posts.');
             return;
         }
+
+        if (!response.ok) {
+            console.error(`Server error: ${response.status}`);
+            return;
+        }
+
         const data = await response.json();
         const icon = document.getElementById(`like-icon-${postId}`);
         const countSpan = document.getElementById(`like-count-${postId}`);
-        
-        countSpan.textContent = data.count > 0 ? data.count : 'Like';
-        if (data.liked) {
-            icon.src = icon.dataset.likedUrl;
-        } else {
-            icon.src = icon.dataset.likeUrl;
+
+        if (icon && countSpan) {
+            countSpan.textContent = data.count > 0 ? data.count : 'Like';
+            icon.src = data.liked ? icon.dataset.likedUrl : icon.dataset.likeUrl;
         }
     } catch (err) {
         console.error('Error toggling like:', err);
