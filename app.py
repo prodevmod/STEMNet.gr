@@ -884,28 +884,24 @@ def follow(user_id):
         return redirect(request.referrer or url_for("index"))
 
     try:
-        # 1. Execute the query (Do NOT chain .fetchone() here in Postgres)
+        # A single execute command using ON CONFLICT to prevent duplicates
+        # No .fetchone() or .fetchall() needed!
         db.execute(
-            "SELECT 1 FROM follows WHERE follower_id = %s AND following_id = %s",
+            """
+            INSERT INTO follows (follower_id, following_id, created_at) 
+            VALUES (%s, %s, CURRENT_TIMESTAMP)
+            ON CONFLICT (follower_id, following_id) DO NOTHING
+            """,
             (current_user_id, user_id)
         )
         
-        # 2. Call fetchone() on the next line
-        existing_follow = db.fetchone()
-
-        if not existing_follow:
-            db.execute(
-                "INSERT INTO follows (follower_id, following_id, created_at) VALUES (%s, %s, CURRENT_TIMESTAMP)",
-                (current_user_id, user_id)
-            )
-            
-            # Safely commit
-            if hasattr(db, 'commit'):
-                db.commit()
-            elif hasattr(db, 'connection'):
-                db.connection.commit()
-            else:
-                g.db.commit()
+        # Safely commit using your wrapper
+        if hasattr(db, 'commit'):
+            db.commit()
+        elif hasattr(db, 'connection'):
+            db.connection.commit()
+        else:
+            g.db.commit()
             
     except Exception as e:
         app.logger.error(f"Follow error: {e}")
@@ -923,12 +919,13 @@ def unfollow(user_id):
         return redirect(url_for("login"))
 
     try:
+        # A simple delete command
         db.execute(
             "DELETE FROM follows WHERE follower_id = %s AND following_id = %s",
             (current_user_id, user_id)
         )
         
-        # Safely commit
+        # Safely commit using your wrapper
         if hasattr(db, 'commit'):
             db.commit()
         elif hasattr(db, 'connection'):
@@ -941,7 +938,6 @@ def unfollow(user_id):
         flash("Could not unfollow user due to a database error.", "danger")
 
     return redirect(request.referrer or url_for("index"))
-
 
 @app.route("/notifications")
 def notifications():
