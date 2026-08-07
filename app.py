@@ -884,19 +884,22 @@ def follow(user_id):
         return redirect(request.referrer or url_for("index"))
 
     try:
-        existing_follow = db.execute(
+        # 1. Execute the query (Do NOT chain .fetchone() here in Postgres)
+        db.execute(
             "SELECT 1 FROM follows WHERE follower_id = %s AND following_id = %s",
             (current_user_id, user_id)
-        ).fetchone()
+        )
+        
+        # 2. Call fetchone() on the next line
+        existing_follow = db.fetchone()
 
         if not existing_follow:
-            # 1. Provide CURRENT_TIMESTAMP explicitly
             db.execute(
                 "INSERT INTO follows (follower_id, following_id, created_at) VALUES (%s, %s, CURRENT_TIMESTAMP)",
                 (current_user_id, user_id)
             )
             
-            # 2. Safely commit whether 'db' is a connection object or a cursor object
+            # Safely commit
             if hasattr(db, 'commit'):
                 db.commit()
             elif hasattr(db, 'connection'):
@@ -925,7 +928,7 @@ def unfollow(user_id):
             (current_user_id, user_id)
         )
         
-        # Safely commit whether 'db' is a connection object or a cursor object
+        # Safely commit
         if hasattr(db, 'commit'):
             db.commit()
         elif hasattr(db, 'connection'):
@@ -938,6 +941,7 @@ def unfollow(user_id):
         flash("Could not unfollow user due to a database error.", "danger")
 
     return redirect(request.referrer or url_for("index"))
+
 
 @app.route("/notifications")
 def notifications():
