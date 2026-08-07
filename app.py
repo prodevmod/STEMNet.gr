@@ -388,13 +388,14 @@ def register():
 
             except (sqlite3.IntegrityError, psycopg2.Error) as e:
                 print(f"Registration DB Error: {e}")
+                db.rollback()  # Resets the aborted PostgreSQL transaction state
                 flash("Registration failed. That username or email may already be in use.", "danger")
                 return render_template("register.html")
             else:
                 flash("Registration successful! Please check your email to verify your account before logging in.", "success")
                 return redirect(url_for("login"))
 
-
+    return render_template("register.html")
 
 
 @app.before_request
