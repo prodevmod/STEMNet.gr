@@ -989,7 +989,7 @@ def notifications():
 @app.route("/user/<username>/followers")
 def followers(username):
     db = get_db()
-    user = db.execute("SELECT id FROM users WHERE username = %s", (username,)).fetchone()
+    user = db.execute("SELECT * FROM users WHERE username = %s", (username,)).fetchone()
     if not user:
         flash("User not found.", "danger")
         return redirect(url_for("index"))
@@ -1010,7 +1010,7 @@ def followers(username):
 @app.route("/user/<username>/following")
 def following(username):
     db = get_db()
-    user = db.execute("SELECT id FROM users WHERE username = %s", (username,)).fetchone()
+    user = db.execute("SELECT * FROM users WHERE username = %s", (username,)).fetchone()
     if not user:
         flash("User not found.", "danger")
         return redirect(url_for("index"))
