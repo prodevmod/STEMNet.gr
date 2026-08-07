@@ -87,7 +87,9 @@ Security was an important part of the project and includes:
 * Flexbox-based layouts
 * Responsive navigation and content display
 * Modern CSS styling using custom properties
+* Notifications for replies and followers
 
+### Search Function 
 ---
 
 # Technologies Used
@@ -97,13 +99,14 @@ Security was an important part of the project and includes:
 * Python 3
 * Flask
 * Jinja2
-* SQLite
+* SQLite (originally)
+* PostgreSQL (wrapper functions)
 
 ## Frontend
 
 * HTML5
 * CSS3
-* JavaScript (ES6+)
+* JavaScript
 
 ## Development & Services
 
@@ -154,11 +157,7 @@ Some planned features for future development include:
 
 * Direct messaging between users
 * Project bookmarking and favorites
-* Notifications for replies and followers
 * Team pages for robotics clubs
-* Search functionality
-* Advanced moderation tools
-* Better profile customization
 * Event and competition announcements
 
 ---
