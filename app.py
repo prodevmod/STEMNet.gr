@@ -52,9 +52,9 @@ def send_verification_email(user_email, token):
         "Authorization": f"Bearer {resend_api_key}",
         "Content-Type": "application/json"
     }
-    
+        
     data = {
-        "from": "STEMNet Greece <onboarding@resend.dev>",  # Use onboarding@resend.dev for testing
+        "from": "STEMNet Greece <noreply@yourdomain.com>",  # Change this to your verified domain email
         "to": [user_email],
         "subject": "Verify your STEMNet Greece Account",
         "html": f"""
