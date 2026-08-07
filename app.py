@@ -27,8 +27,6 @@ from flask import (
 )
 from werkzeug.security import check_password_hash, generate_password_hash
 from itsdangerous import URLSafeTimedSerializer
-from flask_limiter import Limiter
-from flask_limiter.util import get_remote_address
 
 
 def get_serializer():
@@ -153,15 +151,9 @@ def get_db() -> sqlite3.Connection:
     return g.db
 
 
-limiter = Limiter(
-    app=app,
-    key_func=get_remote_address,
-    storage_uri="memory://" # Keeps track of requests in memory
-)
 
 
 @app.route("/login", methods=["GET", "POST"])
-@limiter.limit("5 per minute")
 def login():
     if request.method == "POST":
         # Capture the input, which could be either a username or an email
