@@ -724,7 +724,7 @@ def profile(username: str | None = None):
         user_id = g.user["id"]
     else:
         target_user = db.execute(
-            "SELECT id FROM users WHERE username = ?", (username,)
+            "SELECT id FROM users WHERE username = %s", (username,)
         ).fetchone()
         
         if target_user is None:
@@ -734,7 +734,7 @@ def profile(username: str | None = None):
 
     # 2. Fetch raw user record
     raw_user = db.execute(
-        "SELECT * FROM users WHERE id = ?", (user_id,)
+        "SELECT * FROM users WHERE id = %s", (user_id,)
     ).fetchone()
 
     if not raw_user:
@@ -744,40 +744,40 @@ def profile(username: str | None = None):
     # 3. Sanitize profile links into a dict
     profile_user = sanitize_profile_links(raw_user)
 
-    # 4. Fetch user's posts
+    # 4. Fetch user's posts (fixed ? to %s)
     posts = db.execute(
         """
         SELECT posts.*, users.username,
                parent_posts.content AS parent_content,
                parent_users.username AS parent_username,
                (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id) AS like_count,
-               (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id AND likes.user_id = ?) AS user_liked
+               (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id AND likes.user_id = %s) AS user_liked
         FROM posts 
         JOIN users ON posts.user_id = users.id 
         LEFT JOIN posts AS parent_posts ON posts.parent_id = parent_posts.id 
         LEFT JOIN users AS parent_users ON parent_posts.user_id = parent_users.id 
-        WHERE posts.user_id = ?
+        WHERE posts.user_id = %s
         ORDER BY posts.created_at DESC
         """,
         (current_user_id, profile_user["id"])
     ).fetchall()
 
-    # 5. Fetch Follower and Following counts safely (handles both dict and tuple rows)
+    # 5. Fetch Follower and Following counts safely (fixed ? to %s)
     followers_row = db.execute(
-        "SELECT COUNT(*) FROM follows WHERE following_id = ?", (profile_user["id"],)
+        "SELECT COUNT(*) FROM follows WHERE following_id = %s", (profile_user["id"],)
     ).fetchone()
     followers_count = next(iter(followers_row.values())) if isinstance(followers_row, dict) else followers_row[0]
     
     following_row = db.execute(
-        "SELECT COUNT(*) FROM follows WHERE follower_id = ?", (profile_user["id"],)
+        "SELECT COUNT(*) FROM follows WHERE follower_id = %s", (profile_user["id"],)
     ).fetchone()
     following_count = next(iter(following_row.values())) if isinstance(following_row, dict) else following_row[0]
 
-    # 6. Check if current user is following this profile user
+    # 6. Check if current user is following this profile user (fixed ? to %s)
     is_following = False
     if g.get("user") and g.user["id"] != profile_user["id"]:
         check_follow = db.execute(
-            "SELECT 1 FROM follows WHERE follower_id = ? AND following_id = ?",
+            "SELECT 1 FROM follows WHERE follower_id = %s AND following_id = %s",
             (g.user["id"], profile_user["id"])
         ).fetchone()
         is_following = check_follow is not None
@@ -790,6 +790,8 @@ def profile(username: str | None = None):
         following_count=following_count, 
         is_following=is_following
     )
+
+
 @app.route("/profile/edit", methods=("GET", "POST"))
 def edit_profile():
     # Security check: Ensure user is logged in
