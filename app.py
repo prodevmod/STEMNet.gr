@@ -873,10 +873,7 @@ def edit_profile():
 
 @app.route("/follow/<int:user_id>", methods=["POST"])
 def follow(user_id):
-    # 1. INITIALIZE THE DB CONNECTION HERE
     db = get_db()
-    
-    # 2. Get current user safely using your app's 'g' object pattern
     current_user_id = g.user["id"] if g.get("user") else None
     
     if not current_user_id:
@@ -887,6 +884,7 @@ def follow(user_id):
         return redirect(request.referrer or url_for("index"))
 
     try:
+        # Notice we removed "RETURNING id" from the end of the query
         db.execute(
             """
             INSERT INTO follows (follower_id, following_id) 
@@ -901,7 +899,6 @@ def follow(user_id):
         flash("Could not follow user due to a database error.", "danger")
 
     return redirect(request.referrer or url_for("index"))
-
 
 @app.route("/unfollow/<int:user_id>", methods=["POST"])
 def unfollow(user_id):
