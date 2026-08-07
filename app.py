@@ -869,49 +869,58 @@ def edit_profile():
     return render_template("edit_profile.html", profile_user=profile_user)
 
 
-@app.route("/follow/<int:user_id>", methods=("POST",))
+@app.route("/follow/<int:user_id>", methods=["POST"])
 def follow(user_id):
-    if g.get("user") is None:
-        flash("Please log in to follow users.", "warning")
-        return redirect(url_for("login"))
+    # Ensure you are using your app's method of getting the current logged-in user's ID
+    current_user_id = session.get("user_id") 
     
-    if user_id == g.user["id"]:
-        flash("You cannot follow yourself.", "danger")
+    if not current_user_id:
+        return redirect(url_for("login"))
+        
+    if current_user_id == user_id:
+        flash("You cannot follow yourself.", "warning")
         return redirect(request.referrer or url_for("index"))
 
-    db = get_db()
-    target_user = db.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
-    if not target_user:
-        flash("User not found.", "danger")
-        return redirect(url_for("index"))
-
-    existing = db.execute(
-        "SELECT * FROM follows WHERE follower_id = ? AND following_id = ?",
-        (g.user["id"], user_id)
-    ).fetchone()
-
-    if existing:
+    try:
+        # NOTE: PostgreSQL uses %s for placeholders, NOT ?
+        # ON CONFLICT prevents crashing if the follow relationship already exists
         db.execute(
-            "DELETE FROM follows WHERE follower_id = ? AND following_id = ?",
-            (g.user["id"], user_id)
+            """
+            INSERT INTO follows (follower_id, following_id) 
+            VALUES (%s, %s) 
+            ON CONFLICT (follower_id, following_id) DO NOTHING
+            """,
+            (current_user_id, user_id)
         )
         db.commit()
-        flash(f"Unfollowed @{target_user['username']}.", "info")
-    else:
+    except Exception as e:
+        app.logger.error(f"Follow error: {e}")
+        flash("Could not follow user due to a database error.", "danger")
+
+    return redirect(request.referrer or url_for("profile", user_id=user_id))
+
+
+@app.route("/unfollow/<int:user_id>", methods=["POST"])
+def unfollow(user_id):
+    current_user_id = session.get("user_id")
+    
+    if not current_user_id:
+        return redirect(url_for("login"))
+
+    try:
         db.execute(
-            "INSERT INTO follows (follower_id, following_id) VALUES (?, ?)",
-            (g.user["id"], user_id)
-        )
-        # Create notification for follow
-        db.execute(
-            "INSERT INTO notifications (user_id, actor_id, type) VALUES (?, ?, ?)",
-            (user_id, g.user["id"], "follow")
+            """
+            DELETE FROM follows 
+            WHERE follower_id = %s AND following_id = %s
+            """,
+            (current_user_id, user_id)
         )
         db.commit()
-        flash(f"Now following @{target_user['username']}!", "success")
+    except Exception as e:
+        app.logger.error(f"Unfollow error: {e}")
+        flash("Could not unfollow user due to a database error.", "danger")
 
-    return redirect(request.referrer or url_for("profile", username=target_user["username"]))
-
+    return redirect(request.referrer or url_for("profile", user_id=user_id))
 
 @app.route("/notifications")
 def notifications():
@@ -938,44 +947,35 @@ def notifications():
 
     return render_template("notifications.html", notifications=notifs)
 
-@app.route("/profile/<username>/followers")
-def followers_list(username):
-    db = get_db()
-    user = db.execute("SELECT * FROM users WHERE username = ?", (username,)).fetchone()
-    if not user:
-        flash("User not found.", "danger")
-        return redirect(url_for("index"))
-    
-    followers = db.execute(
+@app.route("/user/<int:user_id>/followers")
+def followers(user_id):
+    # Fetch all users who follow this user ID
+    followers_list = db.execute(
         """
-        SELECT u.* FROM users u
-        JOIN follows f ON u.id = f.follower_id
-        WHERE f.following_id = ?
+        SELECT users.id, users.username, users.profile_pic 
+        FROM follows 
+        JOIN users ON follows.follower_id = users.id 
+        WHERE follows.following_id = %s
         """,
-        (user["id"],)
+        (user_id,)
     ).fetchall()
     
-    return render_template("user_list.html", profile_user=user, users=followers, title=f"Followers of @{username}")
+    return render_template("followers.html", followers=followers_list)
 
-
-@app.route("/profile/<username>/following")
-def following_list(username):
-    db = get_db()
-    user = db.execute("SELECT * FROM users WHERE username = ?", (username,)).fetchone()
-    if not user:
-        flash("User not found.", "danger")
-        return redirect(url_for("index"))
-    
-    following = db.execute(
+@app.route("/user/<int:user_id>/following")
+def following(user_id):
+    # Fetch all users that this user ID is following
+    following_list = db.execute(
         """
-        SELECT u.* FROM users u
-        JOIN follows f ON u.id = f.following_id
-        WHERE f.follower_id = ?
+        SELECT users.id, users.username, users.profile_pic 
+        FROM follows 
+        JOIN users ON follows.following_id = users.id 
+        WHERE follows.follower_id = %s
         """,
-        (user["id"],)
+        (user_id,)
     ).fetchall()
     
-    return render_template("user_list.html", profile_user=user, users=following, title=f"Users followed by @{username}")
+    return render_template("following.html", following=following_list)
 
 @app.route("/post/<int:post_id>")
 def post_detail(post_id):
