@@ -136,18 +136,19 @@
                 {% endif %}
 
                 <!-- Action Bar (Likes & Reply) -->
-            <button type="button" 
-                    data-post-id="{{ reply['id'] }}" 
-                    onclick="toggleLike(event, this.dataset.postId)" 
-                    id="like-btn-{{ reply['id'] }}" 
-                    style="background: none; border: none; display: flex; align-items: center; gap: 0.35rem; cursor: pointer; color: #64748b; font-weight: 500;">
-                <img id="like-icon-{{ reply['id'] }}" 
-                    src="{{ url_for('static', filename='liked.svg' if reply['user_liked'] > 0 else 'like.svg') }}" 
-                    data-like-url="{{ url_for('static', filename='like.svg') }}"
-                    data-liked-url="{{ url_for('static', filename='liked.svg') }}"
-                    width="16" height="16" alt="Like">
-                <span id="like-count-{{ reply['id'] }}">{{ reply['like_count'] if reply['like_count'] > 0 else 'Like' }}</span>
-            </button>
+                <div style="display: flex; gap: 1.5rem; align-items: center; border-top: 1px solid #f1f5f9; padding-top: 0.75rem; margin-top: 0.5rem;">
+<button type="button" 
+        data-post-id="{{ reply['id'] }}" 
+        onclick="toggleLike(event, this.dataset.postId)" 
+        id="like-btn-{{ reply['id'] }}" 
+        style="background: none; border: none; display: flex; align-items: center; gap: 0.35rem; cursor: pointer; color: #64748b; font-weight: 500;">
+    <img id="like-icon-{{ reply['id'] }}" 
+         src="{{ url_for('static', filename='liked.svg' if reply['user_liked'] > 0 else 'like.svg') }}" 
+         data-like-url="{{ url_for('static', filename='like.svg') }}"
+         data-liked-url="{{ url_for('static', filename='liked.svg') }}"
+         width="16" height="16" alt="Like">
+    <span id="like-count-{{ reply['id'] }}">{{ reply['like_count'] if reply['like_count'] > 0 else 'Like' }}</span>
+</button>
 
                     <a href="{{ url_for('create_post', reply_to=post['id']) }}" style="text-decoration: none; display: flex; align-items: center;">
                         <img src="{{ url_for('static', filename='comment.svg') }}" width="20" height="20" alt="Comment">
