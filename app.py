@@ -5,6 +5,7 @@ import urllib.parse
 from werkzeug.utils import secure_filename
 import os
 from dotenv import load_dotenv
+import re
 
 
 import psycopg2
@@ -188,25 +189,22 @@ class PostgresWrapper:
 
     def close(self):
         self.conn.close()
-        
+
 def get_db():
     if "db" not in g:
         db_url = os.environ.get("DATABASE_URL")
         
         if db_url:
-            # Fix URL prefix if Render gives postgres:// instead of postgresql://
             if db_url.startswith("postgres://"):
                 db_url = db_url.replace("postgres://", "postgresql://", 1)
             
-            # Connect to Supabase PostgreSQL using psycopg2
             connection = psycopg2.connect(db_url, cursor_factory=psycopg2.extras.RealDictCursor)
-            
-            # Wrap the PostgreSQL connection so it behaves like SQLite
             g.db = PostgresWrapper(connection)
         else:
-            # Fallback to local SQLite if no DATABASE_URL is found
             connection = sqlite3.connect(DATABASE)
             connection.row_factory = sqlite3.Row
+            # ONLY run PRAGMA on SQLite
+            connection.execute("PRAGMA foreign_keys = ON;")
             g.db = connection
             
     return g.db
@@ -358,9 +356,6 @@ def register():
 
     return render_template("register.html")
 
-# ---------------------------------------------------------
-# 1. Database Hook (MUST be @app.before_request)
-# ---------------------------------------------------------
 @app.before_request
 def upgrade_database():
     if getattr(app, '_db_checked', False):
@@ -370,7 +365,7 @@ def upgrade_database():
     is_postgres = bool(os.environ.get("DATABASE_URL"))
 
     try:
-        # Fetch columns in a way compatible with the active database
+        # Check existing columns based on database engine
         if is_postgres:
             cursor = db.execute(
                 "SELECT column_name FROM information_schema.columns WHERE table_name = 'posts';"
@@ -380,14 +375,16 @@ def upgrade_database():
             cursor = db.execute("PRAGMA table_info(posts);")
             columns = [row["name"] for row in cursor.fetchall()]
 
-        # If table doesn't exist, build schema from schema.sql
+        # Create schema if tables don't exist
         if not columns:
             with app.open_resource("schema.sql", mode="r") as f:
                 schema_script = f.read()
 
             if is_postgres:
-                # Strip SQLite-only AUTOINCREMENT for PostgreSQL compatibility
-                schema_script = schema_script.replace("AUTOINCREMENT", "").replace("autoincrement", "")
+                # Remove SQLite-specific commands (PRAGMA & AUTOINCREMENT)
+                schema_script = re.sub(r'(?i)PRAGMA\s+[^;]+;', '', schema_script)
+                schema_script = re.sub(r'(?i)\bAUTOINCREMENT\b', '', schema_script)
+
                 raw_conn = db.conn if hasattr(db, 'conn') else db
                 with raw_conn.cursor() as cur:
                     cur.execute(schema_script)
@@ -396,7 +393,7 @@ def upgrade_database():
 
             db.commit()
 
-            # Re-fetch columns after running schema
+            # Re-check columns after table creation
             if is_postgres:
                 cursor = db.execute(
                     "SELECT column_name FROM information_schema.columns WHERE table_name = 'posts';"
@@ -406,7 +403,7 @@ def upgrade_database():
                 cursor = db.execute("PRAGMA table_info(posts);")
                 columns = [row["name"] for row in cursor.fetchall()]
 
-        # Apply schema updates for missing columns
+        # Add missing columns if schema evolved
         if columns:
             missing_cols = {
                 "parent_id": "INTEGER",
