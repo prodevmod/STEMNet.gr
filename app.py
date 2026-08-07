@@ -355,45 +355,46 @@ def register():
                 elif existing_user["username"] == username:
                     flash("That username is already taken.", "danger")
                 return render_template("register.html")
-
             try:
-                db.execute(
-                    """
-                    INSERT INTO users (
-                        username, email, password_hash, age, grade, interest, 
-                        github_user, linkedin_url,
-                        custom_link_1, custom_link_2, custom_link_3, custom_link_4, custom_link_5
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    """,
-                    (
-                        username,
-                        email,  
-                        generate_password_hash(password),
-                        age,
-                        grade,
-                        interest,
-                        github_user,
-                        linkedin_url,
-                        custom_link_1,
-                        custom_link_2,
-                        custom_link_3,
-                        custom_link_4,
-                        custom_link_5,
-                    ),
-                )
-                db.commit()
+                            db.execute(
+                                """
+                                INSERT INTO users (
+                                    username, email, password_hash, age, grade, interest, 
+                                    github_user, linkedin_url,
+                                    custom_link_1, custom_link_2, custom_link_3, custom_link_4, custom_link_5
+                                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                """,
+                                (
+                                    username,
+                                    email,  
+                                    generate_password_hash(password),
+                                    age,
+                                    grade,
+                                    interest,
+                                    github_user,
+                                    linkedin_url,
+                                    custom_link_1,
+                                    custom_link_2,
+                                    custom_link_3,
+                                    custom_link_4,
+                                    custom_link_5,
+                                ),
+                            )
+                            db.commit()
 
-                # Generate token and send verification email
-                token = generate_verification_token(email)
-                send_verification_email(email, token)
+                            # Generate token and send verification email
+                            token = generate_verification_token(email)
+                            send_verification_email(email, token)
 
-            except sqlite3.IntegrityError:
-                flash("Registration failed due to a database error.", "danger")
-            else:
-                flash("Registration successful! Please check your email to verify your account before logging in.", "success")
-                return redirect(url_for("login"))
+                        except (sqlite3.IntegrityError, psycopg2.Error) as e:
+                            print(f"Registration DB Error: {e}")
+                            flash("Registration failed. That username or email may already be in use.", "danger")
+                            return render_template("register.html")
+                        else:
+                            flash("Registration successful! Please check your email to verify your account before logging in.", "success")
+                            return redirect(url_for("login"))
 
-    return render_template("register.html")
+                return render_template("register.html")
 
 
 
