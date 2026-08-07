@@ -10,9 +10,9 @@
     </a>
 </div>
 
-{% if users %}
+{% if following %}
     <div style="display: flex; flex-direction: column; gap: 10px;">
-        {% for u in users %}
+        {% for u in following %}
         <div class="card" style="display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; margin-bottom: 0;">
             <div style="display: flex; align-items: center; gap: 15px;">
                 <!-- Avatar fallback -->
@@ -26,11 +26,6 @@
                     <a href="{{ url_for('profile', username=u['username']) }}" style="text-decoration: none; font-weight: bold; color: inherit;">
                         @{{ u['username'] }}
                     </a>
-                    {% if u['bio'] %}
-                    <p style="margin: 2px 0 0 0; font-size: 0.85rem; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 300px;">
-                        {{ u['bio'] }}
-                    </p>
-                    {% endif %}
                 </div>
             </div>
         </div>
