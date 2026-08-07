@@ -25,30 +25,30 @@
         <a href="{{ url_for('create_post') }}" class="btn btn-primary" style="font-size: 0.85rem; padding: 0.5rem 1rem;">+ Create Post</a>
     </div>
 
-    <!-- Category Filter Pill Bar (Excludes Events) -->
-<div class="category-filter-bar">
-    <a href="{{ url_for('index') }}" class="category-pill {% if not selected_category %}active{% endif %}">
-        All
-    </a>
-    <a href="{{ url_for('index', category='Robotics') }}" class="category-pill {% if selected_category == 'Robotics' %}active{% endif %}">
-        Robotics
-    </a>
-    <a href="{{ url_for('index', category='3D Modeling') }}" class="category-pill {% if selected_category == '3D Modeling' %}active{% endif %}">
-        3D Modeling
-    </a>
-    <a href="{{ url_for('index', category='Software') }}" class="category-pill {% if selected_category == 'Software' %}active{% endif %}">
-        Software
-    </a>
-    <a href="{{ url_for('index', category='Electronics') }}" class="category-pill {% if selected_category == 'Electronics' %}active{% endif %}">
-        Electronics
-    </a>
-    <a href="{{ url_for('index', category='AI') }}" class="category-pill {% if selected_category == 'AI' %}active{% endif %}">
-        AI
-    </a>
-    <a href="{{ url_for('index', category='Other') }}" class="category-pill {% if selected_category == 'Other' %}active{% endif %}">
-        Other
-    </a>
-</div>
+    <!-- Category Filter Pill Bar -->
+    <div class="category-filter-bar">
+        <a href="{{ url_for('index') }}" class="category-pill {% if not selected_category %}active{% endif %}">
+            All
+        </a>
+        <a href="{{ url_for('index', category='Robotics') }}" class="category-pill {% if selected_category == 'Robotics' %}active{% endif %}">
+            Robotics
+        </a>
+        <a href="{{ url_for('index', category='3D Modeling') }}" class="category-pill {% if selected_category == '3D Modeling' %}active{% endif %}">
+            3D Modeling
+        </a>
+        <a href="{{ url_for('index', category='Software') }}" class="category-pill {% if selected_category == 'Software' %}active{% endif %}">
+            Software
+        </a>
+        <a href="{{ url_for('index', category='Electronics') }}" class="category-pill {% if selected_category == 'Electronics' %}active{% endif %}">
+            Electronics
+        </a>
+        <a href="{{ url_for('index', category='AI') }}" class="category-pill {% if selected_category == 'AI' %}active{% endif %}">
+            AI
+        </a>
+        <a href="{{ url_for('index', category='Other') }}" class="category-pill {% if selected_category == 'Other' %}active{% endif %}">
+            Other
+        </a>
+    </div>
 
 <style>
 .category-filter-bar {
@@ -79,6 +79,7 @@
 
     {% if posts %}
         {% for post in posts %}
+            {% set item = reply if reply is defined else post %}
             <div class="post-card" style="background: #fff; border: 1px solid var(--border-color); border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1rem;">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                     <a href="{{ url_for('profile', username=post['username']) }}" class="username">
@@ -91,7 +92,7 @@
                     </small>
                 </div>
                 
-                <!-- Parent Reply Snippet (If this post is a reply) -->
+                <!-- Parent Reply Snippet -->
                 {% if post['parent_id'] and post['parent_content'] %}
                 <div style="background: #f8fafc; border-left: 4px solid var(--primary-color); padding: 0.6rem 0.8rem; margin-bottom: 0.75rem; border-radius: 4px; font-size: 0.85rem;">
                     <span style="font-weight: 600; color: #475569;">Replying to @{{ post['parent_username'] }}:</span>
@@ -137,18 +138,18 @@
 
                 <!-- Action Bar (Likes & Reply) -->
                 <div style="display: flex; gap: 1.5rem; align-items: center; border-top: 1px solid #f1f5f9; padding-top: 0.75rem; margin-top: 0.5rem;">
-<button type="button" 
-        data-post-id="{{ reply['id'] }}" 
-        onclick="toggleLike(event, this.dataset.postId)" 
-        id="like-btn-{{ reply['id'] }}" 
-        style="background: none; border: none; display: flex; align-items: center; gap: 0.35rem; cursor: pointer; color: #64748b; font-weight: 500;">
-    <img id="like-icon-{{ reply['id'] }}" 
-         src="{{ url_for('static', filename='liked.svg' if reply['user_liked'] > 0 else 'like.svg') }}" 
-         data-like-url="{{ url_for('static', filename='like.svg') }}"
-         data-liked-url="{{ url_for('static', filename='liked.svg') }}"
-         width="16" height="16" alt="Like">
-    <span id="like-count-{{ reply['id'] }}">{{ reply['like_count'] if reply['like_count'] > 0 else 'Like' }}</span>
-</button>
+                    <button type="button" 
+                            data-post-id="{{ item['id'] }}" 
+                            onclick="toggleLike(event, this.dataset.postId)" 
+                            id="like-btn-{{ item['id'] }}" 
+                            style="background: none; border: none; display: flex; align-items: center; gap: 0.35rem; cursor: pointer; color: #64748b; font-weight: 500;">
+                        <img id="like-icon-{{ item['id'] }}" 
+                             src="{{ url_for('static', filename='liked.svg' if item['user_liked'] > 0 else 'like.svg') }}" 
+                             data-like-url="{{ url_for('static', filename='like.svg') }}"
+                             data-liked-url="{{ url_for('static', filename='liked.svg') }}"
+                             width="16" height="16" alt="Like">
+                        <span id="like-count-{{ item['id'] }}">{{ item['like_count'] if item['like_count'] > 0 else 'Like' }}</span>
+                    </button>
 
                     <a href="{{ url_for('create_post', reply_to=post['id']) }}" style="text-decoration: none; display: flex; align-items: center;">
                         <img src="{{ url_for('static', filename='comment.svg') }}" width="20" height="20" alt="Comment">
@@ -156,15 +157,16 @@
                 </div>
             </div>
         {% endfor %}
-{% else %}
+    {% else %}
         <div class="card" style="text-align: center; padding: 3rem;">
             <p style="color: #64748b;">No posts found in this category yet.</p>
         </div>
     {% endif %}
 </section>
+
 <script>
 async function toggleLike(event, postId) {
-    if (event) event.preventDefault(); // Prevents page refresh if inside a form
+    if (event) event.preventDefault();
     
     console.log("Toggling like for ID:", postId);
     

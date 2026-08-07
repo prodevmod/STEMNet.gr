@@ -16,19 +16,16 @@
 
     <h2>@{{ profile_user.username }}</h2>
     
-    <!-- Follower & Following Interactive Metrics (Layered & Mobile-Responsive) -->
+    <!-- Follower & Following Interactive Metrics -->
     <div style="display: flex; flex-wrap: wrap; gap: 15px; margin: 12px 0; font-size: 0.95rem; align-items: center;">
-        <!-- Followers Link -->
         <a href="{{ url_for('followers', username=profile_user.username) }}" style="text-decoration: none; color: #64748b;">
             <strong>{{ followers_count }}</strong> Followers
         </a>
 
-        <!-- Following Link -->
         <a href="{{ url_for('following', username=profile_user.username) }}" style="text-decoration: none; color: #64748b;">
             <strong>{{ following_count }}</strong> Following
         </a>
 
-        <!-- Follow / Unfollow Button (Hidden if viewing your own profile) -->
         {% if g.user and g.user.id != profile_user.id %}
         <form action="{{ url_for('unfollow' if is_following else 'follow', user_id=profile_user.id) }}" method="POST" style="margin: 0;">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -73,7 +70,7 @@
         {% endfor %}
     </div>
 
-    <!-- Edit Profile Button (Only shows to the owner) -->
+    <!-- Edit Profile Button -->
     {% if g.user and g.user['id'] == profile_user['id'] %}
     <div style="margin-top: 15px;">
         <a href="{{ url_for('edit_profile') }}" class="btn btn-primary">Edit Profile</a>
@@ -87,14 +84,13 @@
 <h3>Posts by @{{ profile_user['username'] }}</h3>
 {% if posts %}
     {% for post in posts %}
+    {% set item = reply if reply is defined else post %}
 <div class="card" style="margin-bottom: 15px; word-break: break-word; overflow-wrap: break-word;">
     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
-        <!-- Clickable Username Link -->
         <a href="{{ url_for('profile', username=post['username']) }}" class="username">
             @{{ post['username'] }}
         </a>
         
-        <!-- Clickable Timestamp Link leading to Thread View -->
         <small style="color: gray;">
             <a href="{{ url_for('post_detail', post_id=post['id']) }}" style="color: gray; text-decoration: none;">
                 {{ post['created_at'] }} ↗
@@ -102,7 +98,6 @@
         </small>
     </div>
     
-    <!-- Category Badge -->
     {% if post['category'] %}
     <div style="margin-top: 8px; margin-bottom: 4px;">
         <span style="display: inline-block; background-color: var(--bg-color); border: 1px solid var(--border-color); padding: 2px 8px; border-radius: var(--radius); font-size: 0.8em; color: #64748b; font-weight: 500;">
@@ -113,7 +108,6 @@
    
     <p style="margin-top: 10px; white-space: pre-line;">{{ post['content'] }}</p>
 
-    <!-- Optional Media Attachment -->
     {% if post['media_path'] %}
     <div style="margin-bottom: 0.75rem; border-radius: var(--radius); overflow: hidden; max-height: 350px;">
         {% if post['media_path'].endswith(('mp4', 'webm')) %}
@@ -128,18 +122,18 @@
 
     <!-- Like and Reply Action Bar -->
     <div style="display: flex; gap: 15px; margin-top: 15px; align-items: center; flex-wrap: wrap;">
-            <button type="button" 
-                    data-post-id="{{ reply['id'] }}" 
-                    onclick="toggleLike(event, this.dataset.postId)" 
-                    id="like-btn-{{ reply['id'] }}" 
-                    style="background: none; border: none; display: flex; align-items: center; gap: 0.35rem; cursor: pointer; color: #64748b; font-weight: 500;">
-                <img id="like-icon-{{ reply['id'] }}" 
-                    src="{{ url_for('static', filename='liked.svg' if reply['user_liked'] > 0 else 'like.svg') }}" 
-                    data-like-url="{{ url_for('static', filename='like.svg') }}"
-                    data-liked-url="{{ url_for('static', filename='liked.svg') }}"
-                    width="16" height="16" alt="Like">
-                <span id="like-count-{{ reply['id'] }}">{{ reply['like_count'] if reply['like_count'] > 0 else 'Like' }}</span>
-            </button>
+        <button type="button" 
+                data-post-id="{{ item['id'] }}" 
+                onclick="toggleLike(event, this.dataset.postId)" 
+                id="like-btn-{{ item['id'] }}" 
+                style="background: none; border: none; display: flex; align-items: center; gap: 0.35rem; cursor: pointer; color: #64748b; font-weight: 500;">
+            <img id="like-icon-{{ item['id'] }}" 
+                 src="{{ url_for('static', filename='liked.svg' if item['user_liked'] > 0 else 'like.svg') }}" 
+                 data-like-url="{{ url_for('static', filename='like.svg') }}"
+                 data-liked-url="{{ url_for('static', filename='liked.svg') }}"
+                 width="16" height="16" alt="Like">
+            <span id="like-count-{{ item['id'] }}">{{ item['like_count'] if item['like_count'] > 0 else 'Like' }}</span>
+        </button>
 
         <a href="{{ url_for('create_post', reply_to=post['id']) }}" style="text-decoration: none; display: flex; align-items: center;">
             <img src="{{ url_for('static', filename='comment.svg') }}" width="20" height="20" alt="Comment">
@@ -153,7 +147,7 @@
 
 <script>
 async function toggleLike(event, postId) {
-    if (event) event.preventDefault(); // Prevents page refresh if inside a form
+    if (event) event.preventDefault();
     
     console.log("Toggling like for ID:", postId);
     
