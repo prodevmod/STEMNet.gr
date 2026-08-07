@@ -884,19 +884,25 @@ def follow(user_id):
         return redirect(request.referrer or url_for("index"))
 
     try:
-        # 1. Check if the follow already exists
         existing_follow = db.execute(
             "SELECT 1 FROM follows WHERE follower_id = %s AND following_id = %s",
             (current_user_id, user_id)
         ).fetchone()
 
-        # 2. Only insert if they aren't already following
         if not existing_follow:
+            # 1. Provide CURRENT_TIMESTAMP explicitly
             db.execute(
-                "INSERT INTO follows (follower_id, following_id) VALUES (%s, %s)",
+                "INSERT INTO follows (follower_id, following_id, created_at) VALUES (%s, %s, CURRENT_TIMESTAMP)",
                 (current_user_id, user_id)
             )
-            db.commit()
+            
+            # 2. Safely commit whether 'db' is a connection object or a cursor object
+            if hasattr(db, 'commit'):
+                db.commit()
+            elif hasattr(db, 'connection'):
+                db.connection.commit()
+            else:
+                g.db.commit()
             
     except Exception as e:
         app.logger.error(f"Follow error: {e}")
@@ -904,12 +910,10 @@ def follow(user_id):
 
     return redirect(request.referrer or url_for("index"))
 
+
 @app.route("/unfollow/<int:user_id>", methods=["POST"])
 def unfollow(user_id):
-    # 1. INITIALIZE THE DB CONNECTION HERE
     db = get_db()
-    
-    # 2. Get current user safely
     current_user_id = g.user["id"] if g.get("user") else None
     
     if not current_user_id:
@@ -917,13 +921,18 @@ def unfollow(user_id):
 
     try:
         db.execute(
-            """
-            DELETE FROM follows 
-            WHERE follower_id = %s AND following_id = %s
-            """,
+            "DELETE FROM follows WHERE follower_id = %s AND following_id = %s",
             (current_user_id, user_id)
         )
-        db.commit()
+        
+        # Safely commit whether 'db' is a connection object or a cursor object
+        if hasattr(db, 'commit'):
+            db.commit()
+        elif hasattr(db, 'connection'):
+            db.connection.commit()
+        else:
+            g.db.commit()
+            
     except Exception as e:
         app.logger.error(f"Unfollow error: {e}")
         flash("Could not unfollow user due to a database error.", "danger")
