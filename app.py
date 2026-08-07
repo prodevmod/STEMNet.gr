@@ -152,15 +152,14 @@ def get_db() -> sqlite3.Connection:
         g.db = connection
     return g.db
 
-# Initialize limiter
+
 limiter = Limiter(
     app=app,
     key_func=get_remote_address,
-    default_limits=["200 per day", "50 per hour"],
     storage_uri="memory://" # Keeps track of requests in memory
 )
 
-# Apply strict limit to login (e.g., max 5 attempts per minute per IP)
+
 @app.route("/login", methods=["GET", "POST"])
 @limiter.limit("5 per minute")
 def login():
@@ -196,9 +195,8 @@ def login():
 
     return render_template("login.html")
 
-# Apply strict limit to registration to prevent spam accounts
+
 @app.route("/register", methods=["GET", "POST"])
-@limiter.limit("3 per hour")
 def register():
     if request.method == "POST":
         username = request.form.get("username", "").strip()
