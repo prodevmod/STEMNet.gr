@@ -873,8 +873,11 @@ def edit_profile():
 
 @app.route("/follow/<int:user_id>", methods=["POST"])
 def follow(user_id):
-    # Ensure you are using your app's method of getting the current logged-in user's ID
-    current_user_id = session.get("user_id") 
+    # 1. INITIALIZE THE DB CONNECTION HERE
+    db = get_db()
+    
+    # 2. Get current user safely using your app's 'g' object pattern
+    current_user_id = g.user["id"] if g.get("user") else None
     
     if not current_user_id:
         return redirect(url_for("login"))
@@ -884,8 +887,6 @@ def follow(user_id):
         return redirect(request.referrer or url_for("index"))
 
     try:
-        # NOTE: PostgreSQL uses %s for placeholders, NOT ?
-        # ON CONFLICT prevents crashing if the follow relationship already exists
         db.execute(
             """
             INSERT INTO follows (follower_id, following_id) 
@@ -899,12 +900,16 @@ def follow(user_id):
         app.logger.error(f"Follow error: {e}")
         flash("Could not follow user due to a database error.", "danger")
 
-    return redirect(request.referrer or url_for("profile", user_id=user_id))
+    return redirect(request.referrer or url_for("index"))
 
 
 @app.route("/unfollow/<int:user_id>", methods=["POST"])
 def unfollow(user_id):
-    current_user_id = session.get("user_id")
+    # 1. INITIALIZE THE DB CONNECTION HERE
+    db = get_db()
+    
+    # 2. Get current user safely
+    current_user_id = g.user["id"] if g.get("user") else None
     
     if not current_user_id:
         return redirect(url_for("login"))
@@ -922,7 +927,7 @@ def unfollow(user_id):
         app.logger.error(f"Unfollow error: {e}")
         flash("Could not unfollow user due to a database error.", "danger")
 
-    return redirect(request.referrer or url_for("profile", user_id=user_id))
+    return redirect(request.referrer or url_for("index"))
 
 @app.route("/notifications")
 def notifications():
