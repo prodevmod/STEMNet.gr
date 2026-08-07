@@ -27,17 +27,17 @@
             <a href="{{ url_for('following', username=profile_user.username) }}" style="text-decoration: none; color: #64748b; margin-left: 15px;">
                 <strong>{{ following_count }}</strong> Following
             </a>
-
         <!-- Follow / Unfollow Button (Hidden if viewing your own profile) -->
-        {% if g.user and g.user.id != profile_user.id %}
-        <form action="{{ url_for('follow', user_id=profile_user.id) }}" method="POST" style="margin: 0;">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <button type="submit" class="btn {% if is_following %}btn-outline{% else %}btn-primary{% endif %}" style="padding: 0.3rem 0.8rem; font-size: 0.85rem;">
-                {{ 'Unfollow' if is_following else 'Follow' }}
-            </button>
-        </form>
-        {% endif %}
-    </div>
+                {% if g.user and g.user.id != profile_user.id %}
+                
+                <!-- Notice the inline if-statement inside url_for to swap between follow/unfollow -->
+                <form action="{{ url_for('unfollow' if is_following else 'follow', user_id=profile_user.id) }}" method="POST" style="margin: 0;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn {% if is_following %}btn-outline{% else %}btn-primary{% endif %}" style="padding: 0.3rem 0.8rem; font-size: 0.85rem;">
+                        {{ 'Unfollow' if is_following else 'Follow' }}
+                    </button>
+                </form>
+                {% endif %}
 
     <!-- Bio Description Display -->
     {% if profile_user['bio'] %}

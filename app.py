@@ -884,16 +884,20 @@ def follow(user_id):
         return redirect(request.referrer or url_for("index"))
 
     try:
-        # Notice we removed "RETURNING id" from the end of the query
-        db.execute(
-            """
-            INSERT INTO follows (follower_id, following_id) 
-            VALUES (%s, %s) 
-            ON CONFLICT (follower_id, following_id) DO NOTHING
-            """,
+        # 1. Check if the follow already exists
+        existing_follow = db.execute(
+            "SELECT 1 FROM follows WHERE follower_id = %s AND following_id = %s",
             (current_user_id, user_id)
-        )
-        db.commit()
+        ).fetchone()
+
+        # 2. Only insert if they aren't already following
+        if not existing_follow:
+            db.execute(
+                "INSERT INTO follows (follower_id, following_id) VALUES (%s, %s)",
+                (current_user_id, user_id)
+            )
+            db.commit()
+            
     except Exception as e:
         app.logger.error(f"Follow error: {e}")
         flash("Could not follow user due to a database error.", "danger")
