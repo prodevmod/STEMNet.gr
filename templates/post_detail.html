@@ -38,17 +38,18 @@
         </div>
         {% endif %}
 
-        {% if post['media_path'] %}
-        <div style="margin-bottom: 0.75rem; border-radius: var(--radius); overflow: hidden; max-height: 400px;">
-            {% if post['media_path'].endswith(('mp4', 'webm')) %}
-            <video controls style="width: 100%; max-height: 400px; object-fit: cover;">
-                <source src="{{ url_for('static', filename=post['media_path']) }}" type="video/mp4">
-            </video>
-            {% else %}
-            <img src="{{ url_for('static', filename=post['media_path']) }}" alt="Post media" style="width: 100%; max-height: 400px; object-fit: cover;">
-            {% endif %}
-        </div>
-        {% endif %}
+<!-- Optional Media Attachment -->
+                {% if post['media_path'] %}
+                <div style="margin-bottom: 0.75rem; border-radius: var(--radius); overflow: hidden; max-height: 350px;">
+                    {% if post['media_path'].endswith(('mp4', 'webm')) %}
+                    <video controls style="width: 100%; max-height: 350px; object-fit: cover;">
+                        <source src="{{ post['media_path'] }}" type="video/mp4">
+                    </video>
+                    {% else %}
+                    <img src="{{ post['media_path'] }}" alt="Post media" style="width: 100%; max-height: 350px; object-fit: cover;">
+                    {% endif %}
+                </div>
+                {% endif %}
 
         <!-- Action Bar -->
         <div style="display: flex; gap: 1.5rem; align-items: center; border-top: 1px solid #f1f5f9; padding-top: 0.75rem; margin-top: 0.5rem;">
