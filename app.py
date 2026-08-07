@@ -169,25 +169,26 @@ def allowed_pfp_file(filename):
 
 class PostgresWrapper:
     """
-    This wrapper makes PostgreSQL act exactly like SQLite so you don't 
-    have to rewrite any of your existing db.execute() queries.
+    Makes PostgreSQL behave like SQLite so existing db queries work.
     """
     def __init__(self, conn):
         self.conn = conn
 
     def execute(self, query, params=()):
         cursor = self.conn.cursor()
-        # Automatically translate SQLite '?' placeholders to PostgreSQL '%s'
         postgres_query = query.replace("?", "%s")
         cursor.execute(postgres_query, params)
-        return cursor # Returns the cursor so .fetchall() or .fetchone() works
+        return cursor
+
+    def cursor(self):
+        return self.conn.cursor()
 
     def commit(self):
         self.conn.commit()
 
     def close(self):
         self.conn.close()
-
+        
 def get_db():
     if "db" not in g:
         db_url = os.environ.get("DATABASE_URL")
@@ -366,30 +367,58 @@ def upgrade_database():
         return
 
     db = get_db()
-    
+    is_postgres = bool(os.environ.get("DATABASE_URL"))
+
     try:
-        cursor = db.execute("PRAGMA table_info(posts);")
-        columns = [row["name"] for row in cursor.fetchall()]
-        
-        if not columns:
-            with app.open_resource("schema.sql", mode="r") as f:
-                db.cursor().executescript(f.read())
-            db.commit()
-            
+        # Fetch columns in a way compatible with the active database
+        if is_postgres:
+            cursor = db.execute(
+                "SELECT column_name FROM information_schema.columns WHERE table_name = 'posts';"
+            )
+            columns = [row["column_name"] for row in cursor.fetchall()]
+        else:
             cursor = db.execute("PRAGMA table_info(posts);")
             columns = [row["name"] for row in cursor.fetchall()]
 
-        if columns:
-            if "parent_id" not in columns:
-                db.execute("ALTER TABLE posts ADD COLUMN parent_id INTEGER;")
-            if "event_type" not in columns:
-                db.execute("ALTER TABLE posts ADD COLUMN event_type TEXT;")
-            if "event_time" not in columns:
-                db.execute("ALTER TABLE posts ADD COLUMN event_time TEXT;")
-            if "event_location" not in columns:
-                db.execute("ALTER TABLE posts ADD COLUMN event_location TEXT;")
+        # If table doesn't exist, build schema from schema.sql
+        if not columns:
+            with app.open_resource("schema.sql", mode="r") as f:
+                schema_script = f.read()
+
+            if is_postgres:
+                # Strip SQLite-only AUTOINCREMENT for PostgreSQL compatibility
+                schema_script = schema_script.replace("AUTOINCREMENT", "").replace("autoincrement", "")
+                raw_conn = db.conn if hasattr(db, 'conn') else db
+                with raw_conn.cursor() as cur:
+                    cur.execute(schema_script)
+            else:
+                db.cursor().executescript(schema_script)
+
             db.commit()
-            
+
+            # Re-fetch columns after running schema
+            if is_postgres:
+                cursor = db.execute(
+                    "SELECT column_name FROM information_schema.columns WHERE table_name = 'posts';"
+                )
+                columns = [row["column_name"] for row in cursor.fetchall()]
+            else:
+                cursor = db.execute("PRAGMA table_info(posts);")
+                columns = [row["name"] for row in cursor.fetchall()]
+
+        # Apply schema updates for missing columns
+        if columns:
+            missing_cols = {
+                "parent_id": "INTEGER",
+                "event_type": "TEXT",
+                "event_time": "TEXT",
+                "event_location": "TEXT"
+            }
+            for col_name, col_type in missing_cols.items():
+                if col_name not in columns:
+                    db.execute(f"ALTER TABLE posts ADD COLUMN {col_name} {col_type};")
+            db.commit()
+
     except Exception as e:
         print(f"Database initialization error: {e}")
 
