@@ -480,10 +480,16 @@ def utility_processor():
     def get_unread_notifications():
         if g.get("user"):
             db = get_db()
-            count = db.execute(
+            row = db.execute(
                 "SELECT COUNT(*) FROM notifications WHERE user_id = ? AND is_read = 0",
                 (g.user["id"],)
-            ).fetchone()[0]
+            ).fetchone()
+            
+            if not row:
+                return False
+            
+            # Handle both Postgres dictionary rows and SQLite tuple rows safely
+            count = row['count'] if isinstance(row, dict) else row[0]
             return count > 0
         return False
     return dict(has_unread_notifications=get_unread_notifications())
