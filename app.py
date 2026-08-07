@@ -166,11 +166,33 @@ def allowed_pfp_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_PFP_EXTENSIONS
 
 
-# --- UPDATED DATABASE CONNECTION LOGIC ---
+class PostgresCursorWrapper:
+    """Wraps psycopg2 cursor to support .lastrowid seamlessly."""
+    def __init__(self, cursor, lastrowid=None):
+        self._cursor = cursor
+        self.lastrowid = lastrowid
+
+    def fetchone(self):
+        return self._cursor.fetchone()
+
+    def fetchall(self):
+        return self._cursor.fetchall()
+
+    def fetchmany(self, size=None):
+        return self._cursor.fetchmany(size) if size else self._cursor.fetchmany()
+
+    def __iter__(self):
+        return iter(self._cursor)
+
+    def __getattr__(self, name):
+        return getattr(self._cursor, name)
+
 
 class PostgresWrapper:
     """
-    Makes PostgreSQL behave like SQLite so existing db queries work.
+    Makes PostgreSQL behave like SQLite:
+    1. Replaces '?' placeholders with '%s'.
+    2. Automatically appends 'RETURNING id' to INSERT statements so cursor.lastrowid works.
     """
     def __init__(self, conn):
         self.conn = conn
@@ -178,14 +200,30 @@ class PostgresWrapper:
     def execute(self, query, params=()):
         cursor = self.conn.cursor()
         postgres_query = query.replace("?", "%s")
-        cursor.execute(postgres_query, params)
-        return cursor
+        
+        is_insert = postgres_query.strip().upper().startswith("INSERT")
+        has_returning = "RETURNING" in postgres_query.upper()
+        
+        lastrowid = None
+        if is_insert and not has_returning:
+            postgres_query = postgres_query.rstrip().rstrip(";") + " RETURNING id;"
+            cursor.execute(postgres_query, params)
+            result = cursor.fetchone()
+            if result:
+                lastrowid = result["id"] if isinstance(result, dict) and "id" in result else result[0]
+        else:
+            cursor.execute(postgres_query, params)
+
+        return PostgresCursorWrapper(cursor, lastrowid=lastrowid)
 
     def cursor(self):
         return self.conn.cursor()
 
     def commit(self):
         self.conn.commit()
+
+    def rollback(self):
+        self.conn.rollback()
 
     def close(self):
         self.conn.close()
@@ -368,68 +406,36 @@ def upgrade_database():
     is_postgres = bool(os.environ.get("DATABASE_URL"))
 
     try:
-        # Check existing columns based on database engine
+        # Run schema creation if tables don't exist
+        with app.open_resource("schema.sql", mode="r") as f:
+            schema_script = f.read()
+
         if is_postgres:
-            cursor = db.execute(
-                "SELECT column_name FROM information_schema.columns WHERE table_name = 'posts';"
+            schema_script = re.sub(r'(?i)PRAGMA\s+[^;]+;', '', schema_script)
+            schema_script = re.sub(
+                r'(?i)INTEGER\s+PRIMARY\s+KEY\s+AUTOINCREMENT', 
+                'SERIAL PRIMARY KEY', 
+                schema_script
             )
-            columns = [row["column_name"] for row in cursor.fetchall()]
+
+            raw_conn = db.conn if hasattr(db, 'conn') else db
+            with raw_conn.cursor() as cur:
+                cur.execute(schema_script)
+        else:
+            db.cursor().executescript(schema_script)
+
+        db.commit()
+
+        # Safely add evolving columns using native Postgres IF NOT EXISTS
+        if is_postgres:
+            db.execute("ALTER TABLE posts ADD COLUMN IF NOT EXISTS parent_id INTEGER;")
+            db.execute("ALTER TABLE posts ADD COLUMN IF NOT EXISTS event_type TEXT;")
+            db.execute("ALTER TABLE posts ADD COLUMN IF NOT EXISTS event_time TEXT;")
+            db.execute("ALTER TABLE posts ADD COLUMN IF NOT EXISTS event_location TEXT;")
+            db.commit()
         else:
             cursor = db.execute("PRAGMA table_info(posts);")
             columns = [row["name"] for row in cursor.fetchall()]
-
-        # Create schema if tables don't exist
-        if not columns:
-            with app.open_resource("schema.sql", mode="r") as f:
-                schema_script = f.read()
-
-            if is_postgres:
-                # Strip SQLite PRAGMAs and convert AUTOINCREMENT to SERIAL for PostgreSQL
-                schema_script = re.sub(r'(?i)PRAGMA\s+[^;]+;', '', schema_script)
-                schema_script = re.sub(
-                    r'(?i)INTEGER\s+PRIMARY\s+KEY\s+AUTOINCREMENT', 
-                    'SERIAL PRIMARY KEY', 
-                    schema_script
-                )
-
-                raw_conn = db.conn if hasattr(db, 'conn') else db
-                with raw_conn.cursor() as cur:
-                    cur.execute(schema_script)
-            else:
-                db.cursor().executescript(schema_script)
-
-            db.commit()
-
-            # Re-check columns after table creation
-            if is_postgres:
-                cursor = db.execute(
-                    "SELECT column_name FROM information_schema.columns WHERE table_name = 'posts';"
-                )
-                columns = [row["column_name"] for row in cursor.fetchall()]
-            else:
-                cursor = db.execute("PRAGMA table_info(posts);")
-                columns = [row["name"] for row in cursor.fetchall()]
-
-        # For existing Postgres tables created without SERIAL, attach sequences
-        if is_postgres:
-            raw_conn = db.conn if hasattr(db, 'conn') else db
-            tables_to_fix = ["users", "posts", "likes", "notifications"]
-            with raw_conn.cursor() as cur:
-                for table in tables_to_fix:
-                    cur.execute(f"""
-                        DO $$
-                        BEGIN
-                            IF NOT EXISTS (SELECT 1 FROM pg_class WHERE relname = '{table}_id_seq') THEN
-                                CREATE SEQUENCE {table}_id_seq;
-                                ALTER TABLE {table} ALTER COLUMN id SET DEFAULT nextval('{table}_id_seq');
-                                ALTER SEQUENCE {table}_id_seq OWNED BY {table}.id;
-                            END IF;
-                        END $$;
-                    """)
-            db.commit()
-
-        # Add missing columns if schema evolved
-        if columns:
             missing_cols = {
                 "parent_id": "INTEGER",
                 "event_type": "TEXT",
@@ -443,6 +449,10 @@ def upgrade_database():
 
     except Exception as e:
         print(f"Database initialization error: {e}")
+        if hasattr(db, 'rollback'):
+            db.rollback()
+        elif hasattr(db, 'conn'):
+            db.conn.rollback()
 
     app._db_checked = True
 # ---------------------------------------------------------
