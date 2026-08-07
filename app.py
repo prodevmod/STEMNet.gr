@@ -279,7 +279,7 @@ def login():
         db = get_db()
         
         try:
-            # Check if the identifier matches EITHER the username OR the email
+            # Check if the identifier matches EITHER the username OR the email[cite: 1]
             user = db.execute(
                 "SELECT * FROM users WHERE username = ? OR email = ?", 
                 (identifier, identifier)
@@ -294,6 +294,7 @@ def login():
                 return render_template("login.html")
             else:
                 session.clear()
+                session.permanent = False  # Forces session to expire when the tab or browser is closed
                 session["user_id"] = user["id"]
                 flash("Logged in successfully!", "success")
                 return redirect(url_for("index"))
