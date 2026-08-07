@@ -6,6 +6,10 @@ from werkzeug.utils import secure_filename
 import os
 from dotenv import load_dotenv
 
+
+import psycopg2
+import psycopg2.extras
+
 load_dotenv()
 
 import sqlite3
@@ -13,7 +17,6 @@ from pathlib import Path
 import smtplib
 from email.message import EmailMessage
 import requests
-
 
 from flask import (
     Flask,
@@ -57,11 +60,29 @@ def send_verification_email(user_email, token):
             "from": "STEMNet Greece <noreply@verify.stemnet.app>", 
                 "to": [user_email],
                 "subject": "Verify your STEMNet Greece Account",
-        "html": f"""
-            <h2>Welcome to STEMNet Greece!</h2>
-            <p>Please click the link below to verify your email address and activate your account:</p>
-            <p><a href="{verify_url}" style="padding: 10px 15px; background: #2563eb; color: white; text-decoration: none; border-radius: 5px;">Verify Email</a></p>
-            <p>If you did not sign up for this, please ignore this email.</p>
+            "html": f"""
+                        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 500px; margin: 40px auto; padding: 40px; text-align: center; background-color: #ffffff; border-radius: 12px; border: 1px solid #eaeaea; box-shadow: 0 4px 10px rgba(0,0,0,0.04);">
+                            
+                            <h2 style="color: #141f36; font-size: 26px; font-weight: 800; margin-top: 0; margin-bottom: 16px; letter-spacing: -0.5px;">
+                                Welcome to STEMNet Greece!
+                            </h2>
+                            
+                            <p style="color: #4b5563; font-size: 16px; line-height: 1.6; margin-bottom: 35px;">
+                                We are thrilled to have you! Please verify your email address below to activate your account and join the community.
+                            </p>
+                            
+                            <!-- Modern Dashboard-Style Button -->
+                            <a href="{verify_url}" style="display: inline-block; padding: 14px 32px; background-color: #3ba47c; color: #ffffff; text-decoration: none; font-size: 16px; font-weight: bold; border-radius: 8px; box-shadow: 0 4px 12px rgba(59, 164, 124, 0.3);">
+                                Verify Email
+                            </a>
+                            
+                            <hr style="border: none; border-top: 1px solid #f3f4f6; margin: 40px 0 25px 0;">
+                            
+                            <p style="color: #9ca3af; font-size: 13px; line-height: 1.5; margin: 0;">
+                                If you did not sign up for STEMNet Greece, you can safely ignore this email.
+                            </p>
+                            
+                        </div>
         """
     }
 
@@ -143,12 +164,34 @@ ALLOWED_PFP_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 def allowed_pfp_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_PFP_EXTENSIONS
 
-def get_db() -> sqlite3.Connection:
+
+# --- UPDATED DATABASE CONNECTION LOGIC ---
+def get_db():
     if "db" not in g:
-        connection = sqlite3.connect(DATABASE)
-        connection.row_factory = sqlite3.Row
+        db_url = os.environ.get("DATABASE_URL")
+        
+        if db_url:
+            # Fix URL prefix if Render gives postgres:// instead of postgresql://
+            if db_url.startswith("postgres://"):
+                db_url = db_url.replace("postgres://", "postgresql://", 1)
+            
+            # Connect to Supabase PostgreSQL using psycopg2
+            connection = psycopg2.connect(db_url, cursor_factory=psycopg2.extras.RealDictCursor)
+        else:
+            # Fallback to local SQLite if no DATABASE_URL is found (for local testing)
+            connection = sqlite3.connect(DATABASE)
+            connection.row_factory = sqlite3.Row
+            
         g.db = connection
     return g.db
+
+@app.teardown_appcontext
+def close_db(exception):
+    db = g.pop("db", None)
+    if db is not None:
+        if hasattr(db, 'close'):
+            db.close()
+
 
 db_url = os.environ.get("DATABASE_URL", "sqlite:///app.db")
 if db_url.startswith("postgres://"):
