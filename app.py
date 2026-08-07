@@ -168,33 +168,9 @@ def allowed_pfp_file(filename):
 
 # --- UPDATED DATABASE CONNECTION LOGIC ---
 
-class PostgresCursorWrapper:
-    """Wraps psycopg2 cursor to support .lastrowid seamlessly."""
-    def __init__(self, cursor, lastrowid=None):
-        self._cursor = cursor
-        self.lastrowid = lastrowid
-
-    def fetchone(self):
-        return self._cursor.fetchone()
-
-    def fetchall(self):
-        return self._cursor.fetchall()
-
-    def fetchmany(self, size=None):
-        return self._cursor.fetchmany(size) if size else self._cursor.fetchmany()
-
-    def __iter__(self):
-        return iter(self._cursor)
-
-    def __getattr__(self, name):
-        return getattr(self._cursor, name)
-
-
 class PostgresWrapper:
     """
-    Makes PostgreSQL behave like SQLite:
-    1. Replaces '?' placeholders with '%s'.
-    2. Automatically appends 'RETURNING id' to INSERT statements so cursor.lastrowid works.
+    Makes PostgreSQL behave like SQLite so existing db queries work.
     """
     def __init__(self, conn):
         self.conn = conn
@@ -202,23 +178,8 @@ class PostgresWrapper:
     def execute(self, query, params=()):
         cursor = self.conn.cursor()
         postgres_query = query.replace("?", "%s")
-        
-        # Capture inserted ID automatically for Postgres
-        is_insert = postgres_query.strip().upper().startswith("INSERT")
-        has_returning = "RETURNING" in postgres_query.upper()
-        
-        lastrowid = None
-        if is_insert and not has_returning:
-            postgres_query = postgres_query.rstrip().rstrip(";") + " RETURNING id;"
-            cursor.execute(postgres_query, params)
-            result = cursor.fetchone()
-            if result:
-                # RealDictCursor returns dict {'id': val}, standard cursor returns tuple (val,)
-                lastrowid = result["id"] if isinstance(result, dict) and "id" in result else result[0]
-        else:
-            cursor.execute(postgres_query, params)
-
-        return PostgresCursorWrapper(cursor, lastrowid=lastrowid)
+        cursor.execute(postgres_query, params)
+        return cursor
 
     def cursor(self):
         return self.conn.cursor()
@@ -355,46 +316,45 @@ def register():
                 elif existing_user["username"] == username:
                     flash("That username is already taken.", "danger")
                 return render_template("register.html")
+
             try:
-                            db.execute(
-                                """
-                                INSERT INTO users (
-                                    username, email, password_hash, age, grade, interest, 
-                                    github_user, linkedin_url,
-                                    custom_link_1, custom_link_2, custom_link_3, custom_link_4, custom_link_5
-                                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                                """,
-                                (
-                                    username,
-                                    email,  
-                                    generate_password_hash(password),
-                                    age,
-                                    grade,
-                                    interest,
-                                    github_user,
-                                    linkedin_url,
-                                    custom_link_1,
-                                    custom_link_2,
-                                    custom_link_3,
-                                    custom_link_4,
-                                    custom_link_5,
-                                ),
-                            )
-                            db.commit()
+                db.execute(
+                    """
+                    INSERT INTO users (
+                        username, email, password_hash, age, grade, interest, 
+                        github_user, linkedin_url,
+                        custom_link_1, custom_link_2, custom_link_3, custom_link_4, custom_link_5
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        username,
+                        email,  
+                        generate_password_hash(password),
+                        age,
+                        grade,
+                        interest,
+                        github_user,
+                        linkedin_url,
+                        custom_link_1,
+                        custom_link_2,
+                        custom_link_3,
+                        custom_link_4,
+                        custom_link_5,
+                    ),
+                )
+                db.commit()
 
-                            # Generate token and send verification email
-                            token = generate_verification_token(email)
-                            send_verification_email(email, token)
+                # Generate token and send verification email
+                token = generate_verification_token(email)
+                send_verification_email(email, token)
 
-                        except (sqlite3.IntegrityError, psycopg2.Error) as e:
-                            print(f"Registration DB Error: {e}")
-                            flash("Registration failed. That username or email may already be in use.", "danger")
-                            return render_template("register.html")
-                        else:
-                            flash("Registration successful! Please check your email to verify your account before logging in.", "success")
-                            return redirect(url_for("login"))
-
+            except (sqlite3.IntegrityError, psycopg2.Error) as e:
+                print(f"Registration DB Error: {e}")
+                flash("Registration failed. That username or email may already be in use.", "danger")
                 return render_template("register.html")
+            else:
+                flash("Registration successful! Please check your email to verify your account before logging in.", "success")
+                return redirect(url_for("login"))
 
 
 
