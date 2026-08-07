@@ -54,9 +54,9 @@ def send_verification_email(user_email, token):
     }
         
     data = {
-        "from": "STEMNet Greece <noreply@yourdomain.com>",  # Change this to your verified domain email
-        "to": [user_email],
-        "subject": "Verify your STEMNet Greece Account",
+            "from": "STEMNet Greece <noreply@verify.stemnet.app>", 
+                "to": [user_email],
+                "subject": "Verify your STEMNet Greece Account",
         "html": f"""
             <h2>Welcome to STEMNet Greece!</h2>
             <p>Please click the link below to verify your email address and activate your account:</p>
