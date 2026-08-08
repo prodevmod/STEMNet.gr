@@ -1,7 +1,7 @@
 from __future__ import annotations
 import time
 from flask_wtf.csrf import CSRFProtect
-import urllib.parse
+from werkzeug.exceptions import HTTPException
 from werkzeug.utils import secure_filename
 import os
 from dotenv import load_dotenv
@@ -1243,6 +1243,13 @@ def search():
 @app.errorhandler(404)
 def page_not_found(e):
     return render_template('404.html'), 404
+@app.errorhandler(Exception)
+def handle_500_error(e):
+    # Pass through standard HTTP errors (like 404 Not Found)
+    if isinstance(e, HTTPException):
+        return e
+    app.logger.error(f"Server Error: {e}")
+    return render_template("500.html"), 500
 
 @app.context_processor
 def inject_login_flag():
