@@ -152,6 +152,7 @@ SCHEMA = BASE_DIR / "schema.sql"
 app = Flask(__name__)
 app.config["SESSION_PERMANENT"] = False
 app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=30)
+app.config["SECRET_KEY"] = os.environ["SECRET_KEY"] 
 
 if not app.debug:
     app.config.update(
