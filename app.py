@@ -7,7 +7,6 @@ import os
 from dotenv import load_dotenv
 import re
 from datetime import timedelta
-from flask import abort
 
 import psycopg2
 import psycopg2.extras
@@ -1240,14 +1239,6 @@ def search():
         ).fetchall()
 
     return render_template("search.html", posts=posts, users=users, query=query)
-
-@app.route("/test-500")
-def test_500():
-    abort(500)
-
-@app.route("/test-404")
-def test_404():
-    abort(404)
 
 @app.errorhandler(404)
 def page_not_found(e):
