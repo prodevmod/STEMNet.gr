@@ -1258,7 +1258,6 @@ def inject_login_flag():
     just_logged_in = session.pop("just_logged_in", False)
     return dict(just_logged_in=just_logged_in)
 
-
 @app.errorhandler(500)
 @app.errorhandler(Exception)
 def handle_500_error(e):
@@ -1269,6 +1268,9 @@ def handle_500_error(e):
     app.logger.error(f"Server Error: {e}")
     return render_template("500.html"), 500
 
+def test_500():
+    # Method A: Standard Flask abort
+    abort(500)
 if __name__ == "__main__":
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
     app.run(host="0.0.0.0", port=80)
