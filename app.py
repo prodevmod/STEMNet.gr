@@ -1248,10 +1248,11 @@ def test_500():
 @app.route("/test-404")
 def test_404():
     abort(404)
-    
+
 @app.errorhandler(404)
 def page_not_found(e):
     return render_template('404.html'), 404
+
 @app.errorhandler(Exception)
 def handle_500_error(e):
     # Pass through standard HTTP errors (like 404 Not Found)
