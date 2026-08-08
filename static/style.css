@@ -463,10 +463,10 @@ textarea {
 /* Selected/Active Pill (Matches .btn-primary) */
 .category-pill.active {
     background-color: var(--primary-color); /* #CCFF00 */
-    color: #000000 !important;
+    color:  var(--primary-color) !important;
     font-weight: 700;
-    border: 2px solid #000000;
-    box-shadow: 4px 4px 0px #000000;
+    border: 2px solid  var(--primary-color) !important;
+    box-shadow: 4px 4px 0px  var(--primary-color) !important;
 }
 
 /* Active Pill Interactions */
