@@ -11,8 +11,6 @@ from datetime import timedelta
 import psycopg2
 import psycopg2.extras
 
-load_dotenv()
-
 import sqlite3
 from pathlib import Path
 import smtplib
