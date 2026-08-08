@@ -432,3 +432,21 @@ textarea {
     font-weight: 600;
     box-shadow: 0 0 12px rgba(0, 255, 102, 0.6); /* Neon glow effect to make it pop out */
 }
+
+/* Central Main Content Container */
+main, .container {
+    flex: 1 0 auto;
+    width: 100%;
+    max-width: 680px; /* Ideal middle-ground width for feed, search, and notifications */
+    margin: 0 auto;
+    padding: 1.5rem 1rem;
+    box-sizing: border-box;
+}
+
+/* Ensure form elements stretch to fit their cards properly */
+.card form, 
+.card input[type="text"], 
+.card input[type="search"] {
+    width: 100%;
+    box-sizing: border-box;
+}
