@@ -39,6 +39,7 @@ SUPABASE_URL = os.environ.get("SUPABASE_URL")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
+
 def get_serializer():
     return URLSafeTimedSerializer(app.secret_key)
 
@@ -151,6 +152,7 @@ SCHEMA = BASE_DIR / "schema.sql"
 app = Flask(__name__)
 app.config["SESSION_PERMANENT"] = False
 app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=30)
+app.config["SECRET_KEY"] = os.environ["SECRET_KEY"] 
 
 if not app.debug:
     app.config.update(
@@ -1259,16 +1261,6 @@ def inject_login_flag():
     # Pops the flag so it is only True on the very first page render after logging in
     just_logged_in = session.pop("just_logged_in", False)
     return dict(just_logged_in=just_logged_in)
-
-@app.errorhandler(500)
-@app.errorhandler(Exception)
-def handle_500_error(e):
-    # Pass through other HTTP status codes (like 404, 403)
-    if isinstance(e, HTTPException) and e.code != 500:
-        return e
-    
-    app.logger.error(f"Server Error: {e}")
-    return render_template("500.html"), 500
 
 if __name__ == "__main__":
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
