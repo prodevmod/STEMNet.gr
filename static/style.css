@@ -459,7 +459,7 @@ textarea {
 /* Selected/Active Pill (Matches .btn-primary) */
 .category-pill.active {
     background-color: var(--primary-color) !important;
-    color: #000000;
+    color: #000000 !important;
     font-weight: 700;
     border: 2px solid  var(--primary-color) !important;
     box-shadow: 3px 3px 0px #000000;
