@@ -147,6 +147,8 @@ SCHEMA = BASE_DIR / "schema.sql"
 
 # Flask App Initialization
 app = Flask(__name__)
+app.config["SESSION_PERMANENT"] = False
+
 if not app.debug:
     app.config.update(
         SESSION_COOKIE_SECURE=True,
@@ -1233,7 +1235,9 @@ def search():
 
     return render_template("search.html", posts=posts, users=users, query=query)
 
-
+@app.errorhandler(404)
+def page_not_found(e):
+    return render_template('404.html'), 404
 
 if __name__ == "__main__":
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
