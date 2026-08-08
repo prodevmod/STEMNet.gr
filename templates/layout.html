@@ -77,5 +77,24 @@
         }
     </script>
 
+    {% if g.user %}
+    <script>
+    (function() {
+        const isJustLoggedIn = "{{ 'true' if just_logged_in else 'false' }}" === "true";
+
+        if (isJustLoggedIn) {
+            // User just completed the login form -> Mark this tab as active
+            sessionStorage.setItem('tab_session_active', 'true');
+        } else {
+            // User is returning or opened a new tab -> Check if this tab has an active session
+            if (!sessionStorage.getItem('tab_session_active')) {
+                // Tab closed or opened in a new tab -> Force logout
+                window.location.href = "{{ url_for('logout') }}";
+            }
+        }
+    })();
+    </script>
+    {% endif %}
+
 </body>
 </html>

@@ -296,8 +296,9 @@ def login():
                 return render_template("login.html")
             else:
                 session.clear()
-                session.permanent = False  # Forces session to expire when the tab or browser is closed
+                session.permanent = False
                 session["user_id"] = user["id"]
+                session["just_logged_in"] = True  # <--- Add this line
                 flash("Logged in successfully!", "success")
                 return redirect(url_for("index"))
                 
@@ -1238,6 +1239,12 @@ def search():
 @app.errorhandler(404)
 def page_not_found(e):
     return render_template('404.html'), 404
+
+@app.context_processor
+def inject_login_flag():
+    # Pops the flag so it is only True on the very first page render after logging in
+    just_logged_in = session.pop("just_logged_in", False)
+    return dict(just_logged_in=just_logged_in)
 
 if __name__ == "__main__":
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
