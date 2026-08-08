@@ -455,18 +455,14 @@ textarea {
     box-shadow: 3px 3px 0px #000000;
 }
 
-.category-pill:active {
-    transform: translate(2px, 2px);
-    box-shadow: 0px 0px 0px #000000;
-}
 
 /* Selected/Active Pill (Matches .btn-primary) */
 .category-pill.active {
-    background-color: var(--primary-color); /* #CCFF00 */
-    color:  var(--primary-color) !important;
+    background-color: var(--primary-color) !important;
+    color: #ffffff;
     font-weight: 700;
     border: 2px solid  var(--primary-color) !important;
-    box-shadow: 4px 4px 0px  var(--primary-color) !important;
+    box-shadow: 3px 3px 0px #000000;
 }
 
 /* Active Pill Interactions */
