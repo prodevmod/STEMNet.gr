@@ -493,3 +493,73 @@ main, .container {
     width: 100%;
     box-sizing: border-box;
 }
+
+/* Checkbox Layout Container */
+.checkbox-group {
+    margin: 1.2rem 0;
+}
+
+.checkbox-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.65rem;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: #000000;
+    user-select: none;
+}
+
+/* Neo-Brutalist Custom Checkbox */
+.custom-checkbox {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 1.3rem;
+    height: 1.3rem;
+    border: 2px solid #000000;
+    border-radius: var(--radius, 4px);
+    background-color: #ffffff;
+    box-shadow: 2px 2px 0px #000000;
+    cursor: pointer;
+    display: grid;
+    place-content: center;
+    transition: transform 0.1s ease, box-shadow 0.1s ease, background-color 0.15s ease;
+}
+
+/* Checkmark Graphic */
+.custom-checkbox::before {
+    content: "";
+    width: 0.65rem;
+    height: 0.65rem;
+    transform: scale(0);
+    transition: transform 0.12s ease-in-out;
+    background-color: #000000;
+    clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%);
+}
+
+/* Hover Effect */
+.custom-checkbox:hover {
+    transform: translate(-1px, -1px);
+    box-shadow: 3px 3px 0px #000000;
+}
+
+/* Checked State */
+.custom-checkbox:checked {
+    background-color: var(--primary-color, #CCFF00); /* Neon Green fill */
+}
+
+.custom-checkbox:checked::before {
+    transform: scale(1);
+}
+
+/* Pressed State */
+.custom-checkbox:active {
+    transform: translate(1px, 1px);
+    box-shadow: 1px 1px 0px #000000;
+}
+
+/* Accessibility Focus Outline */
+.custom-checkbox:focus-visible {
+    outline: 2px solid #000000;
+    outline-offset: 2px;
+}

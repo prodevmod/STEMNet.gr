@@ -6,7 +6,7 @@ from werkzeug.utils import secure_filename
 import os
 from dotenv import load_dotenv
 import re
-
+from datetime import timedelta
 
 import psycopg2
 import psycopg2.extras
@@ -148,6 +148,7 @@ SCHEMA = BASE_DIR / "schema.sql"
 # Flask App Initialization
 app = Flask(__name__)
 app.config["SESSION_PERMANENT"] = False
+app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=30)
 
 if not app.debug:
     app.config.update(
@@ -273,6 +274,7 @@ def login():
     if request.method == "POST":
         identifier = request.form.get("username_or_email", "").strip()
         password = request.form.get("password", "")
+        remember = request.form.get("remember")  # <--- Read the "remember" checkbox value
 
         if not identifier or not password:
             flash("Please enter both your username/email and password.", "danger")
@@ -281,7 +283,7 @@ def login():
         db = get_db()
         
         try:
-            # Check if the identifier matches EITHER the username OR the email[cite: 1]
+            # Check if the identifier matches EITHER the username OR the email
             user = db.execute(
                 "SELECT * FROM users WHERE username = ? OR email = ?", 
                 (identifier, identifier)
@@ -296,9 +298,10 @@ def login():
                 return render_template("login.html")
             else:
                 session.clear()
-                session.permanent = False
+                # If checked, session becomes permanent (uses app.config["PERMANENT_SESSION_LIFETIME"])
+                session.permanent = True if remember else False  # <--- Updated line
                 session["user_id"] = user["id"]
-                session["just_logged_in"] = True  # <--- Add this line
+                session["just_logged_in"] = True
                 flash("Logged in successfully!", "success")
                 return redirect(url_for("index"))
                 
@@ -312,6 +315,7 @@ def login():
             return render_template("login.html")
 
     return render_template("login.html")
+
 
 @app.route("/register", methods=["GET", "POST"])
 def register():

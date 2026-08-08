@@ -77,7 +77,7 @@
         }
     </script>
 
-    {% if g.user %}
+    {% if g.user and not session.permanent %}
     <script>
     (function() {
         const isJustLoggedIn = "{{ 'true' if just_logged_in else 'false' }}" === "true";
