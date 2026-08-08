@@ -400,37 +400,84 @@ textarea {
     font-size: 1rem;
     background-color: #ffffff;
 }
+/* Horizontal Filter Bar Container */
 .category-filter-bar {
     display: flex;
-    gap: 8px;
+    gap: 10px;
     margin-bottom: 1.5rem;
     overflow-x: auto;
-    padding-bottom: 5px;
+    
+    /* Padding prevents neo-brutalist offset shadows from clipping during hover/scroll */
+    padding: 6px 6px 12px 2px;
+    
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+}
+
+/* Custom Scrollbar for Filter Bar */
+.category-filter-bar::-webkit-scrollbar {
+    height: 6px;
+}
+
+.category-filter-bar::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.category-filter-bar::-webkit-scrollbar-thumb {
+    background-color: #cbd5e1;
+    border-radius: 10px;
+}
+
+/* Neo-Brutalist Category Filter Pills */
+.category-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #ffffff;
+    color: #000000;
+    font-size: 0.85rem;
+    font-weight: 600;
+    padding: 0.4rem 0.95rem;
+    text-decoration: none;
+    border: 2px solid #000000;
+    border-radius: var(--radius);
+    box-shadow: 2px 2px 0px #000000;
+    transition: transform 0.1s ease, box-shadow 0.1s ease, background-color 0.1s ease;
     white-space: nowrap;
 }
 
-.category-pill {
-    background-color: whitesmoke;
-    color: dimgray;
-    border: 1px solid silver;
-    font-size: 0.85rem;
-    padding: 0.4rem 1rem;
-    text-decoration: none;
-    border-radius: 6px;
-    transition: all 0.2s ease;
-}
-
+/* Inactive Pill Interactions */
 .category-pill:hover {
-    background-color: #e2e8f0;
-    color: #1e293b;
+    background-color: #f1f5f9;
+    color: #000000;
+    transform: translate(-1px, -1px);
+    box-shadow: 3px 3px 0px #000000;
 }
 
+.category-pill:active {
+    transform: translate(2px, 2px);
+    box-shadow: 0px 0px 0px #000000;
+}
+
+/* Selected/Active Pill (Matches .btn-primary) */
 .category-pill.active {
-    background-color: #00ff66; /* Neon green */
-    color: #0f172a; /* Deep dark text for maximum contrast */
-    border-color: #00cc52;
-    font-weight: 600;
-    box-shadow: 0 0 12px rgba(0, 255, 102, 0.6); /* Neon glow effect to make it pop out */
+    background-color: var(--primary-color); /* #CCFF00 */
+    color: #000000 !important;
+    font-weight: 700;
+    border: 2px solid #000000;
+    box-shadow: 4px 4px 0px #000000;
+}
+
+/* Active Pill Interactions */
+.category-pill.active:hover {
+    transform: translate(-1px, -1px);
+    box-shadow: 5px 5px 0px #000000;
+}
+
+.category-pill.active:active {
+    transform: translate(4px, 4px);
+    box-shadow: 0px 0px 0px #000000;
 }
 
 /* Central Main Content Container */
