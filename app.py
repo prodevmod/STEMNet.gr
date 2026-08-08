@@ -1241,6 +1241,14 @@ def search():
 
     return render_template("search.html", posts=posts, users=users, query=query)
 
+@app.route("/test-500")
+def test_500():
+    abort(500)
+
+@app.route("/test-404")
+def test_404():
+    abort(404)
+    
 @app.errorhandler(404)
 def page_not_found(e):
     return render_template('404.html'), 404
@@ -1268,9 +1276,6 @@ def handle_500_error(e):
     app.logger.error(f"Server Error: {e}")
     return render_template("500.html"), 500
 
-def test_500():
-    # Method A: Standard Flask abort
-    abort(500)
 if __name__ == "__main__":
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
     app.run(host="0.0.0.0", port=80)
