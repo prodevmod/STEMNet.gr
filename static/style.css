@@ -29,25 +29,44 @@
 }
 
 
-/* Global Reset to Prevent Horizontal Scrolling on Mobile */
+/* Universal Box-Sizing Reset */
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
+/* Global Reset with Full Viewport Height */
 html, body {
     background-color: var(--bg-color);
     color: var(--text-color);
     font-family: var(--font-main);
     line-height: 1.6;
-    padding-bottom: 2rem;
     width: 100%;
     max-width: 100%;
-    overflow-x: hidden !important;
+    min-height: 100vh; /* Ensures the page always spans full screen height */
     margin: 0;
     padding: 0;
-    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden !important; /* Retains mobile horizontal scroll fix */
 }
 
-*, *:before, *:after {
-    box-sizing: inherit;
+/* Forces main content container to fill available vertical space */
+main, .container, .content-wrapper {
+    flex: 1 0 auto;
 }
 
+/* Prevents header/navbar containers from clipping overflowing dropdowns */
+header, nav, .navbar, .nav-container {
+    position: relative;
+    overflow: visible !important; 
+    z-index: 1000;
+}
+
+/* Ensures dropdown menus float freely above all page elements */
+.dropdown, .dropdown-menu, .dropdown-content {
+    position: absolute;
+    z-index: 9999 !important;
+}
 /* Ensure media and large containers never break mobile viewports */
 img, video, canvas, svg {
     max-width: 100%;
