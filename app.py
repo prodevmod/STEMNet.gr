@@ -7,6 +7,7 @@ import os
 from dotenv import load_dotenv
 import re
 from datetime import timedelta
+from flask import abort
 
 import psycopg2
 import psycopg2.extras
@@ -1257,6 +1258,10 @@ def inject_login_flag():
     just_logged_in = session.pop("just_logged_in", False)
     return dict(just_logged_in=just_logged_in)
 
+@app.route("/test-500")
+def test_500():
+    # Method A: Standard Flask abort
+    abort(500)
 if __name__ == "__main__":
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
     app.run(host="0.0.0.0", port=80)
