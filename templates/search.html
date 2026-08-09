@@ -7,34 +7,34 @@
     <h2>Search STEMNet Greece</h2>
     <p style="color: #64748b; font-size: 0.9rem; margin-top: 5px;">Find members, projects, and discussions.</p>
     
-    <form action="{{ url_for('search') }}" method="GET" style="display: flex; gap: 10px; margin-top: 15px;">
-        <input type="text" name="q" value="{{ query }}" placeholder="Search users, tech stacks, or topics..." required style="flex: 1; padding: 10px; border-radius: var(--radius); border: 1px solid var(--border-color); font-size: 1rem;">
-        <button type="submit" class="btn btn-primary" style="padding: 10px 20px;">Search</button>
+    <form action="{{ url_for('search') }}" method="GET" style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 15px;">
+        <input type="text" name="q" value="{{ query }}" placeholder="Search users, tech stacks, or topics..." required style="flex: 1 1 200px; min-width: 0; padding: 10px; border-radius: var(--radius); border: 1px solid var(--border-color); font-size: 1rem;">
+        <button type="submit" class="btn btn-primary" style="padding: 10px 20px; flex-shrink: 0;">Search</button>
     </form>
 </div>
 
 {% if query %}
     <!-- USERS RESULTS SECTION -->
-    <h3 style="margin-bottom: 15px;">Users matching "{{ query }}" ({{ users|length }})</h3>
+    <h3 style="margin-bottom: 15px; word-break: break-word;">Users matching "{{ query }}" ({{ users|length }})</h3>
     {% if users %}
         <div style="display: grid; gap: 10px; margin-bottom: 2rem;">
             {% for u in users %}
-            <div class="card" style="display: flex; align-items: center; gap: 15px; padding: 12px 20px; margin-bottom: 0;">
-                <img src="{{ url_for('static', filename=u['profile_pic'] if u['profile_pic'] else 'uploads/default_avatar.svg') }}" alt="{{ u['username'] }}" style="width: 45px; height: 45px; border-radius: 50%; object-fit: cover; border: 1px solid var(--border-color);">
-                <div style="flex: 1;">
-                    <a href="{{ url_for('profile', username=u['username']) }}" class="username" style="font-weight: bold; font-size: 1.05rem;">
+            <div class="card" style="display: flex; flex-wrap: wrap; align-items: center; gap: 15px; padding: 12px 20px; margin-bottom: 0;">
+                <img src="{{ url_for('static', filename=u['profile_pic'] if u['profile_pic'] else 'uploads/default_avatar.svg') }}" alt="{{ u['username'] }}" style="width: 45px; height: 45px; border-radius: 50%; object-fit: cover; border: 1px solid var(--border-color); flex-shrink: 0;">
+                <div style="flex: 1; min-width: 0;">
+                    <a href="{{ url_for('profile', username=u['username']) }}" class="username" style="font-weight: bold; font-size: 1.05rem; word-break: break-word;">
                         @{{ u['username'] }}
                     </a>
                     {% if u['interest'] %}
-                        <span style="font-size: 0.85rem; color: #64748b; margin-left: 10px;">Interest: {{ u['interest'] }}</span>
+                        <span style="font-size: 0.85rem; color: #64748b; margin-left: 10px; display: inline-block;">Interest: {{ u['interest'] }}</span>
                     {% endif %}
                     {% if u['bio'] %}
-                    <p style="font-size: 0.85rem; color: #475569; margin: 4px 0 0 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 400px;">
+                    <p style="font-size: 0.85rem; color: #475569; margin: 4px 0 0 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;">
                         {{ u['bio'] }}
                     </p>
                     {% endif %}
                 </div>
-                <a href="{{ url_for('profile', username=u['username']) }}" class="btn btn-outline" style="padding: 0.3rem 0.8rem; font-size: 0.85rem;">View Profile</a>
+                <a href="{{ url_for('profile', username=u['username']) }}" class="btn btn-outline" style="padding: 0.3rem 0.8rem; font-size: 0.85rem; flex-shrink: 0;">View Profile</a>
             </div>
             {% endfor %}
         </div>
@@ -45,11 +45,11 @@
     <hr style="margin: 20px 0;">
 
     <!-- POSTS / PROJECTS RESULTS SECTION -->
-    <h3 style="margin-bottom: 15px;">Posts & Projects matching "{{ query }}" ({{ posts|length }})</h3>
+    <h3 style="margin-bottom: 15px; word-break: break-word;">Posts & Projects matching "{{ query }}" ({{ posts|length }})</h3>
     {% if posts %}
         {% for post in posts %}
-        <div class="card" style="margin-bottom: 15px;">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div class="card" style="margin-bottom: 15px; word-break: break-word;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 5px;">
                 <a href="{{ url_for('profile', username=post['username']) }}" class="username">
                     @{{ post['username'] }}
                 </a>
@@ -68,30 +68,31 @@
             </div>
             {% endif %}
            
-            <p style="margin-top: 10px; white-space: pre-line;">{{ post['content'] }}</p>
+            <p style="margin-top: 10px; white-space: pre-line; word-break: break-word;">{{ post['content'] }}</p>
         </div>
         {% endfor %}
     {% else %}
         <p style="color: gray;">No posts found matching your search term.</p>
     {% endif %}
+    
     <!-- Group Search Results Section -->
-<div style="margin-top: 2rem;">
-    <h3>Group Chats</h3>
-    {% if groups %}
-        <div style="display: grid; gap: 1rem; margin-top: 1rem;">
-            {% for group in groups %}
-                <div class="card" style="padding: 1rem; display: flex; justify-content: space-between; align-items: center;">
-                    <div>
-                        <h4 style="margin: 0;"><a href="{{ url_for('group_detail', group_id=group['id']) }}">{{ group['name'] }}</a></h4>
-                        <p style="margin: 0.25rem 0 0 0; font-size: 0.85rem; color: #64748b;">Hosted by @{{ group['username'] }}</p>
+    <div style="margin-top: 2rem;">
+        <h3>Group Chats</h3>
+        {% if groups %}
+            <div style="display: grid; gap: 1rem; margin-top: 1rem;">
+                {% for group in groups %}
+                    <div class="card" style="padding: 1rem; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; word-break: break-word;">
+                        <div style="flex: 1; min-width: 0;">
+                            <h4 style="margin: 0;"><a href="{{ url_for('group_detail', group_id=group['id']) }}">{{ group['name'] }}</a></h4>
+                            <p style="margin: 0.25rem 0 0 0; font-size: 0.85rem; color: #64748b;">Hosted by @{{ group['username'] }}</p>
+                        </div>
+                        <a href="{{ url_for('group_detail', group_id=group['id']) }}" class="btn btn-outline" style="font-size: 0.85rem; padding: 0.4rem 0.8rem; flex-shrink: 0;">View Group</a>
                     </div>
-                    <a href="{{ url_for('group_detail', group_id=group['id']) }}" class="btn btn-outline" style="font-size: 0.85rem; padding: 0.4rem 0.8rem;">View Group</a>
-                </div>
-            {% endfor %}
-        </div>
-    {% else %}
-        <p style="color: #64748b; margin-top: 0.5rem;">No group chats found matching your search.</p>
-    {% endif %}
-</div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p style="color: #64748b; margin-top: 0.5rem;">No group chats found matching your search.</p>
+        {% endif %}
+    </div>
 {% endif %}
 {% endblock %}
