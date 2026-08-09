@@ -45,14 +45,15 @@
             opacity: 0.9;
         }
 
-        /* Nav links and icons */
+        /* Nav links container */
         .nav-links {
             display: flex;
             align-items: center;
             gap: 1.25rem;
         }
 
-        .nav-links a, 
+        /* Target ONLY icon links — exclude .btn elements so .btn-primary works properly */
+        .nav-links a:not(.btn), 
         .theme-toggle-btn {
             display: inline-flex;
             align-items: center;
@@ -63,6 +64,15 @@
             border: none;
             padding: 0.2rem;
             cursor: pointer;
+        }
+
+        /* Preserve SVG fill using current color without unwanted dark mode color inversions */
+        .nav-links a:not(.btn) svg,
+        .nav-brand svg,
+        .menu-toggle-btn svg,
+        .theme-toggle-btn svg {
+            fill: currentColor;
+            display: block;
         }
 
         /* Mobile Menu Toggle Button (Hidden on Desktop) */
