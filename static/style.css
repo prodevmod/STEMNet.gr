@@ -606,17 +606,16 @@ body {
     color: var(--text-color) !important;
 }
 
-/* Classical Coherent Toggle Button */
+/* Clean up the theme toggle button default browser styling */
 .theme-toggle-btn {
-    background: transparent;
-    border: none;
-    border-radius: 50%;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
     cursor: pointer;
-    padding: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-left: auto; /* Pushes it to the right if in a flex container */
 }
 
 .theme-toggle-btn:hover {
@@ -627,10 +626,15 @@ body {
     transform: translate(0, 0);
 }
 
+
+.theme-toggle-btn:focus {
+    outline: none !important;
+}
+
 .theme-toggle-btn img {
-    width: 20px;
-    height: 20px;
-    filter: var(--icon-filter, none); 
+    display: block;
+    width: 22px;
+    height: 22px;
 }
 
 /* ==========================================
