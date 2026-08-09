@@ -123,7 +123,7 @@
                     </div>
                     {% endif %}
 
-                    <!-- Optional Media Attachment -->
+                    <!-- Optional Media Attachment with Modal Expansion -->
                     {% if post['media_path'] %}
                     <div style="margin-bottom: 0.75rem; border-radius: var(--radius); overflow: hidden; max-height: 350px;">
                         {% if post['media_path'].endswith(('mp4', 'webm')) %}
@@ -131,7 +131,11 @@
                             <source src="{{ post['media_path'] }}" type="video/mp4">
                         </video>
                         {% else %}
-                        <img src="{{ post['media_path'] }}" alt="Post media" style="width: 100%; max-height: 350px; object-fit: cover;">
+                        <img src="{{ post['media_path'] }}" 
+                             alt="Post media" 
+                             class="clickable-preview-img" 
+                             onclick="openImageModal('{{ post['media_path'] }}')" 
+                             style="width: 100%; max-height: 350px; object-fit: cover;">
                         {% endif %}
                     </div>
                     {% endif %}

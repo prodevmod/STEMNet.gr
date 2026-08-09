@@ -66,13 +66,20 @@
             cursor: pointer;
         }
 
-        /* Preserve SVG fill using current color without unwanted dark mode color inversions */
+        /* Preserve raw SVG colors and prevent filter/inversion in dark mode */
         .nav-links a:not(.btn) svg,
         .nav-brand svg,
         .menu-toggle-btn svg,
         .theme-toggle-btn svg {
             fill: currentColor;
             display: block;
+            filter: none !important;
+        }
+
+        /* Prevent dark mode color inversions on all inline SVGs and SVG images */
+        html[data-theme="dark"] svg,
+        html[data-theme="dark"] img[src$=".svg"] {
+            filter: none !important;
         }
 
         /* Mobile Menu Toggle Button (Hidden on Desktop) */
