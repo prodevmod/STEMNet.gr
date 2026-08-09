@@ -4,6 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}STEMNet Greece{% endblock %}</title>
+    
+    <!-- Synchronous script to prevent white flash in dark mode -->
+    <script>
+        (function() {
+            const savedTheme = localStorage.getItem('theme');
+            const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            if (savedTheme === 'dark' || (!savedTheme && systemPrefersDark)) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            }
+        })();
+    </script>
+
     <!-- Link to your stylesheet -->
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='logo.svg') }}?v=2">
@@ -52,7 +64,6 @@
                         </a>
                         <!-- Theme Toggle Button -->
                     <button id="theme-toggle" class="theme-toggle-btn" aria-label="Toggle Dark Mode">
-                        <!-- Defaults to dark_mode.svg (meaning "click to switch to dark mode") -->
                         <img id="theme-icon" src="{{ url_for('static', filename='dark_mode.svg') }}" alt="Toggle Theme">
                     </button>
                         <a href="{{ url_for('create_post') }}" class="btn btn-primary">+ New Post</a>
@@ -93,46 +104,37 @@
         }
 
         // ==========================================
-        // 2. Dark / Light Mode Toggle
+        // 2. Dark / Light Mode Toggle Logic
         // ==========================================
         document.addEventListener('DOMContentLoaded', () => {
             const toggleBtn = document.getElementById('theme-toggle');
             const themeIcon = document.getElementById('theme-icon');
             
             if (toggleBtn && themeIcon) {
-                // Grab the proper static file paths using Jinja
                 const darkModeIconPath = "{{ url_for('static', filename='dark_mode.svg') }}";
                 const lightModeIconPath = "{{ url_for('static', filename='light_mode.svg') }}";
 
-                // Check local storage for a saved theme, or fallback to system preference
-                const savedTheme = localStorage.getItem('theme');
-                const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                
-                let currentTheme = 'light';
-                if (savedTheme === 'dark' || (!savedTheme && systemPrefersDark)) {
-                    currentTheme = 'dark';
-                }
-
-                // Function to apply the theme to the page and update the icon
-                function applyTheme(theme) {
-                    document.documentElement.setAttribute('data-theme', theme);
-                    localStorage.setItem('theme', theme);
-                    
-                    // If theme is dark, show the light mode SVG so they can switch back
-                    if (theme === 'dark') {
+                // Function to update the icon based on current root attribute
+                function updateIcon() {
+                    const currentTheme = document.documentElement.getAttribute('data-theme');
+                    if (currentTheme === 'dark') {
                         themeIcon.src = lightModeIconPath;
                     } else {
                         themeIcon.src = darkModeIconPath;
                     }
                 }
 
-                // Apply the initial theme on load
-                applyTheme(currentTheme);
+                // Set correct icon on load
+                updateIcon();
 
                 // Listen for toggle button clicks
                 toggleBtn.addEventListener('click', () => {
-                    currentTheme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-                    applyTheme(currentTheme);
+                    const currentTheme = document.documentElement.getAttribute('data-theme');
+                    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+                    
+                    document.documentElement.setAttribute('data-theme', newTheme);
+                    localStorage.setItem('theme', newTheme);
+                    updateIcon();
                 });
             }
         });
@@ -147,12 +149,9 @@
         const isJustLoggedIn = "{{ 'true' if just_logged_in else 'false' }}" === "true";
 
         if (isJustLoggedIn) {
-            // User just completed the login form -> Mark this tab as active
             sessionStorage.setItem('tab_session_active', 'true');
         } else {
-            // User is returning or opened a new tab -> Check if this tab has an active session
             if (!sessionStorage.getItem('tab_session_active')) {
-                // Tab closed or opened in a new tab -> Force logout
                 window.location.href = "{{ url_for('logout') }}";
             }
         }

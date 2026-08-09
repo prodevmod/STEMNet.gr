@@ -1333,52 +1333,35 @@ def create_group():
             
     return render_template('create_group.html')
 
-@app.route('/group/<int:group_id>')
+@app.route("/group/<int:group_id>")
 def group_detail(group_id):
     db = get_db()
-    current_user_id = g.user['id'] if g.get('user') else 0
+    current_user_id = g.user["id"] if g.get("user") else 0
     
-    group = db.execute('''
-        SELECT g.*, u.username FROM groups g 
-        JOIN users u ON g.user_id = u.id 
-        WHERE g.id = ?
-    ''', [group_id]).fetchone()
-    
-    if not group:
-        flash('Group chat not found.', 'error')
-        return redirect(url_for('index'))
-        
-    posts = db.execute('''
-        SELECT p.*, u.username, 
-               (SELECT COUNT(*) FROM likes WHERE post_id = p.id) as like_count,
-               (SELECT COUNT(*) FROM likes WHERE post_id = p.id AND user_id = ?) as user_liked
-        FROM posts p 
-        JOIN users u ON p.user_id = u.id 
-        WHERE p.group_id = ? 
-        ORDER BY p.created_at DESC
-    ''', [current_user_id, group_id]).fetchall()
-    
-    return render_template('group_detail.html', group=group, posts=posts)
-@app.route('/groups')
-def groups():
-    db = get_db()
-    current_user_id = g.user['id'] if g.get('user') else 0
-    
-    # Fetch all groups with their owner username and post counts
-    all_groups = db.execute('''
-        SELECT g.*, u.username, 
-               (SELECT COUNT(*) FROM posts WHERE posts.group_id = g.id) as post_count
+    # 1. Fetch the group details
+    group = db.execute("""
+        SELECT g.*, u.username 
         FROM groups g 
         JOIN users u ON g.user_id = u.id 
-        ORDER BY g.created_at DESC
-    ''').fetchall()
+        WHERE g.id = ?
+    """, (group_id,)).fetchone()
     
-    # Check if the logged-in user already owns a group chat
-    user_has_group = False
-    if current_user_id:
-        user_has_group = db.execute('SELECT 1 FROM groups WHERE user_id = ?', [current_user_id]).fetchone() is not None
-
-    return render_template('groups.html', groups=all_groups, user_has_group=user_has_group)
+    if not group:
+        flash("Group not found.", "error")
+        return redirect(url_for('groups'))
+        
+    # 2. Fetch posts belonging specifically to this group
+    posts = db.execute("""
+        SELECT posts.*, users.username,
+               (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id) AS like_count,
+               (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id AND likes.user_id = ?) AS user_liked
+        FROM posts 
+        JOIN users ON posts.user_id = users.id 
+        WHERE posts.group_id = ?
+        ORDER BY posts.created_at DESC
+    """, (current_user_id, group_id)).fetchall()
+    
+    return render_template("group_detail.html", group=group, posts=posts)
 if __name__ == "__main__":
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
     app.run(host="0.0.0.0", port=80)
