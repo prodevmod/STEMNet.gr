@@ -1114,12 +1114,12 @@ html body header nav a.nav-logout-link,
 [data-theme="dark"] header nav a.nav-logout-link,
 [data-theme="None"] header nav .nav-brand span,
 [data-theme="None"] header nav a.nav-logout-link {
-    color: #0074D9 !important;
+    color: #ccff00 !important;
 }
 
 /* Ensure hover states remain visible and consistent */
 html body header nav .nav-brand:hover span,
 html body header nav a.nav-logout-link:hover {
-    color: #0056b3 !important;
+    color: #ccff00 !important;
     opacity: 1 !important;
 }
