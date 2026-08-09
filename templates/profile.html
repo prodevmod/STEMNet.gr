@@ -15,7 +15,11 @@
     <!-- Profile Picture Header Display -->
     <div style="margin-bottom: 15px;">
         {% if profile_user['profile_pic'] %}
-            <img src="{{ url_for('static', filename=profile_user['profile_pic']) }}" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 2px solid var(--border-color);" alt="Profile Picture">
+            <img src="{{ url_for('static', filename=profile_user['profile_pic']) }}" 
+                 class="clickable-preview-img"
+                 onclick="openImageModal(this.src)"
+                 style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 2px solid var(--border-color);" 
+                 alt="Profile Picture">
         {% else %}
             <!-- Default avatar fallback -->
             <img src="{{ url_for('static', filename='uploads/default_avatar.svg') }}" alt="Default Avatar" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 2px solid var(--border-color);">
@@ -125,7 +129,12 @@
             <source src="{{ post['media_path'] }}" type="video/mp4">
         </video>
         {% else %}
-        <img src="{{ post['media_path'] }}" alt="Post media" style="width: 100%; max-height: 350px; object-fit: cover;">
+        <!-- Clickable Post Image for Full Preview Lightbox -->
+        <img src="{{ post['media_path'] }}" 
+             alt="Post media" 
+             class="clickable-preview-img"
+             onclick="openImageModal(this.src)"
+             style="width: 100%; max-height: 350px; object-fit: cover;">
         {% endif %}
     </div>
     {% endif %}
@@ -180,7 +189,7 @@ async function toggleLike(event, postId) {
         countSpan.textContent = data.count > 0 ? data.count : 'Like';
         iconWrapper.classList.toggle('is-liked', data.liked);
 
-        // Trigger the spring heart pop animation
+        // Trigger spring heart pop animation
         iconWrapper.classList.remove('like-pop');
         void iconWrapper.offsetWidth; // Force CSS reflow
         iconWrapper.classList.add('like-pop');
