@@ -1,5 +1,7 @@
 # STEMNet Greece
 
+<img width="1842" height="996" alt="image" src="https://github.com/user-attachments/assets/18100af1-db5d-4a0a-8b98-e9785935faef" />
+
 STEMNet Greece is a community-driven platform built for Greek high school robotics clubs, STEM students, and young makers. Throughout robotics competitions and school projects, many talented students develop innovative solutions but rarely have an opportunity to share their work outside their own teams. STEMNet was created to bridge that gap by providing a dedicated space where students can connect, collaborate, and learn from one another.
 
 The platform allows members to showcase projects, share open-source code, publish 3D-printing designs, discuss technical challenges, and build connections with students from schools across Greece. Whether someone is looking for help debugging a robotics project, sharing a CAD model, or presenting a completed build, STEMNet provides a centralized environment designed specifically for student collaboration.
