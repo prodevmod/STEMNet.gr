@@ -761,10 +761,10 @@ input:focus, button:focus-visible {
     background: var(--primary-color, #2563eb);
 }
 /* ==========================================
-   STEM EXTRAS & VAULT THEMED STYLES
+   STEM EXTRAS & VAULT CSS (UPDATED)
    ========================================== */
 
-/* STEM Vault Main Container */
+/* Main Container & Layout */
 .vault-container {
     width: 100%;
     max-width: var(--max-width, 1100px);
@@ -772,7 +772,26 @@ input:focus, button:focus-visible {
     padding: 0 0.5rem;
 }
 
-/* Section Grids */
+.vault-banner {
+    margin-bottom: 2rem;
+    padding: 2rem 1.5rem;
+    text-align: center;
+    border-left: 4px solid #059669 !important;
+}
+
+[data-theme="dark"] .vault-banner {
+    border-left-color: var(--primary-color, #ccff00) !important;
+}
+
+.vault-section-title {
+    font-size: 1.3rem;
+    margin-top: 1.5rem;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
 .vault-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -780,7 +799,7 @@ input:focus, button:focus-visible {
     margin-bottom: 2.5rem;
 }
 
-/* Dynamic STEM Cards */
+/* Vault Cards */
 .vault-card {
     background-color: var(--card-bg) !important;
     border: 1px solid var(--border-color) !important;
@@ -794,6 +813,21 @@ input:focus, button:focus-visible {
     transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
+.vault-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+    width: 100%;
+}
+
+.vault-title-block {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-size: 1.05rem;
+}
+
 /* Light / Dark Mode Text System */
 .vault-text-primary {
     color: var(--text-color) !important;
@@ -801,6 +835,8 @@ input:focus, button:focus-visible {
 
 .vault-text-secondary {
     color: #475569;
+    font-size: 0.88rem;
+    line-height: 1.5;
     transition: color 0.3s ease;
 }
 
@@ -808,11 +844,12 @@ input:focus, button:focus-visible {
     color: #94a3b8 !important;
 }
 
-/* Dynamic Accent Link Colors */
 .vault-link-green {
     color: #059669;
     font-weight: 700;
-    text-decoration: none;
+    font-size: 0.85rem;
+    margin-top: 1rem;
+    display: inline-block;
     transition: color 0.2s ease;
 }
 
@@ -821,25 +858,28 @@ input:focus, button:focus-visible {
 }
 
 [data-theme="dark"] .vault-link-green {
-    color: var(--primary-color, #ccff00) !important; /* Dynamic neon highlight in dark mode */
+    color: var(--primary-color, #ccff00) !important;
 }
 
-/* Vault Icons */
+/* Icon Styling - ALWAYS DARK BACKGROUND */
 .vault-icon {
-    background-color: var(--card-bg) !important;
-    border: 1px solid var(--border-color) !important;
+    background-color: #0f172a !important; /* Fixed dark background in all modes */
+    border: 1px solid #1e293b !important;
     padding: 6px;
     border-radius: 8px;
     display: inline-block;
     object-fit: contain;
+    flex-shrink: 0;
 }
 
-/* Dynamic Badges */
+/* Badges / Bubbles Styling (Un-squeezed & Protected from Cutoff) */
 .vault-badge {
     font-size: 0.75rem;
     font-weight: 600;
-    padding: 2px 8px;
+    padding: 3px 10px;
     border-radius: 12px;
+    white-space: nowrap; /* Keeps text together without breaking/cutting off */
+    flex-shrink: 0;      /* Prevents badge bubble from squishing */
     background-color: rgba(16, 185, 129, 0.12);
     color: #047857;
     border: 1px solid #10b981;
