@@ -730,3 +730,22 @@ body {
 [data-theme="dark"] .btn-outline:hover {
     color: #000000 !important;
 }
+/* Universal Dark Mode Button Fix */
+[data-theme="dark"] .btn,
+[data-theme="dark"] .btn-outline,
+[data-theme="dark"] a.btn {
+    color: #ffffff !important;
+    border-color: var(--border-color, #475569);
+}
+
+[data-theme="dark"] .btn-outline:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: #ffffff !important;
+}
+
+/* Light mode defaults */
+.btn-outline {
+    color: #0f172a;
+    border-color: var(--border-color, #cbd5e1);
+    background: transparent;
+}
