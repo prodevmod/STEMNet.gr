@@ -7,6 +7,7 @@ import os
 from dotenv import load_dotenv
 import re
 from datetime import timedelta
+from markupsafe import Markup
 
 import psycopg2
 import psycopg2.extras
