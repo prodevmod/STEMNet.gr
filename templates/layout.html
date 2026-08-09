@@ -37,6 +37,9 @@
             <!-- Navigation Links -->
             <div class="nav-links" id="navLinks">
                 {% if g.user %}
+                <a href="{{ url_for('stem_extras') }}" style="display: flex; align-items: center;" title="STEM Extras">
+                    <img src="{{ url_for('static', filename='stem.svg') }}" width="22" height="22" alt="STEM Extras">
+                </a>
                     <a href="{{ url_for('groups') }}" style="display: flex; align-items: center;" title="Groups">
                         <img src="{{ url_for('static', filename='group.svg') }}" width="22" height="22" alt="Groups">
                     </a>

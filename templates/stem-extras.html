@@ -1,0 +1,248 @@
+{% extends "layout.html" %}
+
+{% block title %}STEM Extras & Resources - STEMNet Greece{% endblock %}
+
+{% block content %}
+<div style="width: 100%; max-width: 1100px; margin: 0 auto;">
+
+    <!-- Header Banner -->
+    <div class="card" style="margin-bottom: 2rem; padding: 1.75rem; text-align: center;">
+        <h1 style="font-size: clamp(1.5rem, 4vw, 2.2rem); margin: 0 0 0.5rem 0;">🚀 Ultimate STEM Student Hub</h1>
+        <p style="color: #64748b; font-size: 1rem; max-width: 700px; margin: 0 auto;">
+            A comprehensive directory of free developer packs, university courses, science competitions, citizen research projects, and educational tools.
+        </p>
+    </div>
+
+    <!-- 1. Computer Science & Software Engineering -->
+    <h2 style="font-size: 1.3rem; margin-bottom: 1rem; display: flex; align-items: center; gap: 8px;">
+        💻 Computer Science & Development
+    </h2>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; margin-bottom: 2.5rem;">
+        
+        <a href="https://education.github.com/pack" target="_blank" class="card" style="text-decoration: none; color: inherit; display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                    <strong style="font-size: 1.1rem;">GitHub Student Pack</strong>
+                    <span style="font-size: 0.75rem; background: #2563eb; color: white; padding: 2px 8px; border-radius: 12px;">Dev Tools</span>
+                </div>
+                <p style="font-size: 0.88rem; color: #64748b; margin: 0;">Free domains, GitHub Copilot, cloud credits, and premium development software for students.</p>
+            </div>
+            <span style="font-size: 0.85rem; color: #2563eb; font-weight: bold; margin-top: 1rem; display: inline-block;">Claim Developer Pack ↗</span>
+        </a>
+
+        <a href="https://roadmap.sh" target="_blank" class="card" style="text-decoration: none; color: inherit; display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                    <strong style="font-size: 1.1rem;">Roadmap.sh</strong>
+                    <span style="font-size: 0.75rem; background: #059669; color: white; padding: 2px 8px; border-radius: 12px;">Roadmaps</span>
+                </div>
+                <p style="font-size: 0.88rem; color: #64748b; margin: 0;">Community-driven visual roadmaps and guides for learning Frontend, Backend, AI, and DevOps.</p>
+            </div>
+            <span style="font-size: 0.85rem; color: #2563eb; font-weight: bold; margin-top: 1rem; display: inline-block;">Explore Roadmaps ↗</span>
+        </a>
+
+        <a href="https://www.theodinproject.com/dashboard" target="_blank" class="card" style="text-decoration: none; color: inherit; display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                    <strong style="font-size: 1.1rem;">The Odin Project</strong>
+                    <span style="font-size: 0.75rem; background: #d97706; color: white; padding: 2px 8px; border-radius: 12px;">Full Stack</span>
+                </div>
+                <p style="font-size: 0.88rem; color: #64748b; margin: 0;">Free open-source full-stack web development curriculum with hands-on project building.</p>
+            </div>
+            <span style="font-size: 0.85rem; color: #2563eb; font-weight: bold; margin-top: 1rem; display: inline-block;">Start Learning ↗</span>
+        </a>
+
+        <a href="https://cs50.harvard.edu/" target="_blank" class="card" style="text-decoration: none; color: inherit; display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                    <strong style="font-size: 1.1rem;">Harvard CS50</strong>
+                    <span style="font-size: 0.75rem; background: #dc2626; color: white; padding: 2px 8px; border-radius: 12px;">Harvard</span>
+                </div>
+                <p style="font-size: 0.88rem; color: #64748b; margin: 0;">Harvard University's world-famous entry-level course on the art of programming and computer science.</p>
+            </div>
+            <span style="font-size: 0.85rem; color: #2563eb; font-weight: bold; margin-top: 1rem; display: inline-block;">Access Course ↗</span>
+        </a>
+
+        <a href="https://cs229.stanford.edu" target="_blank" class="card" style="text-decoration: none; color: inherit; display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                    <strong style="font-size: 1.1rem;">Stanford CS229: ML</strong>
+                    <span style="font-size: 0.75rem; background: #7c3aed; color: white; padding: 2px 8px; border-radius: 12px;">Stanford</span>
+                </div>
+                <p style="font-size: 0.88rem; color: #64748b; margin: 0;">Official Stanford University lecture notes, syllabus, and resources for Machine Learning.</p>
+            </div>
+            <span style="font-size: 0.85rem; color: #2563eb; font-weight: bold; margin-top: 1rem; display: inline-block;">View Materials ↗</span>
+        </a>
+
+    </div>
+
+    <!-- 2. Mathematics, Physics & Science Learning -->
+    <h2 style="font-size: 1.3rem; margin-bottom: 1rem; display: flex; align-items: center; gap: 8px;">
+        📐 Math, Physics & Core Sciences
+    </h2>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; margin-bottom: 2.5rem;">
+        
+        <a href="https://www.khanacademy.org" target="_blank" class="card" style="text-decoration: none; color: inherit; display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+                <strong style="font-size: 1.1rem; display: block; margin-bottom: 0.5rem;">Khan Academy</strong>
+                <p style="font-size: 0.88rem; color: #64748b; margin: 0;">Free practice exercises, instructional videos, and personalized learning dashboard for Math, Science, and computing.</p>
+            </div>
+            <span style="font-size: 0.85rem; color: #2563eb; font-weight: bold; margin-top: 1rem; display: inline-block;">Open Academy ↗</span>
+        </a>
+
+        <a href="https://www.physicsonline.com" target="_blank" class="card" style="text-decoration: none; color: inherit; display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+                <strong style="font-size: 1.1rem; display: block; margin-bottom: 0.5rem;">Physics Online</strong>
+                <p style="font-size: 0.88rem; color: #64748b; margin: 0;">High-quality video tutorials, experiment demonstrations, and exam revision guides for physics students.</p>
+            </div>
+            <span style="font-size: 0.85rem; color: #2563eb; font-weight: bold; margin-top: 1rem; display: inline-block;">Watch Videos ↗</span>
+        </a>
+
+        <a href="https://physicsstudytown.com" target="_blank" class="card" style="text-decoration: none; color: inherit; display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+                <strong style="font-size: 1.1rem; display: block; margin-bottom: 0.5rem;">Physics Study Town</strong>
+                <p style="font-size: 0.88rem; color: #64748b; margin: 0;">Comprehensive physics problem sets, topic summaries, and revision notes for high school and university prep.</p>
+            </div>
+            <span style="font-size: 0.85rem; color: #2563eb; font-weight: bold; margin-top: 1rem; display: inline-block;">Study Physics ↗</span>
+        </a>
+
+        <a href="https://www.onmaths.com" target="_blank" class="card" style="text-decoration: none; color: inherit; display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+                <strong style="font-size: 1.1rem; display: block; margin-bottom: 0.5rem;">OnMaths</strong>
+                <p style="font-size: 0.88rem; color: #64748b; margin: 0;">Interactive mathematics practice papers, prediction exams, and topic-by-topic drills.</p>
+            </div>
+            <span style="font-size: 0.85rem; color: #2563eb; font-weight: bold; margin-top: 1rem; display: inline-block;">Practice Math ↗</span>
+        </a>
+
+        <a href="https://stemgateway.nasa.gov/s/course-offering/a0BSJ0000049icD/open-science-essentials" target="_blank" class="card" style="text-decoration: none; color: inherit; display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+                <strong style="font-size: 1.1rem; display: block; margin-bottom: 0.5rem;">NASA Open Science Essentials</strong>
+                <p style="font-size: 0.88rem; color: #64748b; margin: 0;">Official NASA course covering transparent, inclusive, and accessible scientific workflows and open data.</p>
+            </div>
+            <span style="font-size: 0.85rem; color: #2563eb; font-weight: bold; margin-top: 1rem; display: inline-block;">Enroll via NASA ↗</span>
+        </a>
+
+    </div>
+
+    <!-- 3. Competitions, Olympiads & Science Fairs -->
+    <h2 style="font-size: 1.3rem; margin-bottom: 1rem; display: flex; align-items: center; gap: 8px;">
+        🏆 Competitions, Olympiads & Fairs
+    </h2>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; margin-bottom: 2.5rem;">
+        
+        <a href="https://ioinformatics.org" target="_blank" class="card" style="text-decoration: none; color: inherit; display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+                <strong style="font-size: 1.1rem; display: block; margin-bottom: 0.5rem;">International Olympiad in Informatics (IOI)</strong>
+                <p style="font-size: 0.88rem; color: #64748b; margin: 0;">The premier global algorithmic competitive programming contest for high school students.</p>
+            </div>
+            <span style="font-size: 0.85rem; color: #2563eb; font-weight: bold; margin-top: 1rem; display: inline-block;">Visit IOI Portal ↗</span>
+        </a>
+
+        <a href="https://icscompetition.org/en/#qualification" target="_blank" class="card" style="text-decoration: none; color: inherit; display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+                <strong style="font-size: 1.1rem; display: block; margin-bottom: 0.5rem;">International Computer Science Competition</strong>
+                <p style="font-size: 0.88rem; color: #64748b; margin: 0;">Global CS contest testing algorithmic problem solving, logic, and computational thinking.</p>
+            </div>
+            <span style="font-size: 0.85rem; color: #2563eb; font-weight: bold; margin-top: 1rem; display: inline-block;">View Qualifications ↗</span>
+        </a>
+
+        <a href="https://www.firstinspires.org" target="_blank" class="card" style="text-decoration: none; color: inherit; display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+                <strong style="font-size: 1.1rem; display: block; margin-bottom: 0.5rem;">FIRST Robotics & Tech</strong>
+                <p style="font-size: 0.88rem; color: #64748b; margin: 0;">Global youth robotics programs and team competitions fostering engineering and innovation.</p>
+            </div>
+            <span style="font-size: 0.85rem; color: #2563eb; font-weight: bold; margin-top: 1rem; display: inline-block;">Explore FIRST ↗</span>
+        </a>
+
+        <a href="https://isef.net" target="_blank" class="card" style="text-decoration: none; color: inherit; display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+                <strong style="font-size: 1.1rem; display: block; margin-bottom: 0.5rem;">Regeneron ISEF</strong>
+                <p style="font-size: 0.88rem; color: #64748b; margin: 0;">The world's largest pre-college global science research competition and engineering fair.</p>
+            </div>
+            <span style="font-size: 0.85rem; color: #2563eb; font-weight: bold; margin-top: 1rem; display: inline-block;">Discover ISEF ↗</span>
+        </a>
+
+        <a href="https://www.vodafonegenerationnext.gr/" target="_blank" class="card" style="text-decoration: none; color: inherit; display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+                <strong style="font-size: 1.1rem; display: block; margin-bottom: 0.5rem;">Vodafone Generation Next 🇬🇷</strong>
+                <p style="font-size: 0.88rem; color: #64748b; margin: 0;">Greece's flagship educational STEM program offering interactive technology labs and team competitions.</p>
+            </div>
+            <span style="font-size: 0.85rem; color: #2563eb; font-weight: bold; margin-top: 1rem; display: inline-block;">Learn & Enter ↗</span>
+        </a>
+
+    </div>
+
+    <!-- 4. Citizen Science & Active Research -->
+    <h2 style="font-size: 1.3rem; margin-bottom: 1rem; display: flex; align-items: center; gap: 8px;">
+        🔬 Citizen Science & University Resources
+    </h2>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; margin-bottom: 2.5rem;">
+        
+        <a href="https://www.zooniverse.org/projects" target="_blank" class="card" style="text-decoration: none; color: inherit; display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+                <strong style="font-size: 1.1rem; display: block; margin-bottom: 0.5rem;">Zooniverse Projects</strong>
+                <p style="font-size: 0.88rem; color: #64748b; margin: 0;">Participate in real academic research from astronomy to biology by classifying real scientific data.</p>
+            </div>
+            <span style="font-size: 0.85rem; color: #2563eb; font-weight: bold; margin-top: 1rem; display: inline-block;">Join Projects ↗</span>
+        </a>
+
+        <a href="https://scistarter.org" target="_blank" class="card" style="text-decoration: none; color: inherit; display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+                <strong style="font-size: 1.1rem; display: block; margin-bottom: 0.5rem;">SciStarter</strong>
+                <p style="font-size: 0.88rem; color: #64748b; margin: 0;">Find and join thousands of citizen science projects, research activities, and community data collection.</p>
+            </div>
+            <span style="font-size: 0.85rem; color: #2563eb; font-weight: bold; margin-top: 1rem; display: inline-block;">Find Research ↗</span>
+        </a>
+
+        <a href="https://bwsi.mit.edu/about/mit-additional-resources/" target="_blank" class="card" style="text-decoration: none; color: inherit; display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+                <strong style="font-size: 1.1rem; display: block; margin-bottom: 0.5rem;">MIT Beaver Works (BWSI)</strong>
+                <p style="font-size: 0.88rem; color: #64748b; margin: 0;">Curated high-school STEM curriculum, autonomous robotics courses, and open software from MIT.</p>
+            </div>
+            <span style="font-size: 0.85rem; color: #2563eb; font-weight: bold; margin-top: 1rem; display: inline-block;">Explore MIT BWSI ↗</span>
+        </a>
+
+    </div>
+
+    <!-- 5. Lesson Vaults, Worksheets & STEM Organizations -->
+    <h2 style="font-size: 1.3rem; margin-bottom: 1rem; display: flex; align-items: center; gap: 8px;">
+        📚 Lesson Vaults & Organizations
+    </h2>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem;">
+        
+        <a href="https://www.stem.org.uk/resources" target="_blank" class="card" style="text-decoration: none; color: inherit; display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+                <strong style="font-size: 1.1rem; display: block; margin-bottom: 0.5rem;">STEM Learning UK</strong>
+                <p style="font-size: 0.88rem; color: #64748b; margin: 0;">Thousands of free quality-assured STEM activities, worksheets, and practical experiment guides.</p>
+            </div>
+            <span style="font-size: 0.85rem; color: #2563eb; font-weight: bold; margin-top: 1rem; display: inline-block;">Browse Library ↗</span>
+        </a>
+
+        <a href="https://stemeducationworks.com/free-stem-lessons-worksheets/" target="_blank" class="card" style="text-decoration: none; color: inherit; display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+                <strong style="font-size: 1.1rem; display: block; margin-bottom: 0.5rem;">STEM Education Works</strong>
+                <p style="font-size: 0.88rem; color: #64748b; margin: 0;">Free downloadable STEM lesson plans, hands-on activity sheets, and 3D printing classroom projects.</p>
+            </div>
+            <span style="font-size: 0.85rem; color: #2563eb; font-weight: bold; margin-top: 1rem; display: inline-block;">Get Worksheets ↗</span>
+        </a>
+
+        <a href="https://nycstem.in/free-stem-education-resources/" target="_blank" class="card" style="text-decoration: none; color: inherit; display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+                <strong style="font-size: 1.1rem; display: block; margin-bottom: 0.5rem;">NYC STEM Hub</strong>
+                <p style="font-size: 0.88rem; color: #64748b; margin: 0;">Curated directory of free learning portals, coding tools, and hands-on science activities.</p>
+            </div>
+            <span style="font-size: 0.85rem; color: #2563eb; font-weight: bold; margin-top: 1rem; display: inline-block;">Open Hub ↗</span>
+        </a>
+
+        <a href="https://www.steme.org" target="_blank" class="card" style="text-decoration: none; color: inherit; display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+                <strong style="font-size: 1.1rem; display: block; margin-bottom: 0.5rem;">STEM E Organization</strong>
+                <p style="font-size: 0.88rem; color: #64748b; margin: 0;">Student-led organization offering mentorship, workshops, hackathons, and STEM literacy programs.</p>
+            </div>
+            <span style="font-size: 0.85rem; color: #2563eb; font-weight: bold; margin-top: 1rem; display: inline-block;">Visit STEM E ↗</span>
+        </a>
+
+    </div>
+
+</div>
+{% endblock %}

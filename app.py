@@ -1376,6 +1376,11 @@ def group_detail(group_id):
     """, (current_user_id, group_id)).fetchall()
     
     return render_template("group_detail.html", group=group, posts=posts)
+
+@app.route('/stem-extras')
+def stem_extras():
+    return render_template('stem-extras.html')
+
 if __name__ == "__main__":
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
     app.run(host="0.0.0.0", port=80)
