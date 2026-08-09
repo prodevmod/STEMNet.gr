@@ -1123,3 +1123,25 @@ html body header nav a.nav-logout-link:hover {
     color: #ccff00 !important;
     opacity: 1 !important;
 }
+/* Dedicated Logout Link Preset */
+a.nav-logout-link,
+.nav-links a.nav-logout-link,
+[data-theme="light"] header nav a.nav-logout-link,
+[data-theme="dark"] header nav a.nav-logout-link,
+[data-theme="None"] header nav a.nav-logout-link,
+[data-theme="none"] header nav a.nav-logout-link,
+:not([data-theme="dark"]) header nav a.nav-logout-link {
+    color: #ccff00 !important;
+    background: transparent !important;
+    text-decoration: none !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    display: inline-flex !important;
+}
+
+a.nav-logout-link:hover,
+[data-theme="light"] header nav a.nav-logout-link:hover,
+[data-theme="dark"] header nav a.nav-logout-link:hover {
+    color: #ccff00 !important;
+    opacity: 1 !important;
+}
