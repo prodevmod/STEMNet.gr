@@ -551,7 +551,7 @@ def index():
         JOIN users ON posts.user_id = users.id 
         LEFT JOIN posts AS parent_posts ON posts.parent_id = parent_posts.id 
         LEFT JOIN users AS parent_users ON parent_posts.user_id = parent_users.id 
-        WHERE posts.category != 'Events'
+        WHERE posts.category != 'Events' AND posts.group_id IS NULL
     """
     params = [current_user_id]
     
