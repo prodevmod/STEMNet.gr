@@ -66,6 +66,13 @@
             cursor: pointer;
         }
 
+        /* Force Login prompt text/background to stay white in every mode */
+        .nav-login-btn,
+        [data-theme="light"] .nav-login-btn,
+        [data-theme="dark"] .nav-login-btn {
+            color: #ffffff !important;
+        }
+
         /* Preserve navbar SVG fills without unwanted filter inversions */
         .nav-links a:not(.btn) svg,
         .nav-brand svg,
@@ -207,7 +214,7 @@
 
     <header>
         <nav>
-            <!-- Brand Logo & Title (STEMNet.gr Reference Link) -->
+            <!-- Brand Logo & Title (STEMNet.gr Reference Link serving as Feed) -->
             <a href="{{ url_for('index') }}" class="nav-brand" title="STEMNet Greece Home">
                 {{ 'logo.svg' | inline_svg(30, 30) }}
                 <span>STEMNet.gr</span>
@@ -220,33 +227,31 @@
 
             <!-- Top Icons & Navigation Menu -->
             <div class="nav-links" id="navLinks">
-                <a href="{{ url_for('stem_extras') }}" title="STEM Extras">
-                    {{ 'stem.svg' | inline_svg(22, 22) }}
-                </a>
+                {% if g.user %}
+                    <a href="{{ url_for('stem_extras') }}" title="STEM Extras">
+                        {{ 'stem.svg' | inline_svg(22, 22) }}
+                    </a>
 
-                <a href="{{ url_for('groups') }}" title="Groups">
-                    {{ 'group.svg' | inline_svg(22, 22) }}
-                </a>
+                    <a href="{{ url_for('groups') }}" title="Groups">
+                        {{ 'group.svg' | inline_svg(22, 22) }}
+                    </a>
 
-                <a href="{{ url_for('index') }}" title="Feed">
-                    {{ 'feed.svg' | inline_svg(22, 22) }}
-                </a>
+                    <a href="{{ url_for('events_feed') }}" title="Events">
+                        {{ 'events.svg' | inline_svg(22, 22) }}
+                    </a>
 
-                <a href="{{ url_for('events_feed') }}" title="Events">
-                    {{ 'events.svg' | inline_svg(22, 22) }}
-                </a>
+                    <a href="{{ url_for('notifications') }}" title="Notifications">
+                        {{ ('notification_on.svg' if has_unread_notifications else 'bell.svg') | inline_svg(22, 22) }}
+                    </a>
 
-                <a href="{{ url_for('notifications') }}" title="Notifications">
-                    {{ ('notification_on.svg' if has_unread_notifications else 'bell.svg') | inline_svg(22, 22) }}
-                </a>
+                    <a href="{{ url_for('profile') }}" title="Profile">
+                        {{ 'profile.svg' | inline_svg(22, 22) }}
+                    </a>
 
-                <a href="{{ url_for('profile') }}" title="Profile">
-                    {{ 'profile.svg' | inline_svg(22, 22) }}
-                </a>
-
-                <a href="{{ url_for('search') }}" title="Search">
-                    {{ 'search.svg' | inline_svg(22, 22) }}
-                </a>
+                    <a href="{{ url_for('search') }}" title="Search">
+                        {{ 'search.svg' | inline_svg(22, 22) }}
+                    </a>
+                {% endif %}
 
                 <!-- Theme Toggle Button -->
                 <button id="theme-toggle" class="theme-toggle-btn" aria-label="Toggle Dark Mode">
@@ -258,7 +263,7 @@
                     <a href="{{ url_for('create_post') }}" class="btn btn-primary">+ New Post</a>
                     <a href="{{ url_for('logout') }}">Logout</a>
                 {% else %}
-                    <a href="{{ url_for('login') }}">Log In</a>
+                    <a href="{{ url_for('login') }}" class="nav-login-btn">Log In</a>
                     <a href="{{ url_for('register') }}" class="btn btn-primary">Register</a>
                 {% endif %}
             </div>

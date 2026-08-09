@@ -1072,3 +1072,26 @@ body {
 [data-theme="dark"] .no-invert svg {
     filter: none !important;
 }
+/* Light Mode Hero Card with White Background and Navy Blue Gradient Border */
+[data-theme="light"] .hero.light-hero-gradient {
+    background: #ffffff !important;
+    border: 3px solid transparent;
+    border-image: linear-gradient(135deg, #001f3f, #0074D9) 1;
+    box-shadow: 0 4px 20px rgba(0, 31, 63, 0.08);
+}
+
+[data-theme="light"] .hero.light-hero-gradient h1,
+[data-theme="light"] .hero.light-hero-gradient p {
+    color: #000000 !important;
+}
+
+/* Ensure Login Prompt / Button in Navbar Stays White in Every Mode */
+.nav-links a.nav-login-btn,
+[data-theme="light"] .nav-links a.nav-login-btn,
+[data-theme="dark"] .nav-links a.nav-login-btn {
+    color: #ffffff !important;
+    background-color: #001f3f !important;
+    padding: 0.4rem 0.9rem;
+    border-radius: var(--radius);
+    text-decoration: none;
+}

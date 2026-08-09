@@ -5,12 +5,12 @@
 {% block content %}
 
 {% if not g.user %}
-    <section class="hero">
+    <section class="hero light-hero-gradient">
         <h1>Welcome to STEMNet Greece</h1>
         <p>
-            STEMNet is an open platform centered arround Greek high school robotics clubs and STEM students. 
+            STEMNet is an open platform centered around Greek high school robotics clubs and STEM students. 
             Connect with other teams, share your open-source code, showcase your 3D printing files, and ask technical troubleshooting questions.
-            I truly believe that this simple medium can make a difference in greek students networking and personal growth.
+            I truly believe that this simple medium can make a difference in Greek students' networking and personal growth.
         </p> 
         <div class="hero-buttons">
             <a href="{{ url_for('register') }}" class="btn btn-primary">Join STEMNet</a>
@@ -170,14 +170,6 @@
 
     <script>
     document.addEventListener('DOMContentLoaded', () => {
-        // Hide the "Feed" link in the navbar since we are currently on it
-        const navLinks = document.querySelectorAll('.nav-links a');
-        navLinks.forEach(link => {
-            if (link.textContent.trim().toLowerCase() === 'feed') {
-                link.style.display = 'none';
-            }
-        });
-
         // Background AJAX Feed Refresher
         const postsContainer = document.getElementById('posts-container');
         if (!postsContainer) return;
@@ -227,9 +219,8 @@
             countSpan.textContent = data.count > 0 ? data.count : 'Like';
             icon.src = data.liked ? icon.dataset.likedUrl : icon.dataset.likeUrl;
 
-            // Trigger the spring heart pop animation on every click
             icon.classList.remove('like-pop');
-            void icon.offsetWidth; // Force CSS reflow to restart animation
+            void icon.offsetWidth;
             icon.classList.add('like-pop');
 
         } catch (err) {
