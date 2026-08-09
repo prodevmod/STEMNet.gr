@@ -1015,11 +1015,9 @@ body {
     color: #000000 !important;
 }
 
-/* Light mode links are black so they don't get lost in the white (excludes buttons/pills) */
-[data-theme="light"] a:not(.btn):not(.category-pill) {
+[data-theme="light"] a:not(.btn):not(.category-pill):not(.nav-logout-link) {
     color: #000000 !important;
 }
-
 /* Global Dark Mode Text Fixes (All Text White) */
 [data-theme="dark"] body,
 [data-theme="dark"] p,
