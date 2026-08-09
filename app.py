@@ -13,8 +13,6 @@ import psycopg2.extras
 
 import sqlite3
 from pathlib import Path
-import smtplib
-from email.message import EmailMessage
 import requests
 
 from flask import (
