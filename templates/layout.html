@@ -7,12 +7,15 @@
     <!-- Link to your stylesheet -->
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='logo.svg') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Raleway:ital,wght@0,100..900;1,100..900&family=Rubik+Spray+Paint&display=swap" rel="stylesheet">
 </head>
 <body>
 
     <header>
         <nav>
-            <a href="{{ url_for('index') }}" class="brand"><strong>STEMNet.gr</strong></a>
+            <a href="{{ url_for('index') }}" class="brand"><strong class ="rubik-spray-paint-regular">STEMNet.gr</strong></a>
             
             <!-- Mobile Menu Toggle Button (Transparent, hidden on wide screens) -->
             <button type="button" class="menu-toggle" id="menuToggle" aria-label="Toggle Menu">
