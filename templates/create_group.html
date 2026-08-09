@@ -6,6 +6,7 @@
     <p style="color: #64748b; margin-bottom: 1.5rem;">Launch a dedicated space where you and other members can post about a specific topic.</p>
     
     <form method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div style="margin-bottom: 1rem;">
             <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Group Name</label>
             <input type="text" name="name" required placeholder="e.g., Arduino Makers Greece" style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: var(--radius); background: var(--bg-color); color: inherit;">
