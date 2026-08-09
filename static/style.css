@@ -693,3 +693,34 @@ main,
         width: 100% !important;
     }
 }
+/* Glamour & Polish FX */
+
+/* 1. Smooth Hover-Lift & Glow for Cards */
+.card, .post-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease !important;
+}
+
+.card:hover, .post-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px -6px rgba(37, 99, 235, 0.12), 0 4px 12px -4px rgba(0, 0, 0, 0.05);
+    border-color: rgba(37, 99, 235, 0.3) !important;
+}
+
+/* 2. Micro-Bounce on Interactive Icons & Navigation */
+.nav-links a img, 
+.theme-toggle-btn img, 
+button img {
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.nav-links a:hover img, 
+.theme-toggle-btn:hover img,
+button:hover img {
+    transform: scale(1.18) rotate(-4deg);
+}
+
+/* 3. Glowing Neon Focus Ring for Input & Search */
+input:focus, button:focus-visible {
+    outline: none !important;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25) !important;
+}
