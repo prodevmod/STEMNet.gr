@@ -3,17 +3,17 @@
 {% block title %}Search - STEMNet Greece{% endblock %}
 
 {% block content %}
-<div style="width: 100%; max-width: 900px; margin: 0 auto; box-sizing: border-box; padding: 0 0.5rem;">
-    <!-- Search Box Card -->
-    <div class="card" style="margin-bottom: 2rem; width: 100%; padding: 1.75rem; box-sizing: border-box;">
-        <h2 style="font-size: clamp(1.3rem, 4vw, 1.6rem); margin-top: 0; margin-bottom: 0.5rem; word-break: break-word;">🔍 Search STEMNet Greece</h2>
-        <p style="color: #64748b; font-size: 0.95rem; margin-top: 0; margin-bottom: 1.5rem;">Find members, projects, and discussions.</p>
-        
-        <form action="{{ url_for('search') }}" method="GET" style="display: flex; gap: 10px; align-items: center; width: 100%; flex-wrap: wrap;">
-            <input type="text" name="q" value="{{ query }}" placeholder="Search users, tech stacks, or topics..." required style="flex: 1 1 220px; padding: 12px 16px; border-radius: var(--radius); border: 1px solid var(--border-color); font-size: 1rem; min-width: 0; height: 48px; box-sizing: border-box;">
-            <button type="submit" class="btn btn-primary" style="padding: 0 24px; height: 48px; flex-shrink: 0; min-width: 100px; display: inline-flex; align-items: center; justify-content: center; font-size: 1rem;">Search</button>
-        </form>
+<div class="card" style="width: 100%; max-width: 900px; margin: 0 auto 2rem auto; padding: 1rem 1.25rem; box-sizing: border-box;">
+    <div style="margin-bottom: 0.75rem;">
+        <h2 style="font-size: clamp(1.2rem, 3.5vw, 1.4rem); margin: 0 0 0.25rem 0;">🔍 Search STEMNet Greece</h2>
+        <p style="color: #64748b; font-size: 0.88rem; margin: 0;">Find members, projects, and discussions.</p>
     </div>
+    
+    <form action="{{ url_for('search') }}" method="GET" class="search-form-bar">
+        <input type="text" name="q" value="{{ query }}" placeholder="Search users, tech stacks, or topics..." required class="search-input">
+        <button type="submit" class="btn btn-primary search-btn">Search</button>
+    </form>
+</div>
 
     <!-- Results Section -->
     {% if query %}
