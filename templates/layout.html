@@ -16,7 +16,7 @@
         })();
     </script>
 
-    <!-- Link to your stylesheet -->
+    <!-- Link to stylesheet -->
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='logo.svg') }}?v=2">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -27,9 +27,9 @@
 
     <header>
         <nav>
-            <a href="{{ url_for('index') }}" class="brand"><strong class ="rubik-spray-paint-regular">STEMNet.gr</strong></a>
+            <a href="{{ url_for('index') }}" class="brand"><strong class="rubik-spray-paint-regular">STEMNet.gr</strong></a>
             
-            <!-- Mobile Menu Toggle Button (Transparent, hidden on wide screens) -->
+            <!-- Mobile Menu Toggle Button -->
             <button type="button" class="menu-toggle" id="menuToggle" aria-label="Toggle Menu">
                 <img src="{{ url_for('static', filename='dropdown.svg') }}" width="28" height="28" alt="Menu">
             </button>
@@ -37,37 +37,37 @@
             <!-- Navigation Links -->
             <div class="nav-links" id="navLinks">
                 {% if g.user %}
+                    <a href="{{ url_for('groups') }}" style="display: flex; align-items: center;" title="Groups">
+                        <img src="{{ url_for('static', filename='group.svg') }}" width="22" height="22" alt="Groups">
+                    </a>
 
-                        <a href="{{ url_for('groups') }}" style="display: flex; align-items: center;" title="Groups">
-                            <img src="{{ url_for('static', filename='group.svg') }}" width="22" height="22" alt="Groups">
-                        </a>
+                    <a href="{{ url_for('index') }}" style="display: flex; align-items: center;" title="Feed">
+                        <img src="{{ url_for('static', filename='feed.svg') }}" width="22" height="22" alt="Feed">
+                    </a>
 
-                        <a href="{{ url_for('index') }}" style="display: flex; align-items: center;" title="Feed">
-                            <img src="{{ url_for('static', filename='feed.svg') }}" width="22" height="22" alt="Feed">
-                        </a>
+                    <a href="{{ url_for('events_feed') }}" style="display: flex; align-items: center;" title="Events">
+                        <img src="{{ url_for('static', filename='events.svg') }}" width="22" height="22" alt="Events">
+                    </a>
 
-                        <a href="{{ url_for('events_feed') }}" style="display: flex; align-items: center;" title="Events">
-                            <img src="{{ url_for('static', filename='events.svg') }}" width="22" height="22" alt="Events">
-                        </a>
+                    <a href="{{ url_for('notifications') }}" style="display: flex; align-items: center;" title="Notifications">
+                        <img src="{{ url_for('static', filename='notification_on.svg' if has_unread_notifications else 'bell.svg') }}" width="22" height="22" alt="Notifications">
+                    </a>
 
-                        <a href="{{ url_for('notifications') }}" style="display: flex; align-items: center;" title="Notifications">
-                            <img src="{{ url_for('static', filename='notification_on.svg' if has_unread_notifications else 'bell.svg') }}" width="22" height="22" alt="Notifications">
-                        </a>
+                    <a href="{{ url_for('profile') }}" style="display: flex; align-items: center;" title="Profile">
+                        <img src="{{ url_for('static', filename='profile.svg') }}" width="22" height="22" alt="Profile">
+                    </a>
 
-                        <a href="{{ url_for('profile') }}" style="display: flex; align-items: center;" title="Profile">
-                            <img src="{{ url_for('static', filename='profile.svg') }}" width="22" height="22" alt="Profile">
-                        </a>
+                    <a href="{{ url_for('search') }}" style="display: flex; align-items: center;" title="Search">
+                        <img src="{{ url_for('static', filename='search.svg') }}" width="22" height="22" alt="Search">
+                    </a>
 
-
-                        <a href="{{ url_for('search') }}" style="display: flex; align-items: center;" title="Search">
-                            <img src="{{ url_for('static', filename='search.svg') }}" width="22" height="22" alt="Search">
-                        </a>
-                        <!-- Theme Toggle Button -->
+                    <!-- Theme Toggle Button -->
                     <button id="theme-toggle" class="theme-toggle-btn" aria-label="Toggle Dark Mode">
                         <img id="theme-icon" src="{{ url_for('static', filename='dark_mode.svg') }}" alt="Toggle Theme">
                     </button>
-                        <a href="{{ url_for('create_post') }}" class="btn btn-primary">+ New Post</a>
-                        <a href="{{ url_for('logout') }}">Logout</a>
+
+                    <a href="{{ url_for('create_post') }}" class="btn btn-primary">+ New Post</a>
+                    <a href="{{ url_for('logout') }}">Logout</a>
                 {% else %}
                     <a href="{{ url_for('login') }}">Log In</a>
                     <a href="{{ url_for('register') }}" class="btn btn-primary">Register</a>
@@ -76,7 +76,7 @@
         </nav>
     </header>
 
-    <main>
+    <main class="app-main-container">
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 <div class="flash-container">
@@ -91,9 +91,7 @@
     </main>
 
     <script>
-        // ==========================================
-        // 1. Mobile Navigation Toggle
-        // ==========================================
+        // Mobile Navigation Toggle
         const menuToggle = document.getElementById('menuToggle');
         const navLinks = document.getElementById('navLinks');
 
@@ -103,9 +101,7 @@
             });
         }
 
-        // ==========================================
-        // 2. Dark / Light Mode Toggle Logic
-        // ==========================================
+        // Dark / Light Mode Toggle Logic
         document.addEventListener('DOMContentLoaded', () => {
             const toggleBtn = document.getElementById('theme-toggle');
             const themeIcon = document.getElementById('theme-icon');
@@ -114,7 +110,6 @@
                 const darkModeIconPath = "{{ url_for('static', filename='dark_mode.svg') }}";
                 const lightModeIconPath = "{{ url_for('static', filename='light_mode.svg') }}";
 
-                // Function to update the icon based on current root attribute
                 function updateIcon() {
                     const currentTheme = document.documentElement.getAttribute('data-theme');
                     if (currentTheme === 'dark') {
@@ -124,10 +119,8 @@
                     }
                 }
 
-                // Set correct icon on load
                 updateIcon();
 
-                // Listen for toggle button clicks
                 toggleBtn.addEventListener('click', () => {
                     const currentTheme = document.documentElement.getAttribute('data-theme');
                     const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
@@ -140,9 +133,6 @@
         });
     </script>
 
-    <!-- ==========================================
-        3. Session / Tab Management 
-        ========================================== -->
     {% if g.user and not session.permanent %}
     <script>
     (function() {

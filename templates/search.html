@@ -3,15 +3,15 @@
 {% block title %}Search - STEMNet Greece{% endblock %}
 
 {% block content %}
-<div class="card" style="width: 100%; max-width: 900px; margin: 0 auto 2rem auto; padding: 1rem 1.25rem; box-sizing: border-box;">
-    <div style="margin-bottom: 0.75rem;">
-        <h2 style="font-size: clamp(1.2rem, 3.5vw, 1.4rem); margin: 0 0 0.25rem 0;">🔍 Search STEMNet Greece</h2>
+<div class="card search-card-banner">
+    <div>
+        <h2 style="font-size: 1.3rem; margin: 0 0 0.2rem 0;">🔍 Search STEMNet Greece</h2>
         <p style="color: #64748b; font-size: 0.88rem; margin: 0;">Find members, projects, and discussions.</p>
     </div>
     
-    <form action="{{ url_for('search') }}" method="GET" class="search-form-bar">
-        <input type="text" name="q" value="{{ query }}" placeholder="Search users, tech stacks, or topics..." required class="search-input">
-        <button type="submit" class="btn btn-primary search-btn">Search</button>
+    <form action="{{ url_for('search') }}" method="GET" class="search-horizontal-form">
+        <input type="text" name="q" value="{{ query }}" placeholder="Search users, tech stacks, or topics..." required class="search-horizontal-input">
+        <button type="submit" class="btn btn-primary search-horizontal-btn">Search</button>
     </form>
 </div>
 
