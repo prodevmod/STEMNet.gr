@@ -562,7 +562,6 @@ nav a {
 .btn-primary {
     background-color: var(--primary-color); /* #CCFF00 */
     color: #000000 !important;              /* Sharp black text for max contrast */
-    font-weight: 400;                       /* Bold weight makes neon buttons pop */
     border: 2px solid #000000;              /* Neo-brutalist sharp black border */
     border-radius: var(--radius);
     box-shadow: 4px 4px 0px #000000;        /* Solid black offset shadow */
@@ -571,7 +570,7 @@ nav a {
     align-items: center;
     justify-content: center;
     transition: transform 0.1s ease, box-shadow 0.1s ease;
-      font-family: "Rubik Spray Paint", system-ui !important;
-  font-weight: 400;
-  font-style: normal;
+    font-family: "Rubik Spray Paint", system-ui !important;
+    font-weight: 400;
+    font-style: normal;
 }
