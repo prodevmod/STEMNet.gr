@@ -230,6 +230,25 @@ label {
     font-weight: 600;
     font-size: 0.9rem;
 }
+
+/* Force full width on search wrappers, forms, and containers */
+.search-container,
+.search-wrapper,
+.search-box,
+form.search-form,
+form[role="search"],
+form[action*="search"] {
+    width: 100% !important;
+    max-width: 100% !important;
+    display: flex !important;
+    box-sizing: border-box !important;
+}
+
+.search-form input[type="search"],
+.search-form input[type="text"] {
+    flex: 1;
+}
+
 /* Ensure search inputs (and all other inputs) span the full width of their containers */
 input[type="text"],
 input[type="password"],
@@ -238,11 +257,14 @@ input[type="number"],
 input[type="url"],
 input[type="file"],
 input[type="search"],
+.search-input,
+.search-bar,
 select,
 textarea {
     width: 100% !important;
     max-width: 100% !important;
-    padding: 0.75rem;
+    display: block !important;
+    padding: 0.75rem 1rem !important;
     border: 2px solid var(--border-color);
     border-radius: var(--radius);
     font-family: inherit;
@@ -250,21 +272,6 @@ textarea {
     background-color: var(--card-bg);
     color: var(--text-color);
     box-sizing: border-box !important;
-}
-
-/* If your search bar is part of an inline form layout with a button, use this layout wrapper */
-.search-form, 
-form[role="search"] {
-    display: flex;
-    width: 100%;
-    gap: 0.5rem;
-    align-items: center;
-    box-sizing: border-box;
-}
-
-.search-form input[type="search"],
-.search-form input[type="text"] {
-    flex: 1;
 }
 
 input:focus, textarea:focus, select:focus {
@@ -305,7 +312,6 @@ a.btn-primary {
     border-radius: var(--radius);
     box-shadow: 4px 4px 0px #000000 !important;
     font-weight: 600;
-    /* Thinned out font weight and styling for better readability */
     font-family: var(--font-main) !important; 
 }
 
