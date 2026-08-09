@@ -1079,6 +1079,12 @@ body {
     border-image: linear-gradient(135deg, #001f3f, #0074D9) 1;
     box-shadow: 0 4px 20px rgba(0, 31, 63, 0.08);
 }
+[data-theme=None] .hero.light-hero-gradient {
+    background: #ffffff !important;
+    border: 3px solid transparent;
+    border-image: linear-gradient(135deg, #001f3f, #0074D9) 1;
+    box-shadow: 0 4px 20px rgba(0, 31, 63, 0.08);
+}
 
 [data-theme="light"] .hero.light-hero-gradient h1,
 [data-theme="light"] .hero.light-hero-gradient p {
