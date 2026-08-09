@@ -149,41 +149,63 @@
 async function toggleLike(event, postId) {
     if (event) event.preventDefault();
     
-    console.log("Toggling like for ID:", postId);
-    
     try {
         const response = await fetch(`/like/${postId}`, { method: 'POST' });
         
-        console.log("Server status:", response.status);
-
         if (response.status === 401) {
             alert('Please log in to like posts.');
             return;
         }
 
-        if (!response.ok) {
-            const errText = await response.text();
-            console.error("Server error response:", errText);
-            return;
-        }
+        if (!response.ok) return;
 
         const data = await response.json();
-        console.log("Received data:", data);
-
         const icon = document.getElementById(`like-icon-${postId}`);
         const countSpan = document.getElementById(`like-count-${postId}`);
         
-        if (!icon || !countSpan) {
-            console.error(`DOM element mismatch: could not find #like-icon-${postId} or #like-count-${postId}`);
-            return;
-        }
+        if (!icon || !countSpan) return;
 
         countSpan.textContent = data.count > 0 ? data.count : 'Like';
         icon.src = data.liked ? icon.dataset.likedUrl : icon.dataset.likeUrl;
+
+        // Trigger the spring heart pop animation on every click
+        icon.classList.remove('like-pop');
+        void icon.offsetWidth; // Force CSS reflow to restart animation
+        icon.classList.add('like-pop');
+
     } catch (err) {
         console.error('Fetch error:', err);
     }
 }
+
+// Background AJAX Feed Refresher
+document.addEventListener('DOMContentLoaded', () => {
+    const postsContainer = document.getElementById('posts-container');
+    if (!postsContainer) return;
+
+    async function refreshPostsFeed() {
+        try {
+            const response = await fetch(window.location.href, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            
+            if (!response.ok) return;
+            const htmlText = await response.text();
+
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(htmlText, 'text/html');
+            const newFeed = doc.getElementById('posts-container');
+
+            if (newFeed && postsContainer.innerHTML.trim() !== newFeed.innerHTML.trim()) {
+                postsContainer.innerHTML = newFeed.innerHTML;
+            }
+        } catch (err) {
+            console.error('Failed to auto-refresh feed:', err);
+        }
+    }
+
+    setInterval(refreshPostsFeed, 10000);
+});
 </script>
 
 {% endblock %}

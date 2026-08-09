@@ -724,3 +724,49 @@ input:focus, button:focus-visible {
     outline: none !important;
     box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25) !important;
 }
+@keyframes heartPop {
+    0% { transform: scale(1); }
+    40% { transform: scale(1.4) rotate(-10deg); }
+    80% { transform: scale(0.9) rotate(5deg); }
+    100% { transform: scale(1) rotate(0deg); }
+}
+
+.like-pop {
+    animation: heartPop 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+header {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 1000 !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    background-color: rgba(255, 255, 255, 0.8) !important;
+    border-bottom: 1px solid var(--border-color) !important;
+    transition: background-color 0.3s ease !important;
+}
+
+[data-theme="dark"] header {
+    background-color: rgba(15, 23, 42, 0.8) !important;
+}
+/* Custom Modern Scrollbars */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 999px;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb {
+    background: #334155;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--primary-color, #2563eb);
+}
