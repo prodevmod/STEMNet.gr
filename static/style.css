@@ -760,3 +760,93 @@ input:focus, button:focus-visible {
 ::-webkit-scrollbar-thumb:hover {
     background: var(--primary-color, #2563eb);
 }
+/* ==========================================
+   STEM EXTRAS & VAULT THEMED STYLES
+   ========================================== */
+
+/* STEM Vault Main Container */
+.vault-container {
+    width: 100%;
+    max-width: var(--max-width, 1100px);
+    margin: 0 auto;
+    padding: 0 0.5rem;
+}
+
+/* Section Grids */
+.vault-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2.5rem;
+}
+
+/* Dynamic STEM Cards */
+.vault-card {
+    background-color: var(--card-bg) !important;
+    border: 1px solid var(--border-color) !important;
+    color: var(--text-color) !important;
+    border-radius: var(--radius, 6px);
+    padding: 1.25rem;
+    text-decoration: none;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+/* Light / Dark Mode Text System */
+.vault-text-primary {
+    color: var(--text-color) !important;
+}
+
+.vault-text-secondary {
+    color: #475569;
+    transition: color 0.3s ease;
+}
+
+[data-theme="dark"] .vault-text-secondary {
+    color: #94a3b8 !important;
+}
+
+/* Dynamic Accent Link Colors */
+.vault-link-green {
+    color: #059669;
+    font-weight: 700;
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+.vault-link-green:hover {
+    text-decoration: underline;
+}
+
+[data-theme="dark"] .vault-link-green {
+    color: var(--primary-color, #ccff00) !important; /* Dynamic neon highlight in dark mode */
+}
+
+/* Vault Icons */
+.vault-icon {
+    background-color: var(--card-bg) !important;
+    border: 1px solid var(--border-color) !important;
+    padding: 6px;
+    border-radius: 8px;
+    display: inline-block;
+    object-fit: contain;
+}
+
+/* Dynamic Badges */
+.vault-badge {
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 12px;
+    background-color: rgba(16, 185, 129, 0.12);
+    color: #047857;
+    border: 1px solid #10b981;
+}
+
+[data-theme="dark"] .vault-badge {
+    background-color: rgba(204, 255, 0, 0.12) !important;
+    color: var(--primary-color, #ccff00) !important;
+    border: 1px solid var(--primary-color, #ccff00) !important;
+}

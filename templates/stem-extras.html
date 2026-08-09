@@ -3,394 +3,309 @@
 {% block title %}STEM Extras & Resources - STEMNet Greece{% endblock %}
 
 {% block content %}
-<style>
-    :root {
-        --vault-card-bg: #ffffff;
-        --vault-card-border: #e2e8f0;
-        --vault-text-primary: #0f172a;
-        --vault-text-secondary: #475569;
-        --vault-accent-green: #059669;
-        --vault-icon-bg: #e2e8f0;
-        --vault-badge-bg: rgba(16, 185, 129, 0.12);
-        --vault-badge-border: #10b981;
-        --vault-badge-text: #047857;
-    }
-
-    @media (prefers-color-scheme: dark) {
-        :root {
-            --vault-card-bg: #0f172a;
-            --vault-card-border: #1e293b;
-            --vault-text-primary: #ffffff;
-            --vault-text-secondary: #94a3b8;
-            --vault-accent-green: #00ff88;
-            --vault-icon-bg: #0f172a;
-            --vault-badge-bg: rgba(0, 255, 136, 0.1);
-            --vault-badge-border: #00ff88;
-            --vault-badge-text: #00ff88;
-        }
-    }
-
-    [data-theme="dark"], body.dark, body.dark-mode, .dark {
-        --vault-card-bg: #0f172a;
-        --vault-card-border: #1e293b;
-        --vault-text-primary: #ffffff;
-        --vault-text-secondary: #94a3b8;
-        --vault-accent-green: #00ff88;
-        --vault-icon-bg: #0f172a;
-        --vault-badge-bg: rgba(0, 255, 136, 0.1);
-        --vault-badge-border: #00ff88;
-        --vault-badge-text: #00ff88;
-    }
-
-    [data-theme="light"], body.light, body.light-mode, .light {
-        --vault-card-bg: #ffffff;
-        --vault-card-border: #e2e8f0;
-        --vault-text-primary: #0f172a;
-        --vault-text-secondary: #475569;
-        --vault-accent-green: #059669;
-        --vault-icon-bg: #e2e8f0;
-        --vault-badge-bg: rgba(16, 185, 129, 0.12);
-        --vault-badge-border: #10b981;
-        --vault-badge-text: #047857;
-    }
-
-    .vault-card {
-        background: var(--vault-card-bg);
-        border: 1px solid var(--vault-card-border);
-        color: var(--vault-text-primary);
-        text-decoration: none;
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-        transition: border-color 0.2s ease;
-    }
-
-    .vault-text-primary {
-        color: var(--vault-text-primary) !important;
-    }
-
-    .vault-text-secondary {
-        color: var(--vault-text-secondary) !important;
-    }
-
-    .vault-link-green {
-        color: var(--vault-accent-green) !important;
-        font-weight: bold;
-    }
-
-    .vault-icon {
-        background: var(--vault-icon-bg);
-        border: 1px solid var(--vault-card-border);
-        padding: 6px;
-        border-radius: 8px;
-        display: inline-block;
-        object-fit: contain;
-    }
-</style>
-
-<div style="width: 100%; max-width: 1100px; margin: 0 auto; box-sizing: border-box; padding: 0 0.5rem;">
+<div class="vault-container">
 
     <!-- Header Banner -->
-    <div class="card vault-card" style="margin-bottom: 2rem; padding: 2rem 1.5rem; text-align: center; border-left: 4px solid var(--vault-accent-green);">
-        <h1 class="vault-text-primary" style="font-size: clamp(1.6rem, 4vw, 2.3rem); margin: 0 0 0.5rem 0; word-break: break-word;">
+    <div class="card vault-card vault-banner">
+        <h1 class="vault-text-primary">
             STEMNet Greece Student Extra Vault
         </h1>
-        <p class="vault-text-secondary" style="font-size: 1rem; max-width: 720px; margin: 0 auto; line-height: 1.5;">
+        <p class="vault-text-secondary">
             A hand-picked directory of free software developer benefits, interactive science simulators, competitive coding platforms, open textbooks, and Greek academic resources.
         </p>
     </div>
 
     <!-- 1. GREEK ACADEMIC PORTALS & OPEN TEXTBOOKS -->
-    <h2 class="vault-text-primary" style="font-size: 1.3rem; margin-bottom: 1rem;">
+    <h2 class="vault-text-primary">
         Greek Academic Portals & Open Resources
     </h2>
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; margin-bottom: 2.5rem;">
+    <div class="vault-grid">
         
         <a href="https://repository.kallipos.gr" target="_blank" rel="noopener" class="card vault-card">
             <div>
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                    <strong class="vault-text-primary" style="font-size: 1.05rem;">Kallipos Open Textbooks</strong>
-                    <span style="font-size: 0.75rem; background: var(--vault-badge-bg); color: var(--vault-badge-text); border: 1px solid var(--vault-badge-border); padding: 2px 8px; border-radius: 12px; font-weight: 600;">100% Free</span>
+                <div class="vault-card-header">
+                    <strong class="vault-text-primary">Kallipos Open Textbooks</strong>
+                    <span class="vault-badge">100% Free</span>
                 </div>
-                <p class="vault-text-secondary" style="font-size: 0.88rem; margin: 0;">Official Greek academic digital repository with free textbooks for Greek university engineering, math, and physics courses.</p>
+                <p class="vault-text-secondary">Official Greek academic digital repository with free textbooks for Greek university engineering, math, and physics courses.</p>
             </div>
-            <span class="vault-link-green" style="font-size: 0.85rem; margin-top: 1rem; display: inline-block;">Browse Library ↗</span>
+            <span class="vault-link-green">Browse Library ↗</span>
         </a>
 
         <a href="https://mathesis.cup.gr" target="_blank" rel="noopener" class="card vault-card">
             <div>
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                    <strong class="vault-text-primary" style="font-size: 1.05rem;">Mathesis (Crete Univ. Press)</strong>
-                    <span style="font-size: 0.75rem; background: var(--vault-badge-bg); color: var(--vault-badge-text); border: 1px solid var(--vault-badge-border); padding: 2px 8px; border-radius: 12px; font-weight: 600;">Free Online Courses</span>
+                <div class="vault-card-header">
+                    <strong class="vault-text-primary">Mathesis (Crete Univ. Press)</strong>
+                    <span class="vault-badge">Free Online Courses</span>
                 </div>
-                <p class="vault-text-secondary" style="font-size: 0.88rem; margin: 0;">High-level Greek online university courses on quantum mechanics, computer programming, differential equations, and history of science.</p>
+                <p class="vault-text-secondary">High-level Greek online university courses on quantum mechanics, computer programming, differential equations, and history of science.</p>
             </div>
-            <span class="vault-link-green" style="font-size: 0.85rem; margin-top: 1rem; display: inline-block;">Start Course ↗</span>
+            <span class="vault-link-green">Start Course ↗</span>
         </a>
 
         <a href="https://opencourses.gr" target="_blank" rel="noopener" class="card vault-card">
             <div>
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                    <strong class="vault-text-primary" style="font-size: 1.05rem;">OpenCourses Greece</strong>
-                    <span style="font-size: 0.75rem; background: rgba(56, 189, 248, 0.12); color: #0284c7; border: 1px solid #0284c7; padding: 2px 8px; border-radius: 12px; font-weight: 600;">Greek Higher Ed</span>
+                <div class="vault-card-header">
+                    <strong class="vault-text-primary">OpenCourses Greece</strong>
+                    <span class="vault-badge">Greek Higher Ed</span>
                 </div>
-                <p class="vault-text-secondary" style="font-size: 0.88rem; margin: 0;">Central portal providing open courseware, syllabi, lecture slides, and notes from universities across Greece (NTUA, AUTH, UoA, UPatras).</p>
+                <p class="vault-text-secondary">Central portal providing open courseware, syllabi, lecture slides, and notes from universities across Greece (NTUA, AUTH, UoA, UPatras).</p>
             </div>
-            <span class="vault-link-green" style="font-size: 0.85rem; margin-top: 1rem; display: inline-block;">Explore Subjects ↗</span>
+            <span class="vault-link-green">Explore Subjects ↗</span>
         </a>
 
         <a href="https://www.vodafonegenerationnext.gr/" target="_blank" rel="noopener" class="card vault-card">
             <div>
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                    <strong class="vault-text-primary" style="font-size: 1.05rem;">Vodafone Generation Next</strong>
-                    <span style="font-size: 0.75rem; background: rgba(248, 113, 113, 0.12); color: #dc2626; border: 1px solid #dc2626; padding: 2px 8px; border-radius: 12px; font-weight: 600;">Greece STEM</span>
+                <div class="vault-card-header">
+                    <strong class="vault-text-primary">Vodafone Generation Next</strong>
+                    <span class="vault-badge">Greece STEM</span>
                 </div>
-                <p class="vault-text-secondary" style="font-size: 0.88rem; margin: 0;">Greece's flagship youth technology program offering free online labs in IoT, robotics, 3D printing, and annual student competitions.</p>
+                <p class="vault-text-secondary">Greece's flagship youth technology program offering free online labs in IoT, robotics, 3D printing, and annual student competitions.</p>
             </div>
-            <span class="vault-link-green" style="font-size: 0.85rem; margin-top: 1rem; display: inline-block;">Join Platform ↗</span>
+            <span class="vault-link-green">Join Platform ↗</span>
         </a>
 
     </div>
 
     <!-- 2. COMPUTER SCIENCE, WEB & AI -->
-    <h2 class="vault-text-primary" style="font-size: 1.3rem; margin-bottom: 1rem; display: flex; align-items: center; gap: 12px;">
+    <h2 class="vault-text-primary vault-section-title">
         <img src="{{ url_for('static', filename='laptop.svg') }}" width="36" height="36" alt="Laptop" class="vault-icon">
         Computer Science, Web Dev & AI
     </h2>
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; margin-bottom: 2.5rem;">
+    <div class="vault-grid">
         
         <a href="https://education.github.com/pack" target="_blank" rel="noopener" class="card vault-card">
             <div>
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                    <strong class="vault-text-primary" style="font-size: 1.05rem;">GitHub Student Developer Pack</strong>
-                    <span style="font-size: 0.75rem; background: rgba(251, 191, 36, 0.15); color: #d97706; border: 1px solid #d97706; padding: 2px 8px; border-radius: 12px; font-weight: 600;">Must Have</span>
+                <div class="vault-card-header">
+                    <strong class="vault-text-primary">GitHub Student Developer Pack</strong>
+                    <span class="vault-badge">Must Have</span>
                 </div>
-                <p class="vault-text-secondary" style="font-size: 0.88rem; margin: 0;">Free GitHub Copilot, domains, Azure/AWS cloud credits, JetBrains IDE licenses, and premium developer tools for students.</p>
+                <p class="vault-text-secondary">Free GitHub Copilot, domains, Azure/AWS cloud credits, JetBrains IDE licenses, and premium developer tools for students.</p>
             </div>
-            <span class="vault-link-green" style="font-size: 0.85rem; margin-top: 1rem; display: inline-block;">Claim Benefits ↗</span>
+            <span class="vault-link-green">Claim Benefits ↗</span>
         </a>
 
         <a href="https://cs50.harvard.edu/" target="_blank" rel="noopener" class="card vault-card">
             <div>
-                <strong class="vault-text-primary" style="font-size: 1.05rem; display: block; margin-bottom: 0.5rem;">Harvard CS50</strong>
-                <p class="vault-text-secondary" style="font-size: 0.88rem; margin: 0;">Harvard's legendary introduction to computer science, covering C, Python, SQL, HTML/CSS, and foundational algorithms.</p>
+                <strong class="vault-text-primary vault-title-block">Harvard CS50</strong>
+                <p class="vault-text-secondary">Harvard's legendary introduction to computer science, covering C, Python, SQL, HTML/CSS, and foundational algorithms.</p>
             </div>
-            <span class="vault-link-green" style="font-size: 0.85rem; margin-top: 1rem; display: inline-block;">Access Course ↗</span>
+            <span class="vault-link-green">Access Course ↗</span>
         </a>
 
         <a href="https://roadmap.sh" target="_blank" rel="noopener" class="card vault-card">
             <div>
-                <strong class="vault-text-primary" style="font-size: 1.05rem; display: block; margin-bottom: 0.5rem;">Roadmap.sh</strong>
-                <p class="vault-text-secondary" style="font-size: 0.88rem; margin: 0;">Interactive, community-curated visual roadmaps detailing exact learning paths for Frontend, Backend, DevOps, AI, and Cybersecurity.</p>
+                <strong class="vault-text-primary vault-title-block">Roadmap.sh</strong>
+                <p class="vault-text-secondary">Interactive, community-curated visual roadmaps detailing exact learning paths for Frontend, Backend, DevOps, AI, and Cybersecurity.</p>
             </div>
-            <span class="vault-link-green" style="font-size: 0.85rem; margin-top: 1rem; display: inline-block;">Explore Roadmaps ↗</span>
+            <span class="vault-link-green">Explore Roadmaps ↗</span>
         </a>
 
         <a href="https://www.theodinproject.com/dashboard" target="_blank" rel="noopener" class="card vault-card">
             <div>
-                <strong class="vault-text-primary" style="font-size: 1.05rem; display: block; margin-bottom: 0.5rem;">The Odin Project</strong>
-                <p class="vault-text-secondary" style="font-size: 0.88rem; margin: 0;">A 100% free open-source full-stack web development curriculum designed to get you hired building real projects with JavaScript/Node & Ruby.</p>
+                <strong class="vault-text-primary vault-title-block">The Odin Project</strong>
+                <p class="vault-text-secondary">A 100% free open-source full-stack web development curriculum designed to get you hired building real projects with JavaScript/Node & Ruby.</p>
             </div>
-            <span class="vault-link-green" style="font-size: 0.85rem; margin-top: 1rem; display: inline-block;">Start Learning ↗</span>
+            <span class="vault-link-green">Start Learning ↗</span>
         </a>
 
         <a href="https://cs229.stanford.edu" target="_blank" rel="noopener" class="card vault-card">
             <div>
-                <strong class="vault-text-primary" style="font-size: 1.05rem; display: block; margin-bottom: 0.5rem;">Stanford CS229: Machine Learning</strong>
-                <p class="vault-text-secondary" style="font-size: 0.88rem; margin: 0;">Complete open course materials, math prerequisites, and lecture notes for Andrew Ng's world-famous Machine Learning course.</p>
+                <strong class="vault-text-primary vault-title-block">Stanford CS229: Machine Learning</strong>
+                <p class="vault-text-secondary">Complete open course materials, math prerequisites, and lecture notes for Andrew Ng's world-famous Machine Learning course.</p>
             </div>
-            <span class="vault-link-green" style="font-size: 0.85rem; margin-top: 1rem; display: inline-block;">View Materials ↗</span>
+            <span class="vault-link-green">View Materials ↗</span>
         </a>
 
         <a href="https://leetcode.com" target="_blank" rel="noopener" class="card vault-card">
             <div>
-                <strong class="vault-text-primary" style="font-size: 1.05rem; display: block; margin-bottom: 0.5rem;">LeetCode & Codeforces</strong>
-                <p class="vault-text-secondary" style="font-size: 0.88rem; margin: 0;">Practice data structures and algorithms, compete in weekly coding contests, and prepare for tech software engineering interviews.</p>
+                <strong class="vault-text-primary vault-title-block">LeetCode & Codeforces</strong>
+                <p class="vault-text-secondary">Practice data structures and algorithms, compete in weekly coding contests, and prepare for tech software engineering interviews.</p>
             </div>
-            <span class="vault-link-green" style="font-size: 0.85rem; margin-top: 1rem; display: inline-block;">Practice Problems ↗</span>
+            <span class="vault-link-green">Practice Problems ↗</span>
         </a>
 
     </div>
 
     <!-- 3. MATH, PHYSICS & ENGINEERING TOOLS -->
-    <h2 class="vault-text-primary" style="font-size: 1.3rem; margin-bottom: 1rem; display: flex; align-items: center; gap: 12px;">
+    <h2 class="vault-text-primary vault-section-title">
         <img src="{{ url_for('static', filename='laptop.svg') }}" width="36" height="36" alt="STEM" class="vault-icon">
         Math, Physics & Productivity Tools
     </h2>
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; margin-bottom: 2.5rem;">
+    <div class="vault-grid">
         
         <a href="https://www.overleaf.com" target="_blank" rel="noopener" class="card vault-card">
             <div>
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                    <strong class="vault-text-primary" style="font-size: 1.05rem;">Overleaf LaTeX Editor</strong>
-                    <span style="font-size: 0.75rem; background: var(--vault-badge-bg); color: var(--vault-badge-text); border: 1px solid var(--vault-badge-border); padding: 2px 8px; border-radius: 12px; font-weight: 600;">Free Editor</span>
+                <div class="vault-card-header">
+                    <strong class="vault-text-primary">Overleaf LaTeX Editor</strong>
+                    <span class="vault-badge">Free Editor</span>
                 </div>
-                <p class="vault-text-secondary" style="font-size: 0.88rem; margin: 0;">Online collaborative LaTeX editor essential for writing university lab reports, math documents, and thesis papers.</p>
+                <p class="vault-text-secondary">Online collaborative LaTeX editor essential for writing university lab reports, math documents, and thesis papers.</p>
             </div>
-            <span class="vault-link-green" style="font-size: 0.85rem; margin-top: 1rem; display: inline-block;">Open Overleaf ↗</span>
+            <span class="vault-link-green">Open Overleaf ↗</span>
         </a>
 
         <a href="https://www.khanacademy.org" target="_blank" rel="noopener" class="card vault-card">
             <div>
-                <strong class="vault-text-primary" style="font-size: 1.05rem; display: block; margin-bottom: 0.5rem;">Khan Academy</strong>
-                <p class="vault-text-secondary" style="font-size: 0.88rem; margin: 0;">Free tutorials and self-paced exercises covering High School and University Calculus, Linear Algebra, and Physics.</p>
+                <strong class="vault-text-primary vault-title-block">Khan Academy</strong>
+                <p class="vault-text-secondary">Free tutorials and self-paced exercises covering High School and University Calculus, Linear Algebra, and Physics.</p>
             </div>
-            <span class="vault-link-green" style="font-size: 0.85rem; margin-top: 1rem; display: inline-block;">Open Academy ↗</span>
+            <span class="vault-link-green">Open Academy ↗</span>
         </a>
 
         <a href="https://www.physicsonline.com" target="_blank" rel="noopener" class="card vault-card">
             <div>
-                <strong class="vault-text-primary" style="font-size: 1.05rem; display: block; margin-bottom: 0.5rem;">Physics Online</strong>
-                <p class="vault-text-secondary" style="font-size: 0.88rem; margin: 0;">High-quality video tutorials, practical experiment guides, and step-by-step problem breakdowns for physics topics.</p>
+                <strong class="vault-text-primary vault-title-block">Physics Online</strong>
+                <p class="vault-text-secondary">High-quality video tutorials, practical experiment guides, and step-by-step problem breakdowns for physics topics.</p>
             </div>
-            <span class="vault-link-green" style="font-size: 0.85rem; margin-top: 1rem; display: inline-block;">Watch Tutorials ↗</span>
+            <span class="vault-link-green">Watch Tutorials ↗</span>
         </a>
 
         <a href="https://physicsstudytown.com" target="_blank" rel="noopener" class="card vault-card">
             <div>
-                <strong class="vault-text-primary" style="font-size: 1.05rem; display: block; margin-bottom: 0.5rem;">Physics Study Town</strong>
-                <p class="vault-text-secondary" style="font-size: 0.88rem; margin: 0;">A dedicated revision portal with formula sheets, worked mechanics examples, and topic notes.</p>
+                <strong class="vault-text-primary vault-title-block">Physics Study Town</strong>
+                <p class="vault-text-secondary">A dedicated revision portal with formula sheets, worked mechanics examples, and topic notes.</p>
             </div>
-            <span class="vault-link-green" style="font-size: 0.85rem; margin-top: 1rem; display: inline-block;">Study Notes ↗</span>
+            <span class="vault-link-green">Study Notes ↗</span>
         </a>
 
         <a href="https://www.onmaths.com" target="_blank" rel="noopener" class="card vault-card">
             <div>
-                <strong class="vault-text-primary" style="font-size: 1.05rem; display: block; margin-bottom: 0.5rem;">OnMaths</strong>
-                <p class="vault-text-secondary" style="font-size: 0.88rem; margin: 0;">Interactive, automatically graded math practice papers and topic-focused revision drills.</p>
+                <strong class="vault-text-primary vault-title-block">OnMaths</strong>
+                <p class="vault-text-secondary">Interactive, automatically graded math practice papers and topic-focused revision drills.</p>
             </div>
-            <span class="vault-link-green" style="font-size: 0.85rem; margin-top: 1rem; display: inline-block;">Practice Math ↗</span>
+            <span class="vault-link-green">Practice Math ↗</span>
         </a>
 
         <a href="https://www.geogebra.org" target="_blank" rel="noopener" class="card vault-card">
             <div>
-                <strong class="vault-text-primary" style="font-size: 1.05rem; display: block; margin-bottom: 0.5rem;">GeoGebra & Desmos</strong>
-                <p class="vault-text-secondary" style="font-size: 0.88rem; margin: 0;">Free interactive 2D and 3D graphing calculators for geometry, calculus functions, vectors, and algebra.</p>
+                <strong class="vault-text-primary vault-title-block">GeoGebra & Desmos</strong>
+                <p class="vault-text-secondary">Free interactive 2D and 3D graphing calculators for geometry, calculus functions, vectors, and algebra.</p>
             </div>
-            <span class="vault-link-green" style="font-size: 0.85rem; margin-top: 1rem; display: inline-block;">Launch Calculators ↗</span>
+            <span class="vault-link-green">Launch Calculators ↗</span>
         </a>
 
     </div>
 
     <!-- 4. INTERNATIONAL COMPETITIONS & OLYMPIADS -->
-    <h2 class="vault-text-primary" style="font-size: 1.3rem; margin-bottom: 1rem; display: flex; align-items: center; gap: 12px;">
+    <h2 class="vault-text-primary vault-section-title">
         <img src="{{ url_for('static', filename='achievement.svg') }}" width="36" height="36" alt="Achievement" class="vault-icon">
         Competitions, Olympiads & Fairs
     </h2>
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; margin-bottom: 2.5rem;">
+    <div class="vault-grid">
         
         <a href="https://ioinformatics.org" target="_blank" rel="noopener" class="card vault-card">
             <div>
-                <strong class="vault-text-primary" style="font-size: 1.05rem; display: block; margin-bottom: 0.5rem;">International Olympiad in Informatics (IOI)</strong>
-                <p class="vault-text-secondary" style="font-size: 0.88rem; margin: 0;">The top global computer science olympiad. Access archive tasks, solutions, and qualification criteria.</p>
+                <strong class="vault-text-primary vault-title-block">International Olympiad in Informatics (IOI)</strong>
+                <p class="vault-text-secondary">The top global computer science olympiad. Access archive tasks, solutions, and qualification criteria.</p>
             </div>
-            <span class="vault-link-green" style="font-size: 0.85rem; margin-top: 1rem; display: inline-block;">IOI Portal ↗</span>
+            <span class="vault-link-green">IOI Portal ↗</span>
         </a>
 
         <a href="https://icscompetition.org/en/#qualification" target="_blank" rel="noopener" class="card vault-card">
             <div>
-                <strong class="vault-text-primary" style="font-size: 1.05rem; display: block; margin-bottom: 0.5rem;">Int'l Computer Science Competition</strong>
-                <p class="vault-text-secondary" style="font-size: 0.88rem; margin: 0;">Global contest testing computational thinking, logic, programming speed, and creative problem solving.</p>
+                <strong class="vault-text-primary vault-title-block">Int'l Computer Science Competition</strong>
+                <p class="vault-text-secondary">Global contest testing computational thinking, logic, programming speed, and creative problem solving.</p>
             </div>
-            <span class="vault-link-green" style="font-size: 0.85rem; margin-top: 1rem; display: inline-block;">View Qualifications ↗</span>
+            <span class="vault-link-green">View Qualifications ↗</span>
         </a>
 
         <a href="https://www.firstinspires.org" target="_blank" rel="noopener" class="card vault-card">
             <div>
-                <strong class="vault-text-primary" style="font-size: 1.05rem; display: block; margin-bottom: 0.5rem;">FIRST Robotics Competition</strong>
-                <p class="vault-text-secondary" style="font-size: 0.88rem; margin: 0;">Leading global youth robotics initiative combining hardware engineering, CAD, and team competition.</p>
+                <strong class="vault-text-primary vault-title-block">FIRST Robotics Competition</strong>
+                <p class="vault-text-secondary">Leading global youth robotics initiative combining hardware engineering, CAD, and team competition.</p>
             </div>
-            <span class="vault-link-green" style="font-size: 0.85rem; margin-top: 1rem; display: inline-block;">Explore FIRST ↗</span>
+            <span class="vault-link-green">Explore FIRST ↗</span>
         </a>
 
         <a href="https://isef.net" target="_blank" rel="noopener" class="card vault-card">
             <div>
-                <strong class="vault-text-primary" style="font-size: 1.05rem; display: block; margin-bottom: 0.5rem;">Regeneron ISEF</strong>
-                <p class="vault-text-secondary" style="font-size: 0.88rem; margin: 0;">The premier international science research competition for high school innovators and young scientists.</p>
+                <strong class="vault-text-primary vault-title-block">Regeneron ISEF</strong>
+                <p class="vault-text-secondary">The premier international science research competition for high school innovators and young scientists.</p>
             </div>
-            <span class="vault-link-green" style="font-size: 0.85rem; margin-top: 1rem; display: inline-block;">Discover ISEF ↗</span>
+            <span class="vault-link-green">Discover ISEF ↗</span>
         </a>
 
     </div>
 
     <!-- 5. CITIZEN SCIENCE & OPEN RESEARCH PORTALS -->
-    <h2 class="vault-text-primary" style="font-size: 1.3rem; margin-bottom: 1rem; display: flex; align-items: center; gap: 12px;">
+    <h2 class="vault-text-primary vault-section-title">
         <img src="{{ url_for('static', filename='laptop.svg') }}" width="36" height="36" alt="Research" class="vault-icon">
         Open Research & Citizen Science
     </h2>
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; margin-bottom: 2.5rem;">
+    <div class="vault-grid">
         
         <a href="https://stemgateway.nasa.gov/s/course-offering/a0BSJ0000049icD/open-science-essentials" target="_blank" rel="noopener" class="card vault-card">
             <div>
-                <strong class="vault-text-primary" style="font-size: 1.05rem; display: block; margin-bottom: 0.5rem;">NASA Open Science Essentials</strong>
-                <p class="vault-text-secondary" style="font-size: 0.88rem; margin: 0;">Official NASA training course covering accessible scientific research methodologies and open-source space data.</p>
+                <strong class="vault-text-primary vault-title-block">NASA Open Science Essentials</strong>
+                <p class="vault-text-secondary">Official NASA training course covering accessible scientific research methodologies and open-source space data.</p>
             </div>
-            <span class="vault-link-green" style="font-size: 0.85rem; margin-top: 1rem; display: inline-block;">Enroll Free ↗</span>
+            <span class="vault-link-green">Enroll Free ↗</span>
         </a>
 
         <a href="https://www.zooniverse.org/projects" target="_blank" rel="noopener" class="card vault-card">
             <div>
-                <strong class="vault-text-primary" style="font-size: 1.05rem; display: block; margin-bottom: 0.5rem;">Zooniverse Projects</strong>
-                <p class="vault-text-secondary" style="font-size: 0.88rem; margin: 0;">Assist university researchers worldwide by analyzing astrophysics images, biological data, and climate logs.</p>
+                <strong class="vault-text-primary vault-title-block">Zooniverse Projects</strong>
+                <p class="vault-text-secondary">Assist university researchers worldwide by analyzing astrophysics images, biological data, and climate logs.</p>
             </div>
-            <span class="vault-link-green" style="font-size: 0.85rem; margin-top: 1rem; display: inline-block;">Browse Projects ↗</span>
+            <span class="vault-link-green">Browse Projects ↗</span>
         </a>
 
         <a href="https://scistarter.org" target="_blank" rel="noopener" class="card vault-card">
             <div>
-                <strong class="vault-text-primary" style="font-size: 1.05rem; display: block; margin-bottom: 0.5rem;">SciStarter</strong>
-                <p class="vault-text-secondary" style="font-size: 0.88rem; margin: 0;">A searchable database connecting students to thousands of active citizen science research projects.</p>
+                <strong class="vault-text-primary vault-title-block">SciStarter</strong>
+                <p class="vault-text-secondary">A searchable database connecting students to thousands of active citizen science research projects.</p>
             </div>
-            <span class="vault-link-green" style="font-size: 0.85rem; margin-top: 1rem; display: inline-block;">Find Projects ↗</span>
+            <span class="vault-link-green">Find Projects ↗</span>
         </a>
 
         <a href="https://bwsi.mit.edu/about/mit-additional-resources/" target="_blank" rel="noopener" class="card vault-card">
             <div>
-                <strong class="vault-text-primary" style="font-size: 1.05rem; display: block; margin-bottom: 0.5rem;">MIT Beaver Works (BWSI)</strong>
-                <p class="vault-text-secondary" style="font-size: 0.88rem; margin: 0;">Free open courseware from MIT on autonomous cognitive mini-racecars, cybersecurity, and satellite engineering.</p>
+                <strong class="vault-text-primary vault-title-block">MIT Beaver Works (BWSI)</strong>
+                <p class="vault-text-secondary">Free open courseware from MIT on autonomous cognitive mini-racecars, cybersecurity, and satellite engineering.</p>
             </div>
-            <span class="vault-link-green" style="font-size: 0.85rem; margin-top: 1rem; display: inline-block;">Access MIT Material ↗</span>
+            <span class="vault-link-green">Access MIT Material ↗</span>
         </a>
 
     </div>
 
     <!-- 6. LESSON VAULTS, WORKSHEETS & GLOBAL ORGANIZATIONS -->
-    <h2 class="vault-text-primary" style="font-size: 1.3rem; margin-bottom: 1rem; display: flex; align-items: center; gap: 12px;">
+    <h2 class="vault-text-primary vault-section-title">
         <img src="{{ url_for('static', filename='book.svg') }}" width="36" height="36" alt="Book" class="vault-icon">
         Lesson Vaults, Worksheets & Organizations
     </h2>
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+    <div class="vault-grid">
         
         <a href="https://www.stem.org.uk/resources" target="_blank" rel="noopener" class="card vault-card">
             <div>
-                <strong class="vault-text-primary" style="font-size: 1.05rem; display: block; margin-bottom: 0.5rem;">STEM Learning UK</strong>
-                <p class="vault-text-secondary" style="font-size: 0.88rem; margin: 0;">An extensive repository of free practical experiment activity guides, worksheets, and interactive science tools.</p>
+                <strong class="vault-text-primary vault-title-block">STEM Learning UK</strong>
+                <p class="vault-text-secondary">An extensive repository of free practical experiment activity guides, worksheets, and interactive science tools.</p>
             </div>
-            <span class="vault-link-green" style="font-size: 0.85rem; margin-top: 1rem; display: inline-block;">Open Resource Vault ↗</span>
+            <span class="vault-link-green">Open Resource Vault ↗</span>
         </a>
 
         <a href="https://stemeducationworks.com/free-stem-lessons-worksheets/" target="_blank" rel="noopener" class="card vault-card">
             <div>
-                <strong class="vault-text-primary" style="font-size: 1.05rem; display: block; margin-bottom: 0.5rem;">STEM Education Works</strong>
-                <p class="vault-text-secondary" style="font-size: 0.88rem; margin: 0;">Downloadable lesson plans, engineering challenges, and hands-on 3D printing project blueprints.</p>
+                <strong class="vault-text-primary vault-title-block">STEM Education Works</strong>
+                <p class="vault-text-secondary">Downloadable lesson plans, engineering challenges, and hands-on 3D printing project blueprints.</p>
             </div>
-            <span class="vault-link-green" style="font-size: 0.85rem; margin-top: 1rem; display: inline-block;">Get Worksheets ↗</span>
+            <span class="vault-link-green">Get Worksheets ↗</span>
         </a>
 
         <a href="https://nycstem.in/free-stem-education-resources/" target="_blank" rel="noopener" class="card vault-card">
             <div>
-                <strong class="vault-text-primary" style="font-size: 1.05rem; display: block; margin-bottom: 0.5rem;">NYC STEM Hub</strong>
-                <p class="vault-text-secondary" style="font-size: 0.88rem; margin: 0;">Curated catalog of free virtual field trips, coding platforms, and hands-on laboratory exercises.</p>
+                <strong class="vault-text-primary vault-title-block">NYC STEM Hub</strong>
+                <p class="vault-text-secondary">Curated catalog of free virtual field trips, coding platforms, and hands-on laboratory exercises.</p>
             </div>
-            <span class="vault-link-green" style="font-size: 0.85rem; margin-top: 1rem; display: inline-block;">Open Hub ↗</span>
+            <span class="vault-link-green">Open Hub ↗</span>
         </a>
 
         <a href="https://www.steme.org" target="_blank" rel="noopener" class="card vault-card">
             <div>
-                <strong class="vault-text-primary" style="font-size: 1.05rem; display: block; margin-bottom: 0.5rem;">STEM E Organization</strong>
-                <p class="vault-text-secondary" style="font-size: 0.88rem; margin: 0;">Student-led organization running free technical workshops, hackathons, and peer mentorship programs.</p>
+                <strong class="vault-text-primary vault-title-block">STEM E Organization</strong>
+                <p class="vault-text-secondary">Student-led organization running free technical workshops, hackathons, and peer mentorship programs.</p>
             </div>
-            <span class="vault-link-green" style="font-size: 0.85rem; margin-top: 1rem; display: inline-block;">Visit STEM E ↗</span>
+            <span class="vault-link-green">Visit STEM E ↗</span>
         </a>
 
     </div>
