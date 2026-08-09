@@ -618,6 +618,7 @@ def create_post():
 
     db = get_db()
     parent_id = request.args.get("reply_to", type=int)
+    group_id = request.args.get("group_id", type=int) or request.form.get("group_id", type=int)
     parent_post = None
 
     if parent_id:
@@ -650,7 +651,7 @@ def create_post():
 
         if not content:
             flash("Post content cannot be empty.", "danger")
-            return render_template("create.html", parent_post=parent_post)
+            return render_template("create.html", parent_post=parent_post, group_id=group_id)
 
         # Handle file/media upload to Supabase Storage
         file = request.files.get("media")
@@ -661,14 +662,12 @@ def create_post():
                 file_bytes = file.read()
                 
                 try:
-                    # Upload directly to the Supabase Storage bucket named 'uploads'
                     supabase.storage.from_("uploads").upload(
                         path=unique_filename,
                         file=file_bytes,
                         file_options={"content-type": file.content_type, "upsert": "false"}
                     )
                     
-                    # Fetch the permanent public URL
                     public_url_response = supabase.storage.from_("uploads").get_public_url(unique_filename)
                     
                     if isinstance(public_url_response, dict):
@@ -678,18 +677,18 @@ def create_post():
                 except Exception as e:
                     app.logger.error(f"Supabase upload error: {e}")
                     flash("Failed to upload media file to cloud storage.", "danger")
-                    return render_template("create.html", parent_post=parent_post)
+                    return render_template("create.html", parent_post=parent_post, group_id=group_id)
             else:
                 flash("Invalid file type. Allowed: images (png, jpg, gif) and short videos (mp4, webm).", "danger")
-                return render_template("create.html", parent_post=parent_post)
+                return render_template("create.html", parent_post=parent_post, group_id=group_id)
 
-        # Insert into database with event fields and cloud media URL
+        # Insert into database including group_id
         cursor = db.execute(
             """
-            INSERT INTO posts (user_id, content, media_path, github_link, category, parent_id, event_type, event_time, event_location) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO posts (user_id, content, media_path, github_link, category, parent_id, event_type, event_time, event_location, group_id) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
-            (g.user["id"], content, media_path, github_link, category, parent_id, event_type, event_time, event_location)
+            (g.user["id"], content, media_path, github_link, category, parent_id, event_type, event_time, event_location, group_id if group_id else None)
         )
         post_id = cursor.lastrowid
 
@@ -711,9 +710,13 @@ def create_post():
 
         db.commit()
         flash("Post published successfully!", "success")
+        
+        # Redirect back to the group if posted inside one, otherwise index
+        if group_id:
+            return redirect(url_for("group_detail", group_id=group_id))
         return redirect(url_for("index"))
 
-    return render_template("create.html", parent_post=parent_post)
+    return render_template("create.html", parent_post=parent_post, group_id=group_id)
 
 from flask import jsonify
 
