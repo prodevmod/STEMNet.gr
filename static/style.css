@@ -574,3 +574,90 @@ nav a {
     font-weight: 400;
     font-style: normal;
 }
+/* Base Light Theme */
+:root, [data-theme="light"] {
+    --bg-color: #f8fafc;
+    --text-color: #334155;
+    --border-color: #e2e8f0;
+    --card-bg: #ffffff;
+    --btn-hover: #e2e8f0;
+}
+
+/* True Black Dark Theme */
+[data-theme="dark"] {
+    --bg-color: #000000;
+    --text-color: #f8fafc;
+    --border-color: #333333;
+    --card-bg: #121212;
+    --btn-hover: #1f2937;
+}
+
+/* Apply variables to the body */
+body {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Ensure cards adapt to the theme */
+.card, .post-card, .category-pill {
+    background-color: var(--card-bg) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-color) !important;
+}
+
+/* Classical Coherent Toggle Button */
+.theme-toggle-btn {
+    background: transparent;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    padding: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: auto; /* Pushes it to the right if in a flex container */
+}
+
+.theme-toggle-btn:hover {
+    transform: translate(-2px, -2px); /* Offsets up and to the left, matching your other buttons */
+}
+
+.theme-toggle-btn:active {
+    transform: translate(0, 0);
+}
+
+.theme-toggle-btn img {
+    width: 20px;
+    height: 20px;
+    filter: var(--icon-filter, none); 
+}
+
+/* ==========================================
+   Bulletproof Global Icon Inversion (All Pages)
+   ========================================== */
+
+/* Automatically invert all UI, action, and affiliate icons based on their filename in dark mode */
+[data-theme="dark"] img[src*="comment.svg"],
+[data-theme="dark"] img[src*="like.svg"],
+[data-theme="dark"] img[src*="liked.svg"],
+[data-theme="dark"] img[src*="github"],
+[data-theme="dark"] img[src*="linkedin"],
+[data-theme="dark"] img[src*="link.svg"] {
+    filter: invert(1);
+}
+
+/* EXCEPTION: Explicitly protect user media, avatars, and the theme toggle button from being inverted */
+[data-theme="dark"] .theme-toggle-btn img,
+[data-theme="dark"] .post-media,
+[data-theme="dark"] .avatar {
+    filter: none !important;
+}
+/* Force navbar to be black and remove the bottom border in dark mode */
+[data-theme="dark"] nav,
+[data-theme="dark"] .navbar,
+[data-theme="dark"] header {
+    background-color: #000000 !important;
+    border-bottom: none !important;
+    box-shadow: none !important;
+}

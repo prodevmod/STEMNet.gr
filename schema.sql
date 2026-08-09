@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS users (
     custom_link_3 TEXT,
     custom_link_4 TEXT,
     custom_link_5 TEXT,
+    theme_preference TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, 
     bio TEXT
 );
@@ -43,6 +44,14 @@ CREATE TABLE IF NOT EXISTS likes (
     FOREIGN KEY (user_id) REFERENCES users (id),
     FOREIGN KEY (post_id) REFERENCES posts (id) ON DELETE CASCADE,
     UNIQUE(user_id, post_id)
+);
+
+CREATE TABLE IF NOT EXISTS post_images (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    post_id INTEGER NOT NULL,
+    image_path TEXT NOT NULL,
+    sort_order INTEGER DEFAULT 0,
+    FOREIGN KEY (post_id) REFERENCES posts (id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS follows (

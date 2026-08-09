@@ -42,9 +42,15 @@
                             <img src="{{ url_for('static', filename='profile.svg') }}" width="22" height="22" alt="Profile">
                         </a>
 
+
                         <a href="{{ url_for('search') }}" style="display: flex; align-items: center;" title="Search">
                             <img src="{{ url_for('static', filename='search.svg') }}" width="22" height="22" alt="Search">
                         </a>
+                        <!-- Theme Toggle Button -->
+                    <button id="theme-toggle" class="theme-toggle-btn" aria-label="Toggle Dark Mode">
+                        <!-- Defaults to dark_mode.svg (meaning "click to switch to dark mode") -->
+                        <img id="theme-icon" src="{{ url_for('static', filename='dark_mode.svg') }}" alt="Toggle Theme">
+                    </button>
                         <a href="{{ url_for('create_post') }}" class="btn btn-primary">+ New Post</a>
                         <a href="{{ url_for('logout') }}">Logout</a>
                 {% else %}
@@ -70,6 +76,9 @@
     </main>
 
     <script>
+        // ==========================================
+        // 1. Mobile Navigation Toggle
+        // ==========================================
         const menuToggle = document.getElementById('menuToggle');
         const navLinks = document.getElementById('navLinks');
 
@@ -78,8 +87,56 @@
                 navLinks.classList.toggle('active');
             });
         }
+
+        // ==========================================
+        // 2. Dark / Light Mode Toggle
+        // ==========================================
+        document.addEventListener('DOMContentLoaded', () => {
+            const toggleBtn = document.getElementById('theme-toggle');
+            const themeIcon = document.getElementById('theme-icon');
+            
+            if (toggleBtn && themeIcon) {
+                // Grab the proper static file paths using Jinja
+                const darkModeIconPath = "{{ url_for('static', filename='dark_mode.svg') }}";
+                const lightModeIconPath = "{{ url_for('static', filename='light_mode.svg') }}";
+
+                // Check local storage for a saved theme, or fallback to system preference
+                const savedTheme = localStorage.getItem('theme');
+                const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                
+                let currentTheme = 'light';
+                if (savedTheme === 'dark' || (!savedTheme && systemPrefersDark)) {
+                    currentTheme = 'dark';
+                }
+
+                // Function to apply the theme to the page and update the icon
+                function applyTheme(theme) {
+                    document.documentElement.setAttribute('data-theme', theme);
+                    localStorage.setItem('theme', theme);
+                    
+                    // If theme is dark, show the light mode SVG so they can switch back
+                    if (theme === 'dark') {
+                        themeIcon.src = lightModeIconPath;
+                    } else {
+                        themeIcon.src = darkModeIconPath;
+                    }
+                }
+
+                // Apply the initial theme on load
+                applyTheme(currentTheme);
+
+                // Listen for toggle button clicks
+                toggleBtn.addEventListener('click', () => {
+                    currentTheme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+                    applyTheme(currentTheme);
+                });
+            }
+        });
     </script>
 
+    <!-- ==========================================
+        3. Session / Tab Management 
+        ========================================== -->
     {% if g.user and not session.permanent %}
     <script>
     (function() {

@@ -28,6 +28,7 @@ from flask import (
 from werkzeug.security import check_password_hash, generate_password_hash
 from itsdangerous import URLSafeTimedSerializer
 from supabase import create_client, Client
+from flask import jsonify
 
 load_dotenv()
 
@@ -1256,6 +1257,34 @@ def inject_login_flag():
     # Pops the flag so it is only True on the very first page render after logging in
     just_logged_in = session.pop("just_logged_in", False)
     return dict(just_logged_in=just_logged_in)
+
+@app.route('/api/posts')
+def api_posts():
+    db = get_db()
+    current_user_id = g.user["id"] if g.get("user") else 0
+    category = request.args.get('category')
+    
+    query = """
+        SELECT posts.*, users.username,
+               (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id) AS like_count,
+               (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id AND likes.user_id = ?) AS user_liked
+        FROM posts 
+        JOIN users ON posts.user_id = users.id 
+        WHERE posts.category != 'Events'
+    """
+    params = [current_user_id]
+    
+    if category:
+        query += " AND posts.category = ?"
+        params.append(category)
+        
+    query += " ORDER BY posts.id DESC"
+    
+    posts = db.execute(query, params).fetchall()
+        
+    # Convert database row objects to standard Python dictionaries for JSON serialization
+    posts_list = [dict(row) for row in posts]
+    return jsonify(posts_list)
 
 if __name__ == "__main__":
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
