@@ -919,3 +919,28 @@ img[width="16"][height="16"] {
     width: 16px !important;
     height: 16px !important;
 }
+/* ==========================================
+   INLINE SVG STABILITY RULES
+   ========================================== */
+.inline-svg-wrapper {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0 !important;
+}
+
+.inline-svg-wrapper svg {
+    width: 100% !important;
+    height: 100% !important;
+    display: block !important;
+}
+
+/* Dark mode auto-invert for simple monochrome icons */
+[data-theme="dark"] .inline-svg-wrapper svg {
+    filter: invert(1);
+}
+
+/* Exclude specific multi-color branding/media icons from dark mode inversion */
+[data-theme="dark"] .no-invert svg {
+    filter: none !important;
+}

@@ -1381,6 +1381,31 @@ def group_detail(group_id):
 def stem_extras():
     return render_template('stem-extras.html')
 
+@app.template_filter('inline_svg')
+def inline_svg(filename, width=20, height=20, class_name=""):
+    """Reads an SVG file from static/ and embeds its raw XML directly into HTML."""
+    filepath = os.path.join(app.static_folder, filename)
+    
+    if not os.path.exists(filepath):
+        return Markup(f'<!-- SVG {filename} not found -->')
+        
+    try:
+        with open(filepath, 'r', encoding='utf-8') as f:
+            svg_content = f.read()
+            
+        # Wrap in a controlled span container to guarantee rigid dimensions in flexbox
+        wrapper = (
+            f'<span class="inline-svg-wrapper {class_name}" '
+            f'style="display: inline-flex; align-items: center; justify-content: center; '
+            f'width: {width}px; height: {height}px; flex-shrink: 0;">'
+            f'{svg_content}'
+            f'</span>'
+        )
+        return Markup(wrapper)
+    except Exception as e:
+        return Markup(f'<!-- Error loading {filename}: {e} -->')
+
+
 if __name__ == "__main__":
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
     app.run(host="0.0.0.0", port=80)

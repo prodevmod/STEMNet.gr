@@ -23,10 +23,10 @@
             display: none !important;
         }
         html:not([data-theme="dark"]) .theme-icon-dark {
-            display: inline-block !important;
+            display: inline-flex !important;
         }
         html[data-theme="dark"] .theme-icon-light {
-            display: inline-block !important;
+            display: inline-flex !important;
         }
     </style>
 
@@ -41,49 +41,43 @@
 
     <header>
         <nav>
-            <a href="{{ url_for('index') }}" class="brand"><strong class="rubik-spray-paint-regular">STEMNet.gr</strong></a>
-            
-            <!-- Mobile Menu Toggle Button -->
-            <button type="button" class="menu-toggle" id="menuToggle" aria-label="Toggle Menu">
-                <img src="{{ url_for('static', filename='dropdown.svg') }}" width="28" height="28" alt="Menu">
-            </button>
-
-            <!-- Navigation Links -->
             <div class="nav-links" id="navLinks">
+                <!-- Navigation icons (Inline SVGs) -->
+                <a href="{{ url_for('stem_extras') }}" title="STEM Extras">
+                    {{ 'stem.svg' | inline_svg(22, 22) }}
+                </a>
+
+                <a href="{{ url_for('groups') }}" title="Groups">
+                    {{ 'group.svg' | inline_svg(22, 22) }}
+                </a>
+
+                <a href="{{ url_for('index') }}" title="Feed">
+                    {{ 'feed.svg' | inline_svg(22, 22) }}
+                </a>
+
+                <a href="{{ url_for('events_feed') }}" title="Events">
+                    {{ 'events.svg' | inline_svg(22, 22) }}
+                </a>
+
+                <a href="{{ url_for('notifications') }}" title="Notifications">
+                    {{ ('notification_on.svg' if has_unread_notifications else 'bell.svg') | inline_svg(22, 22) }}
+                </a>
+
+                <a href="{{ url_for('profile') }}" title="Profile">
+                    {{ 'profile.svg' | inline_svg(22, 22) }}
+                </a>
+
+                <a href="{{ url_for('search') }}" title="Search">
+                    {{ 'search.svg' | inline_svg(22, 22) }}
+                </a>
+
+                <!-- Theme Toggle Button -->
+                <button id="theme-toggle" class="theme-toggle-btn" aria-label="Toggle Dark Mode">
+                    <span class="theme-icon theme-icon-dark">{{ 'dark_mode.svg' | inline_svg(22, 22) }}</span>
+                    <span class="theme-icon theme-icon-light">{{ 'light_mode.svg' | inline_svg(22, 22) }}</span>
+                </button>
+
                 {% if g.user %}
-                    <a href="{{ url_for('stem_extras') }}" style="display: flex; align-items: center;" title="STEM Extras">
-                        <img src="{{ url_for('static', filename='stem.svg') }}" width="22" height="22" alt="STEM Extras">
-                    </a>
-                    <a href="{{ url_for('groups') }}" style="display: flex; align-items: center;" title="Groups">
-                        <img src="{{ url_for('static', filename='group.svg') }}" width="22" height="22" alt="Groups">
-                    </a>
-
-                    <a href="{{ url_for('index') }}" style="display: flex; align-items: center;" title="Feed">
-                        <img src="{{ url_for('static', filename='feed.svg') }}" width="22" height="22" alt="Feed">
-                    </a>
-
-                    <a href="{{ url_for('events_feed') }}" style="display: flex; align-items: center;" title="Events">
-                        <img src="{{ url_for('static', filename='events.svg') }}" width="22" height="22" alt="Events">
-                    </a>
-
-                    <a href="{{ url_for('notifications') }}" style="display: flex; align-items: center;" title="Notifications">
-                        <img src="{{ url_for('static', filename='notification_on.svg' if has_unread_notifications else 'bell.svg') }}" width="22" height="22" alt="Notifications">
-                    </a>
-
-                    <a href="{{ url_for('profile') }}" style="display: flex; align-items: center;" title="Profile">
-                        <img src="{{ url_for('static', filename='profile.svg') }}" width="22" height="22" alt="Profile">
-                    </a>
-
-                    <a href="{{ url_for('search') }}" style="display: flex; align-items: center;" title="Search">
-                        <img src="{{ url_for('static', filename='search.svg') }}" width="22" height="22" alt="Search">
-                    </a>
-
-                    <!-- Theme Toggle Button with Both Icons Rendered -->
-                    <button id="theme-toggle" class="theme-toggle-btn" aria-label="Toggle Dark Mode">
-                        <img src="{{ url_for('static', filename='dark_mode.svg') }}" class="theme-icon theme-icon-dark" alt="Dark Mode">
-                        <img src="{{ url_for('static', filename='light_mode.svg') }}" class="theme-icon theme-icon-light" alt="Light Mode">
-                    </button>
-
                     <a href="{{ url_for('create_post') }}" class="btn btn-primary">+ New Post</a>
                     <a href="{{ url_for('logout') }}">Logout</a>
                 {% else %}

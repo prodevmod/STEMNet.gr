@@ -3,6 +3,14 @@
 {% block title %}@{{ profile_user['username'] }} - Profile{% endblock %}
 
 {% block content %}
+<!-- Styles for zero-network instantaneous like icon switching -->
+<style>
+    .like-icon-wrapper .icon-liked { display: none !important; }
+    .like-icon-wrapper .icon-unliked { display: inline-flex !important; }
+    .like-icon-wrapper.is-liked .icon-liked { display: inline-flex !important; }
+    .like-icon-wrapper.is-liked .icon-unliked { display: none !important; }
+</style>
+
 <div class="card" style="margin-bottom: 2rem; word-break: break-word; overflow-wrap: break-word;">
     <!-- Profile Picture Header Display -->
     <div style="margin-bottom: 15px;">
@@ -46,25 +54,25 @@
     <!-- Member Since -->
     <p style="color: gray; font-size: 0.85rem; margin-top: 10px;">Member since {{ profile_user['created_at'] }}</p>
 
-    <!-- Affiliate Links Layer -->
+    <!-- Affiliate Links Layer (Inlined SVGs) -->
     <div style="display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap; align-items: center;">
         {% if profile_user['github_user'] %}
-        <a href="{{ profile_user['github_user'] }}" target="_blank" rel="noopener" class="btn btn-outline" style="display: inline-flex; align-items: center; justify-content: center; text-decoration: none;">
-            <img src="{{ url_for('static', filename='github.svg') }}?v=1" width="24" height="24" loading="eager" alt="GitHub" style="flex-shrink: 0; width: 24px; height: 24px;"> 
+        <a href="{{ profile_user['github_user'] }}" target="_blank" rel="noopener" class="btn btn-outline" style="display: inline-flex; align-items: center; justify-content: center; text-decoration: none;" title="GitHub">
+            {{ 'github.svg' | inline_svg(24, 24) }}
         </a>
         {% endif %}
 
         {% if profile_user['linkedin_url'] %}
-        <a href="{{ profile_user['linkedin_url'] }}" target="_blank" rel="noopener" class="btn btn-outline" style="display: inline-flex; align-items: center; justify-content: center; text-decoration: none;">
-            <img src="{{ url_for('static', filename='linkedin.svg') }}?v=1" width="24" height="24" loading="eager" alt="LinkedIn" style="flex-shrink: 0; width: 24px; height: 24px;"> 
+        <a href="{{ profile_user['linkedin_url'] }}" target="_blank" rel="noopener" class="btn btn-outline" style="display: inline-flex; align-items: center; justify-content: center; text-decoration: none;" title="LinkedIn">
+            {{ 'linkedin.svg' | inline_svg(24, 24) }}
         </a>
         {% endif %}
         
         {% for i in range(1, 6) %}
             {% set custom_link = profile_user['custom_link_' ~ i] %}
             {% if custom_link %}
-            <a href="{{ custom_link }}" target="_blank" rel="noopener" class="btn btn-outline" style="display: inline-flex; align-items: center; justify-content: center; text-decoration: none;">
-                <img src="{{ url_for('static', filename='link.svg') }}?v=1" width="24" height="24" loading="eager" alt="Link" style="flex-shrink: 0; width: 24px; height: 24px;">
+            <a href="{{ custom_link }}" target="_blank" rel="noopener" class="btn btn-outline" style="display: inline-flex; align-items: center; justify-content: center; text-decoration: none;" title="Link">
+                {{ 'link.svg' | inline_svg(24, 24) }}
             </a>
             {% endif %}
         {% endfor %}
@@ -129,17 +137,17 @@
                 onclick="toggleLike(event, this.dataset.postId)" 
                 id="like-btn-{{ item['id'] }}" 
                 style="background: none; border: none; display: flex; align-items: center; gap: 0.35rem; cursor: pointer; color: #64748b; font-weight: 500;">
-            <img id="like-icon-{{ item['id'] }}" 
-                 src="{{ url_for('static', filename='liked.svg' if item['user_liked'] > 0 else 'like.svg') }}?v=1" 
-                 data-like-url="{{ url_for('static', filename='like.svg') }}?v=1"
-                 data-liked-url="{{ url_for('static', filename='liked.svg') }}?v=1"
-                 width="16" height="16" loading="eager" alt="Like"
-                 style="flex-shrink: 0; width: 16px; height: 16px;">
+            
+            <span id="like-icon-wrapper-{{ item['id'] }}" class="like-icon-wrapper {% if item['user_liked'] > 0 %}is-liked{% endif %}">
+                <span class="icon-unliked">{{ 'like.svg' | inline_svg(16, 16) }}</span>
+                <span class="icon-liked">{{ 'liked.svg' | inline_svg(16, 16) }}</span>
+            </span>
+
             <span id="like-count-{{ item['id'] }}">{{ item['like_count'] if item['like_count'] > 0 else 'Like' }}</span>
         </button>
 
-        <a href="{{ url_for('create_post', reply_to=post['id']) }}" style="text-decoration: none; display: flex; align-items: center;">
-            <img src="{{ url_for('static', filename='comment.svg') }}?v=1" width="20" height="20" loading="eager" alt="Comment" style="flex-shrink: 0; width: 20px; height: 20px;">
+        <a href="{{ url_for('create_post', reply_to=post['id']) }}" style="text-decoration: none; display: flex; align-items: center;" title="Comment">
+            {{ 'comment.svg' | inline_svg(20, 20) }}
         </a>
     </div>
 </div>
@@ -164,18 +172,18 @@ async function toggleLike(event, postId) {
         if (!response.ok) return;
 
         const data = await response.json();
-        const icon = document.getElementById(`like-icon-${postId}`);
+        const iconWrapper = document.getElementById(`like-icon-wrapper-${postId}`);
         const countSpan = document.getElementById(`like-count-${postId}`);
         
-        if (!icon || !countSpan) return;
+        if (!iconWrapper || !countSpan) return;
 
         countSpan.textContent = data.count > 0 ? data.count : 'Like';
-        icon.src = data.liked ? icon.dataset.likedUrl : icon.dataset.likeUrl;
+        iconWrapper.classList.toggle('is-liked', data.liked);
 
-        // Trigger the spring heart pop animation on every click
-        icon.classList.remove('like-pop');
-        void icon.offsetWidth; // Force CSS reflow to restart animation
-        icon.classList.add('like-pop');
+        // Trigger the spring heart pop animation
+        iconWrapper.classList.remove('like-pop');
+        void iconWrapper.offsetWidth; // Force CSS reflow
+        iconWrapper.classList.add('like-pop');
 
     } catch (err) {
         console.error('Fetch error:', err);
