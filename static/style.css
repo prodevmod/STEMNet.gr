@@ -1073,13 +1073,11 @@ body {
     filter: none !important;
 }
 /* Light Mode Hero Card with White Background and Navy Blue Gradient Border */
-[data-theme="light"] .hero.light-hero-gradient {
-    background: #ffffff !important;
-    border: 3px solid transparent;
-    border-image: linear-gradient(135deg, #001f3f, #0074D9) 1;
-    box-shadow: 0 4px 20px rgba(0, 31, 63, 0.08);
-}
-[data-theme=None] .hero.light-hero-gradient {
+/* Light/Default Mode Hero Card (Handles explicit 'light', 'None', 'none', or unset attributes) */
+[data-theme="light"] .hero.light-hero-gradient,
+[data-theme="None"] .hero.light-hero-gradient,
+[data-theme="none"] .hero.light-hero-gradient,
+:not([data-theme="dark"]) .hero.light-hero-gradient {
     background: #ffffff !important;
     border: 3px solid transparent;
     border-image: linear-gradient(135deg, #001f3f, #0074D9) 1;
@@ -1087,7 +1085,13 @@ body {
 }
 
 [data-theme="light"] .hero.light-hero-gradient h1,
-[data-theme="light"] .hero.light-hero-gradient p {
+[data-theme="light"] .hero.light-hero-gradient p,
+[data-theme="None"] .hero.light-hero-gradient h1,
+[data-theme="None"] .hero.light-hero-gradient p,
+[data-theme="none"] .hero.light-hero-gradient h1,
+[data-theme="none"] .hero.light-hero-gradient p,
+:not([data-theme="dark"]) .hero.light-hero-gradient h1,
+:not([data-theme="dark"]) .hero.light-hero-gradient p {
     color: #000000 !important;
 }
 
