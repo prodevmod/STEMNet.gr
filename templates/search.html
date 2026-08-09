@@ -6,7 +6,7 @@
 <div style="width: 100%; max-width: 900px; margin: 0 auto; box-sizing: border-box; padding: 0 0.5rem;">
     <!-- Search Box Card -->
     <div class="card" style="margin-bottom: 2rem; width: 100%; padding: 1.75rem; box-sizing: border-box;">
-        <h2 style="font-size: clamp(1.3rem, 4vw, 1.6rem); margin-top: 0; margin-bottom: 0.5rem; word-break: break-word;">Search STEMNet Greece</h2>
+        <h2 style="font-size: clamp(1.3rem, 4vw, 1.6rem); margin-top: 0; margin-bottom: 0.5rem; word-break: break-word;">🔍 Search STEMNet Greece</h2>
         <p style="color: #64748b; font-size: 0.95rem; margin-top: 0; margin-bottom: 1.5rem;">Find members, projects, and discussions.</p>
         
         <form action="{{ url_for('search') }}" method="GET" style="display: flex; gap: 10px; align-items: center; width: 100%; flex-wrap: wrap;">
@@ -75,28 +75,28 @@
             </div>
             {% endfor %}
         {% else %}
-            <p style="color: gray;">No posts found matching your search term.</p>
+            <p style="color: gray; margin-bottom: 2rem;">No posts found matching your search term.</p>
         {% endif %}
-        
+
+        <hr style="margin: 20px 0; border: 0; border-top: 1px solid var(--border-color, #e2e8f0);">
+
         <!-- GROUP CHATS RESULTS SECTION -->
-        <div style="margin-top: 2rem;">
-            <h3 style="font-size: 1.2rem;">Group Chats</h3>
-            {% if groups %}
-                <div style="display: grid; gap: 1rem; margin-top: 1rem; width: 100%; box-sizing: border-box;">
-                    {% for group in groups %}
-                        <div class="card" style="padding: 1rem; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; word-break: break-word; margin-bottom: 0; width: 100%; box-sizing: border-box;">
-                            <div style="flex: 1; min-width: 180px;">
-                                <h4 style="margin: 0;"><a href="{{ url_for('group_detail', group_id=group['id']) }}">{{ group['name'] }}</a></h4>
-                                <p style="margin: 0.25rem 0 0 0; font-size: 0.85rem; color: #64748b;">Hosted by @{{ group['username'] }}</p>
-                            </div>
-                            <a href="{{ url_for('group_detail', group_id=group['id']) }}" class="btn btn-outline" style="font-size: 0.85rem; padding: 0.4rem 0.8rem; flex-shrink: 0;">View Group</a>
+        <h3 style="margin-bottom: 15px; word-break: break-word; font-size: 1.2rem;">Group Chats matching "{{ query }}" ({{ groups|length if groups else 0 }})</h3>
+        {% if groups %}
+            <div style="display: grid; gap: 1rem; margin-top: 1rem; width: 100%; box-sizing: border-box;">
+                {% for group in groups %}
+                    <div class="card" style="padding: 1rem; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; word-break: break-word; margin-bottom: 0; width: 100%; box-sizing: border-box;">
+                        <div style="flex: 1; min-width: 180px;">
+                            <h4 style="margin: 0;"><a href="{{ url_for('group_detail', group_id=group['id']) }}">{{ group['name'] }}</a></h4>
+                            <p style="margin: 0.25rem 0 0 0; font-size: 0.85rem; color: #64748b;">Hosted by @{{ group['username'] }}</p>
                         </div>
-                    {% endfor %}
-                </div>
-            {% else %}
-                <p style="color: #64748b; margin-top: 0.5rem;">No group chats found matching your search.</p>
-            {% endif %}
-        </div>
+                        <a href="{{ url_for('group_detail', group_id=group['id']) }}" class="btn btn-outline" style="font-size: 0.85rem; padding: 0.4rem 0.8rem; flex-shrink: 0;">View Group</a>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p style="color: #64748b; margin-top: 0.5rem;">No group chats found matching your search term.</p>
+        {% endif %}
     {% endif %}
 </div>
 {% endblock %}
