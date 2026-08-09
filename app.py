@@ -1335,8 +1335,8 @@ def create_group():
             flash('Both name and description are required.', 'error')
         else:
             cursor = db.cursor()
-            cursor.execute('INSERT INTO groups (user_id, name, description) VALUES (?, ?, ?)',
-                           [current_user_id, name, description])
+            cursor.execute('INSERT INTO groups (user_id, name, description) VALUES (%s, %s, %s)',
+                        [current_user_id, name, description])
             db.commit()
             group_id = cursor.lastrowid
             flash('Group chat created successfully!', 'success')
