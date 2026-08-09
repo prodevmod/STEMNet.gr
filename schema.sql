@@ -75,3 +75,16 @@ CREATE TABLE IF NOT EXISTS notifications (
     FOREIGN KEY (actor_id) REFERENCES users (id),
     FOREIGN KEY (post_id) REFERENCES posts (id)
 );
+
+-- Create groups table
+CREATE TABLE IF NOT EXISTS groups (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL UNIQUE,
+    name TEXT NOT NULL,
+    description TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users (id)
+);
+
+-- Add group reference to posts table (Run this or alter your posts table)
+ALTER TABLE posts ADD COLUMN group_id INTEGER REFERENCES groups(id);

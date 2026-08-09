@@ -535,14 +535,12 @@ def login_required(view):
     return wrapped_view
 
 
-# Route Stubs
 @app.route("/")
 def index():
     db = get_db()
     current_user_id = g.user["id"] if g.get("user") else 0
     selected_category = request.args.get("category", "").strip()
     
-    # Base query: Exclude 'Events' from the main feed
     query = """
         SELECT posts.*, users.username,
                parent_posts.content AS parent_content,
@@ -557,7 +555,6 @@ def index():
     """
     params = [current_user_id]
     
-    # Apply category filter if selected
     if selected_category:
         query += " AND posts.category = ?"
         params.append(selected_category)
@@ -566,10 +563,18 @@ def index():
     
     posts = db.execute(query, params).fetchall()
     
-    return render_template("index.html", posts=posts, selected_category=selected_category)
-
-
-
+    # Safely fetch featured groups (wrapped in try/except in case table is missing)
+    featured_groups = []
+    try:
+        featured_groups = db.execute('''
+            SELECT g.*, u.username FROM groups g 
+            JOIN users u ON g.user_id = u.id 
+            ORDER BY RANDOM() LIMIT 3
+        ''').fetchall()
+    except Exception:
+        pass
+    
+    return render_template("index.html", posts=posts, selected_category=selected_category, featured_groups=featured_groups)
 
 @app.route("/verify/<token>")
 def verify_email(token):
@@ -1205,6 +1210,7 @@ def search():
     
     posts = []
     users = []
+    groups = []
     
     if query:
         search_term = f"%{query}%"
@@ -1227,7 +1233,7 @@ def search():
             (current_user_id, search_term, search_term)
         ).fetchall()
 
-        # 2. Search users (by username or bio)
+        # 2. Search users (by username, bio, or interest)
         users = db.execute(
             """
             SELECT id, username, profile_pic, bio, grade, interest 
@@ -1238,7 +1244,19 @@ def search():
             (search_term, search_term, search_term)
         ).fetchall()
 
-    return render_template("search.html", posts=posts, users=users, query=query)
+        # 3. Search groups (by name or description)
+        groups = db.execute(
+            """
+            SELECT groups.*, users.username 
+            FROM groups 
+            JOIN users ON groups.user_id = users.id 
+            WHERE groups.name LIKE ? OR groups.description LIKE ?
+            ORDER BY groups.created_at DESC
+            """,
+            (search_term, search_term)
+        ).fetchall()
+
+    return render_template("search.html", posts=posts, users=users, groups=groups, query=query)
 
 @app.errorhandler(404)
 def page_not_found(e):
@@ -1286,6 +1304,81 @@ def api_posts():
     posts_list = [dict(row) for row in posts]
     return jsonify(posts_list)
 
+@app.route('/group/create', methods=['GET', 'POST'])
+@login_required
+def create_group():
+    db = get_db()
+    current_user_id = g.user['id']
+    
+    # Check if user already owns a group chat
+    existing_group = db.execute('SELECT id FROM groups WHERE user_id = ?', [current_user_id]).fetchone()
+    if existing_group:
+        flash('You already have a group chat!', 'error')
+        return redirect(url_for('group_detail', group_id=existing_group['id']))
+    
+    if request.method == 'POST':
+        name = request.form.get('name')
+        description = request.form.get('description')
+        
+        if not name or not description:
+            flash('Both name and description are required.', 'error')
+        else:
+            cursor = db.cursor()
+            cursor.execute('INSERT INTO groups (user_id, name, description) VALUES (?, ?, ?)',
+                           [current_user_id, name, description])
+            db.commit()
+            group_id = cursor.lastrowid
+            flash('Group chat created successfully!', 'success')
+            return redirect(url_for('group_detail', group_id=group_id))
+            
+    return render_template('create_group.html')
+
+@app.route('/group/<int:group_id>')
+def group_detail(group_id):
+    db = get_db()
+    current_user_id = g.user['id'] if g.get('user') else 0
+    
+    group = db.execute('''
+        SELECT g.*, u.username FROM groups g 
+        JOIN users u ON g.user_id = u.id 
+        WHERE g.id = ?
+    ''', [group_id]).fetchone()
+    
+    if not group:
+        flash('Group chat not found.', 'error')
+        return redirect(url_for('index'))
+        
+    posts = db.execute('''
+        SELECT p.*, u.username, 
+               (SELECT COUNT(*) FROM likes WHERE post_id = p.id) as like_count,
+               (SELECT COUNT(*) FROM likes WHERE post_id = p.id AND user_id = ?) as user_liked
+        FROM posts p 
+        JOIN users u ON p.user_id = u.id 
+        WHERE p.group_id = ? 
+        ORDER BY p.created_at DESC
+    ''', [current_user_id, group_id]).fetchall()
+    
+    return render_template('group_detail.html', group=group, posts=posts)
+@app.route('/groups')
+def groups():
+    db = get_db()
+    current_user_id = g.user['id'] if g.get('user') else 0
+    
+    # Fetch all groups with their owner username and post counts
+    all_groups = db.execute('''
+        SELECT g.*, u.username, 
+               (SELECT COUNT(*) FROM posts WHERE posts.group_id = g.id) as post_count
+        FROM groups g 
+        JOIN users u ON g.user_id = u.id 
+        ORDER BY g.created_at DESC
+    ''').fetchall()
+    
+    # Check if the logged-in user already owns a group chat
+    user_has_group = False
+    if current_user_id:
+        user_has_group = db.execute('SELECT 1 FROM groups WHERE user_id = ?', [current_user_id]).fetchone() is not None
+
+    return render_template('groups.html', groups=all_groups, user_has_group=user_has_group)
 if __name__ == "__main__":
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
     app.run(host="0.0.0.0", port=80)

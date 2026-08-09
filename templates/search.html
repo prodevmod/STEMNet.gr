@@ -74,5 +74,24 @@
     {% else %}
         <p style="color: gray;">No posts found matching your search term.</p>
     {% endif %}
+    <!-- Group Search Results Section -->
+<div style="margin-top: 2rem;">
+    <h3>Group Chats</h3>
+    {% if groups %}
+        <div style="display: grid; gap: 1rem; margin-top: 1rem;">
+            {% for group in groups %}
+                <div class="card" style="padding: 1rem; display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <h4 style="margin: 0;"><a href="{{ url_for('group_detail', group_id=group['id']) }}">{{ group['name'] }}</a></h4>
+                        <p style="margin: 0.25rem 0 0 0; font-size: 0.85rem; color: #64748b;">Hosted by @{{ group['username'] }}</p>
+                    </div>
+                    <a href="{{ url_for('group_detail', group_id=group['id']) }}" class="btn btn-outline" style="font-size: 0.85rem; padding: 0.4rem 0.8rem;">View Group</a>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p style="color: #64748b; margin-top: 0.5rem;">No group chats found matching your search.</p>
+    {% endif %}
+</div>
 {% endif %}
 {% endblock %}

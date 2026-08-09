@@ -1,0 +1,22 @@
+{% extends "layout.html" %}
+{% block title %}Create Group Chat - STEMNet Greece{% endblock %}
+{% block content %}
+<div class="card" style="max-width: 600px; margin: 2rem auto; padding: 2rem;">
+    <h2>Create Your Group Chat</h2>
+    <p style="color: #64748b; margin-bottom: 1.5rem;">Launch a dedicated space where you and other members can post about a specific topic.</p>
+    
+    <form method="POST">
+        <div style="margin-bottom: 1rem;">
+            <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Group Name</label>
+            <input type="text" name="name" required placeholder="e.g., Arduino Makers Greece" style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: var(--radius); background: var(--bg-color); color: inherit;">
+        </div>
+        
+        <div style="margin-bottom: 1.5rem;">
+            <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Description</label>
+            <textarea name="description" rows="4" required placeholder="What is this group chat about?" style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: var(--radius); background: var(--bg-color); color: inherit;"></textarea>
+        </div>
+        
+        <button type="submit" class="btn btn-primary" style="width: 100%;">Create Group Chat</button>
+    </form>
+</div>
+{% endblock %}
