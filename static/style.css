@@ -734,16 +734,6 @@ input:focus, button:focus-visible {
 .like-pop {
     animation: heartPop 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
-header {
-    position: sticky !important;
-    top: 0 !important;
-    z-index: 1000 !important;
-    backdrop-filter: blur(12px) !important;
-    -webkit-backdrop-filter: blur(12px) !important;
-    background-color: rgba(255, 255, 255, 0.8) !important;
-    border-bottom: 1px solid var(--border-color) !important;
-    transition: background-color 0.3s ease !important;
-}
 
 [data-theme="dark"] header {
     background-color: rgba(15, 23, 42, 0.8) !important;
