@@ -1,40 +1,32 @@
 /* STEMNet Global Variables & Theme */
 :root {
-
-    --bg-color: #f4f4f5;         
+    --bg-color: #f4f4f5;        
     --text-color: #2b2b2b;       
-    --card-bg: #ffffff;         
-    --border-color: #d4d4d4;     
-    --dark-bg: #2b2b2b;         
-
+    --card-bg: #ffffff;        
+    --border-color: #d4d4d4;    
+    --dark-bg: #2b2b2b;        
 
     --primary-color: #ccff00;    
     --primary-hover: #b3e600;    
-    --primary-text: #000000;     
-    --accent-color: #dfff00;     
-    --danger-color: #ef4444;     
-    /* Typography & Layout Setup */
+    --primary-text: #000000;    
+    --accent-color: #dfff00;    
+    --danger-color: #ef4444;    
+
     --font-main: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
     --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 
     --max-width: 720px;
-    --radius: 6px;               /* Modern, slightly sharper edges */
+    --radius: 6px; 
     --shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
 }
-/* Base Styles */
-* {
+
+/* Base Reset */
+*, *::before, *::after {
     box-sizing: border-box;
     margin: 0;
     padding: 0;
 }
 
-
-/* Universal Box-Sizing Reset */
-*, *::before, *::after {
-    box-sizing: border-box;
-}
-
-/* Global Reset with Full Viewport Height */
 html, body {
     background-color: var(--bg-color);
     color: var(--text-color);
@@ -42,40 +34,32 @@ html, body {
     line-height: 1.6;
     width: 100%;
     max-width: 100%;
-    min-height: 100vh; /* Ensures the page always spans full screen height */
-    margin: 0;
-    padding: 0;
+    min-height: 100vh;
     display: flex;
     flex-direction: column;
-    overflow-x: hidden !important; /* Retains mobile horizontal scroll fix */
+    overflow-x: hidden !important;
 }
 
-/* Forces main content container to fill available vertical space */
 main, .container, .content-wrapper {
     flex: 1 0 auto;
 }
 
-/* Prevents header/navbar containers from clipping overflowing dropdowns */
 header, nav, .navbar, .nav-container {
     position: relative;
     overflow: visible !important; 
     z-index: 1000;
 }
 
-/* Ensures dropdown menus float freely above all page elements */
 .dropdown, .dropdown-menu, .dropdown-content {
     position: absolute;
     z-index: 9999 !important;
 }
-/* Ensure media and large containers never break mobile viewports */
+
 img, video, canvas, svg {
     max-width: 100%;
     height: auto;
 }
 
-*, *:before, *:after {
-    box-sizing: inherit;
-}
 /* Header & Navigation Bar */
 header {
     background-color: #0f172a;
@@ -101,16 +85,18 @@ nav {
     gap: 1.25rem;
     align-items: center;
 }
+
 nav a {
     color: var(--primary-color);
     text-decoration: none;
     font-size: 0.95rem;
     font-weight: 500;
+    font-family: "Raleway", sans-serif;
 }
 
 nav a:hover {
     color: #ffffff !important;
-    transform: translate(-2px, -2px);       /* Slight pop-up effect on hover */
+    transform: translate(-2px, -2px);
     box-shadow: 6px 6px 0px #000000;
 }
 
@@ -123,14 +109,12 @@ nav a:hover {
     gap: 0.5rem;
 }
 
-/* Main Container */
 main {
     max-width: var(--max-width);
     margin: 0 auto;
     padding: 0 1rem;
 }
 
-/* Flash Messages */
 .flash-container {
     margin-bottom: 1.5rem;
 }
@@ -141,7 +125,12 @@ main {
     margin-bottom: 0.5rem;
     font-size: 0.9rem;
 }
-/* Completely hidden on wide/desktop screens */
+
+.flash.info { background-color: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; }
+.flash.warning { background-color: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
+.flash.danger { background-color: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
+.flash.success { background-color: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
+
 .menu-toggle {
     display: none;
     background: transparent;
@@ -150,7 +139,6 @@ main {
     padding: 0;
 }
 
-/* Responsive behavior for smaller screens */
 @media (max-width: 768px) {
     .menu-toggle {
         display: block;
@@ -182,7 +170,6 @@ main {
         padding: 0.5rem 0;
     }
 
-    /* FIX: Make the button look great and span cleanly inside the mobile dropdown */
     .nav-links .btn {
         display: block;
         width: 100%;
@@ -192,10 +179,6 @@ main {
         box-sizing: border-box;
     }
 }
-.flash.info { background-color: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; }
-.flash.warning { background-color: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
-.flash.danger { background-color: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
-.flash.success { background-color: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
 
 /* Cards & Feeds */
 .card, article {
@@ -217,10 +200,8 @@ main {
 .username {
     font-weight: bold;
     color: black;
-    font-size: 24;
     text-decoration: none;
 }
-
 
 .username:hover {
     text-decoration: underline;
@@ -232,19 +213,7 @@ main {
     font-family: var(--font-mono);
 }
 
-.post-title {
-    font-size: 1.2rem;
-    font-weight: 700;
-    margin-bottom: 0.5rem;
-}
-
-.post-body {
-    color: #334155;
-    margin-bottom: 1rem;
-    white-space: pre-wrap;
-}
-
-/* Form Styling */
+/* Forms */
 form {
     display: flex;
     flex-direction: column;
@@ -264,7 +233,11 @@ label {
 
 input[type="text"],
 input[type="password"],
+input[type="email"],
+input[type="number"],
 input[type="url"],
+input[type="file"],
+select,
 textarea {
     width: 100%;
     padding: 0.75rem;
@@ -272,13 +245,14 @@ textarea {
     border-radius: var(--radius);
     font-family: inherit;
     font-size: 1rem;
-    background-color: #ffffff;
+    background-color: var(--card-bg);
+    color: var(--text-color);
 }
 
-input:focus, textarea:focus {
+input:focus, textarea:focus, select:focus {
     outline: none;
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+    box-shadow: 0 0 0 3px rgba(204, 255, 0, 0.2);
 }
 
 textarea {
@@ -286,50 +260,72 @@ textarea {
     min-height: 120px;
 }
 
-/* Buttons */
+/* ==========================================
+   UNIFIED BUTTON STYLING (Neon Primary & Outlines)
+   ========================================== */
+
 .btn {
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     padding: 0.6rem 1.2rem;
     border-radius: var(--radius);
-    font-weight: 400;
     text-decoration: none;
-    border: none;
     cursor: pointer;
     font-size: 0.95rem;
     text-align: center;
+    transition: transform 0.1s ease, box-shadow 0.1s ease, background-color 0.1s ease;
 }
 
+/* Primary Neo-Brutalist Lime Buttons (Always black text, always neon background) */
+.btn-primary, 
+button.btn-primary, 
+a.btn-primary {
+    background-color: var(--primary-color) !important;
+    color: #000000 !important;
+    border: 2px solid #000000 !important;
+    border-radius: var(--radius);
+    box-shadow: 4px 4px 0px #000000 !important;
+    font-weight: 600;
+    /* Thinned out font weight and styling for better readability */
+    font-family: var(--font-main) !important; 
+}
 
 .btn-primary:hover {
-    background-color: var(--primary-hover); /* #B3E600 */
-    color: #ffffff !important;
-    transform: translate(-2px, -2px);       /* Slight pop-up effect on hover */
-    box-shadow: 6px 6px 0px #000000;
+    background-color: var(--primary-hover) !important;
+    color: #000000 !important;
+    transform: translate(-2px, -2px);
+    box-shadow: 6px 6px 0px #000000 !important;
 }
 
 .btn-primary:active {
-    transform: translate(2px, 2px);         /* Pressed effect */
-    box-shadow: 2px 2px 0px #000000;
+    transform: translate(2px, 2px);
+    box-shadow: 2px 2px 0px #000000 !important;
 }
 
-.hero .btn-outline {
+/* Outline & Secondary Buttons */
+.btn-outline {
     background-color: transparent;
-    border: 2px solid #ffffff;
-    color: #ffffff;
-    font-weight: 600;
-    transition: all 0.2s ease-in-out;
+    border: 2px solid var(--border-color);
+    color: var(--text-color) !important;
+    font-weight: 500;
 }
 
-.hero .btn-outline:hover {
-    background-color: transparent !important;
-    border-color: var(--primary-color) !important;
-    color: var(--primary-color) !important;
+.btn-outline:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+    border-color: var(--primary-color);
+    transform: translate(-1px, -1px);
 }
 
-.btn .btn-outline:hover {
-    background-color: transparent !important;
-    border-color: var(--primary-color) !important;
-    color: var(--primary-color) !important;
+/* Dark mode adjustments for outline buttons: White text in dark mode, black text in light mode */
+[data-theme="dark"] .btn-outline {
+    color: #ffffff !important;
+    border-color: #475569;
+}
+
+[data-theme="dark"] .btn-outline:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: #ffffff !important;
 }
 
 .btn-github {
@@ -337,7 +333,7 @@ textarea {
     align-items: center;
     gap: 0.5rem;
     background-color: #24292e;
-    color: #ffffff;
+    color: #ffffff !important;
     font-family: var(--font-mono);
     font-size: 0.85rem;
 }
@@ -346,7 +342,7 @@ textarea {
     background-color: #000000;
 }
 
-/* Landing Section for Non-Logged Users */
+/* Landing Hero Section */
 .hero {
     background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
     color: #ffffff;
@@ -358,6 +354,7 @@ textarea {
 .hero h1 {
     font-size: 1.8rem;
     margin-bottom: 0.75rem;
+    color: #ffffff !important;
 }
 
 .hero p {
@@ -371,44 +368,31 @@ textarea {
     gap: 1rem;
 }
 
-input[type="text"],
-input[type="password"],
-input[type="email"],
-input[type="number"],
-input[type="url"],
-input[type="file"],
-select,
-textarea {
-    width: 100%;
-    padding: 0.75rem;
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius);
-    font-family: inherit;
-    font-size: 1rem;
-    background-color: #ffffff;
+.hero .btn-outline {
+    border-color: #ffffff;
+    color: #ffffff !important;
 }
-/* Horizontal Filter Bar Container */
+
+.hero .btn-outline:hover {
+    background-color: transparent !important;
+    border-color: var(--primary-color) !important;
+    color: var(--primary-color) !important;
+}
+
+/* Category Filter Bar */
 .category-filter-bar {
     display: flex;
     gap: 10px;
     margin-bottom: 1.5rem;
     overflow-x: auto;
-    
-    /* Padding prevents neo-brutalist offset shadows from clipping during hover/scroll */
     padding: 6px 6px 12px 2px;
-    
     white-space: nowrap;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: thin;
 }
 
-/* Custom Scrollbar for Filter Bar */
 .category-filter-bar::-webkit-scrollbar {
     height: 6px;
-}
-
-.category-filter-bar::-webkit-scrollbar-track {
-    background: transparent;
 }
 
 .category-filter-bar::-webkit-scrollbar-thumb {
@@ -416,72 +400,36 @@ textarea {
     border-radius: 10px;
 }
 
-/* Neo-Brutalist Category Filter Pills */
 .category-pill {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    background-color: #ffffff;
-    color: #000000;
+    background-color: var(--card-bg);
+    color: var(--text-color);
     font-size: 0.85rem;
     font-weight: 600;
     padding: 0.4rem 0.95rem;
     text-decoration: none;
-    border: 2px solid #000000;
+    border: 2px solid var(--border-color);
     border-radius: var(--radius);
-    box-shadow: 2px 2px 0px #000000;
+    box-shadow: 2px 2px 0px rgba(0,0,0,0.2);
     transition: transform 0.1s ease, box-shadow 0.1s ease, background-color 0.1s ease;
-    white-space: nowrap;
 }
 
-/* Inactive Pill Interactions */
 .category-pill:hover {
-    background-color: #f1f5f9;
-    color: #000000;
     transform: translate(-1px, -1px);
-    box-shadow: 3px 3px 0px #000000;
+    box-shadow: 3px 3px 0px rgba(0,0,0,0.3);
 }
 
-
-/* Selected/Active Pill (Matches .btn-primary) */
 .category-pill.active {
     background-color: var(--primary-color) !important;
     color: #000000 !important;
     font-weight: 700;
-    border: 2px solid  var(--primary-color) !important;
-    box-shadow: 3px 3px 0px #000000;
+    border: 2px solid #000000 !important;
+    box-shadow: 3px 3px 0px #000000 !important;
 }
 
-/* Active Pill Interactions */
-.category-pill.active:hover {
-    transform: translate(-1px, -1px);
-    box-shadow: 5px 5px 0px #000000;
-}
-
-.category-pill.active:active {
-    transform: translate(4px, 4px);
-    box-shadow: 0px 0px 0px #000000;
-}
-
-/* Central Main Content Container */
-main, .container {
-    flex: 1 0 auto;
-    width: 100%;
-    max-width: 680px; /* Ideal middle-ground width for feed, search, and notifications */
-    margin: 0 auto;
-    padding: 1.5rem 1rem;
-    box-sizing: border-box;
-}
-
-/* Ensure form elements stretch to fit their cards properly */
-.card form, 
-.card input[type="text"], 
-.card input[type="search"] {
-    width: 100%;
-    box-sizing: border-box;
-}
-
-/* Checkbox Layout Container */
+/* Custom Checkbox */
 .checkbox-group {
     margin: 1.2rem 0;
 }
@@ -493,11 +441,9 @@ main, .container {
     cursor: pointer;
     font-weight: 600;
     font-size: 0.95rem;
-    color: #000000;
     user-select: none;
 }
 
-/* Neo-Brutalist Custom Checkbox */
 .custom-checkbox {
     appearance: none;
     -webkit-appearance: none;
@@ -510,10 +456,8 @@ main, .container {
     cursor: pointer;
     display: grid;
     place-content: center;
-    transition: transform 0.1s ease, box-shadow 0.1s ease, background-color 0.15s ease;
 }
 
-/* Checkmark Graphic */
 .custom-checkbox::before {
     content: "";
     width: 0.65rem;
@@ -524,89 +468,40 @@ main, .container {
     clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%);
 }
 
-/* Hover Effect */
-.custom-checkbox:hover {
-    transform: translate(-1px, -1px);
-    box-shadow: 3px 3px 0px #000000;
-}
-
-/* Checked State */
 .custom-checkbox:checked {
-    background-color: var(--primary-color, #CCFF00); /* Neon Green fill */
+    background-color: var(--primary-color);
 }
 
 .custom-checkbox:checked::before {
     transform: scale(1);
 }
 
-/* Pressed State */
-.custom-checkbox:active {
-    transform: translate(1px, 1px);
-    box-shadow: 1px 1px 0px #000000;
-}
-
-/* Accessibility Focus Outline */
-.custom-checkbox:focus-visible {
-    outline: 2px solid #000000;
-    outline-offset: 2px;
-}
-
-
-nav a {
-  font-family: "Raleway", sans-serif;
-  font-optical-sizing: auto;
-  font-weight: 700;
-  font-style: normal;
-}
-
-.btn-primary {
-    background-color: var(--primary-color); /* #CCFF00 */
-    color: #000000 !important;              /* Sharp black text for max contrast */
-    border: 2px solid #000000;              /* Neo-brutalist sharp black border */
-    border-radius: var(--radius);
-    box-shadow: 4px 4px 0px #000000;        /* Solid black offset shadow */
-    text-decoration: none;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    transition: transform 0.1s ease, box-shadow 0.1s ease;
-    font-family: "Rubik Spray Paint", system-ui !important;
-    font-weight: 400;
-    font-style: normal;
-}
-/* Base Light Theme */
+/* Theme Configurations */
 :root, [data-theme="light"] {
     --bg-color: #f8fafc;
     --text-color: #334155;
     --border-color: #e2e8f0;
     --card-bg: #ffffff;
-    --btn-hover: #e2e8f0;
 }
 
-/* True Black Dark Theme */
 [data-theme="dark"] {
     --bg-color: #000000;
     --text-color: #f8fafc;
     --border-color: #333333;
     --card-bg: #121212;
-    --btn-hover: #1f2937;
 }
 
-/* Apply variables to the body */
 body {
     background-color: var(--bg-color);
     color: var(--text-color);
     transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-/* Ensure cards adapt to the theme */
 .card, .post-card, .category-pill {
     background-color: var(--card-bg) !important;
     border-color: var(--border-color) !important;
-    color: var(--text-color) !important;
 }
 
-/* Clean up the theme toggle button default browser styling */
 .theme-toggle-btn {
     background: transparent !important;
     border: none !important;
@@ -619,16 +514,7 @@ body {
 }
 
 .theme-toggle-btn:hover {
-    transform: translate(-2px, -2px); /* Offsets up and to the left, matching your other buttons */
-}
-
-.theme-toggle-btn:active {
-    transform: translate(0, 0);
-}
-
-
-.theme-toggle-btn:focus {
-    outline: none !important;
+    transform: translate(-2px, -2px);
 }
 
 .theme-toggle-btn img {
@@ -637,11 +523,7 @@ body {
     height: 22px;
 }
 
-/* ==========================================
-   Bulletproof Global Icon Inversion (All Pages)
-   ========================================== */
-
-/* Automatically invert all UI, action, and affiliate icons based on their filename in dark mode */
+/* Icon Inversion in Dark Mode */
 [data-theme="dark"] img[src*="comment.svg"],
 [data-theme="dark"] img[src*="like.svg"],
 [data-theme="dark"] img[src*="liked.svg"],
@@ -651,13 +533,12 @@ body {
     filter: invert(1);
 }
 
-/* EXCEPTION: Explicitly protect user media, avatars, and the theme toggle button from being inverted */
 [data-theme="dark"] .theme-toggle-btn img,
 [data-theme="dark"] .post-media,
 [data-theme="dark"] .avatar {
     filter: none !important;
 }
-/* Force navbar to be black and remove the bottom border in dark mode */
+
 [data-theme="dark"] nav,
 [data-theme="dark"] .navbar,
 [data-theme="dark"] header {
@@ -665,13 +546,12 @@ body {
     border-bottom: none !important;
     box-shadow: none !important;
 }
-/* ==========================================
-   Global Dark Mode Text & Card Overrides
-   ========================================== */
+
+/* Global Dark Mode Text Fixes */
 [data-theme="dark"] body,
 [data-theme="dark"] p,
 [data-theme="dark"] span,
-[data-theme="dark"] a,
+[data-theme="dark"] a:not(.btn-primary),
 [data-theme="dark"] h1, 
 [data-theme="dark"] h2, 
 [data-theme="dark"] h3, 
@@ -684,7 +564,6 @@ body {
     color: #ffffff !important;
 }
 
-/* Ensure post cards and containers look correct in dark mode */
 [data-theme="dark"] .post-card,
 [data-theme="dark"] .card {
     background-color: #121212 !important;
@@ -692,60 +571,9 @@ body {
     border-color: #2a2a2a !important;
 }
 
-/* Fix text inside post cards explicitly */
-[data-theme="dark"] .post-card p,
-[data-theme="dark"] .post-card span,
-[data-theme="dark"] .post-card small,
-[data-theme="dark"] .post-card a,
-[data-theme="dark"] .post-card .username {
-    color: #ffffff !important;
-}
-
-/* Fix nested reply preview boxes in dark mode */
 [data-theme="dark"] div[style*="background: #f8fafc"],
 [data-theme="dark"] div[style*="background: #fff"] {
     background-color: #1e1e1e !important;
     color: #ffffff !important;
     border-color: #333333 !important;
-}
-
-[data-theme="dark"] div[style*="background: #f8fafc"] p,
-[data-theme="dark"] div[style*="background: #f8fafc"] span {
-    color: #ffffff !important;
-}
-
-/* Force all button text to stay black in dark mode for neon button contrast */
-[data-theme="dark"] .btn,
-[data-theme="dark"] .btn-primary,
-[data-theme="dark"] .btn-outline,
-[data-theme="dark"] button,
-[data-theme="dark"] input[type="submit"],
-[data-theme="dark"] a.btn {
-    color: #000000 !important;
-}
-
-/* Also ensure hover states for buttons keep black text if needed */
-[data-theme="dark"] .btn:hover,
-[data-theme="dark"] .btn-primary:hover,
-[data-theme="dark"] .btn-outline:hover {
-    color: #000000 !important;
-}
-/* Primary neon green buttons use dark/black text for high contrast */
-.btn-primary, 
-button.btn-primary, 
-a.btn-primary {
-    color: #0f172a !important;
-    font-weight: 600;
-}
-
-/* Outline and other buttons use white text */
-.btn-outline, 
-[data-theme="dark"] .btn-outline {
-    color: #ffffff !important;
-    border-color: var(--border-color, #475569);
-}
-
-.btn-outline:hover {
-    background-color: rgba(255, 255, 255, 0.1);
-    color: #ffffff !important;
 }
