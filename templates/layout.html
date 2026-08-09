@@ -52,7 +52,7 @@
             gap: 1.25rem;
         }
 
-        /* Target ONLY icon links — exclude .btn elements so .btn-primary works properly */
+        /* Target ONLY navbar icon links — preserve original CSS for .btn-primary */
         .nav-links a:not(.btn), 
         .theme-toggle-btn {
             display: inline-flex;
@@ -66,7 +66,7 @@
             cursor: pointer;
         }
 
-        /* Preserve raw SVG colors and prevent filter/inversion in dark mode */
+        /* Preserve navbar SVG fills without unwanted filter inversions */
         .nav-links a:not(.btn) svg,
         .nav-brand svg,
         .menu-toggle-btn svg,
@@ -76,10 +76,15 @@
             filter: none !important;
         }
 
-        /* Prevent dark mode color inversions on all inline SVGs and SVG images */
-        html[data-theme="dark"] svg,
-        html[data-theme="dark"] img[src$=".svg"] {
+        /* General dark mode safety for navbar SVGs */
+        html[data-theme="dark"] header nav svg {
             filter: none !important;
+        }
+
+        /* Invert Like, Liked, and Reply/Comment SVG buttons specifically in Dark Mode */
+        html[data-theme="dark"] img[src*="like"],
+        html[data-theme="dark"] img[src*="comment"] {
+            filter: invert(1) brightness(1.2) !important;
         }
 
         /* Mobile Menu Toggle Button (Hidden on Desktop) */
