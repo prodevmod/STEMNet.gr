@@ -17,7 +17,7 @@
 
     <!-- 1. GREEK ACADEMIC PORTALS & OPEN TEXTBOOKS -->
     <h2 style="font-size: 1.3rem; margin-bottom: 1rem; display: flex; align-items: center; gap: 10px;">
-        <img src="{{ url_for('static', filename='gr.svg') }}" width="24" height="24" alt="Greece">
+        <img src="{{ url_for('static', filename='gr.svg') }}" width="20" height="20" alt="Greece" style="background: var(--primary-color, #2563eb); padding: 6px; border-radius: 8px; display: inline-block; object-fit: contain;">
         Greek Academic Portals & Open Resources
     </h2>
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; margin-bottom: 2.5rem;">
@@ -26,7 +26,7 @@
             <div>
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
                     <strong style="font-size: 1.05rem;">Kallipos Open Textbooks</strong>
-                    <span style="font-size: 0.75rem; background: #059669; color: white; padding: 2px 8px; border-radius: 12px; font-weight: 600;">100% Free</span>
+                    <span style="font-size: 0.75rem; background: var(--primary-color, #2563eb); color: white; padding: 2px 8px; border-radius: 12px; font-weight: 600;">100% Free</span>
                 </div>
                 <p style="font-size: 0.88rem; color: #64748b; margin: 0;">Official Greek academic digital repository with free textbooks for Greek university engineering, math, and physics courses.</p>
             </div>
@@ -37,7 +37,7 @@
             <div>
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
                     <strong style="font-size: 1.05rem;">Mathesis (Crete Univ. Press)</strong>
-                    <span style="font-size: 0.75rem; background: #059669; color: white; padding: 2px 8px; border-radius: 12px; font-weight: 600;">Free Online Courses</span>
+                    <span style="font-size: 0.75rem; background: var(--primary-color, #2563eb); color: white; padding: 2px 8px; border-radius: 12px; font-weight: 600;">Free Online Courses</span>
                 </div>
                 <p style="font-size: 0.88rem; color: #64748b; margin: 0;">High-level Greek online university courses on quantum mechanics, computer programming, differential equations, and history of science.</p>
             </div>
@@ -48,7 +48,7 @@
             <div>
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
                     <strong style="font-size: 1.05rem;">OpenCourses Greece</strong>
-                    <span style="font-size: 0.75rem; background: #2563eb; color: white; padding: 2px 8px; border-radius: 12px; font-weight: 600;">Greek Higher Ed</span>
+                    <span style="font-size: 0.75rem; background: var(--primary-color, #2563eb); color: white; padding: 2px 8px; border-radius: 12px; font-weight: 600;">Greek Higher Ed</span>
                 </div>
                 <p style="font-size: 0.88rem; color: #64748b; margin: 0;">Central portal providing open courseware, syllabi, lecture slides, and notes from universities across Greece (NTUA, AUTH, UoA, UPatras).</p>
             </div>
@@ -59,7 +59,7 @@
             <div>
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
                     <strong style="font-size: 1.05rem;">Vodafone Generation Next</strong>
-                    <span style="font-size: 0.75rem; background: #dc2626; color: white; padding: 2px 8px; border-radius: 12px; font-weight: 600;">Greece STEM</span>
+                    <span style="font-size: 0.75rem; background: var(--primary-color, #2563eb); color: white; padding: 2px 8px; border-radius: 12px; font-weight: 600;">Greece STEM</span>
                 </div>
                 <p style="font-size: 0.88rem; color: #64748b; margin: 0;">Greece's flagship youth technology program offering free online labs in IoT, robotics, 3D printing, and annual student competitions.</p>
             </div>
@@ -70,7 +70,7 @@
 
     <!-- 2. COMPUTER SCIENCE, WEB & AI -->
     <h2 style="font-size: 1.3rem; margin-bottom: 1rem; display: flex; align-items: center; gap: 10px;">
-        <img src="{{ url_for('static', filename='laptop.svg') }}" width="24" height="24" alt="Laptop">
+        <img src="{{ url_for('static', filename='laptop.svg') }}" width="20" height="20" alt="Laptop" style="background: var(--primary-color, #2563eb); padding: 6px; border-radius: 8px; display: inline-block; object-fit: contain;">
         Computer Science, Web Dev & AI
     </h2>
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; margin-bottom: 2.5rem;">
@@ -79,7 +79,7 @@
             <div>
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
                     <strong style="font-size: 1.05rem;">GitHub Student Developer Pack</strong>
-                    <span style="font-size: 0.75rem; background: #2563eb; color: white; padding: 2px 8px; border-radius: 12px; font-weight: 600;">Must Have</span>
+                    <span style="font-size: 0.75rem; background: var(--primary-color, #2563eb); color: white; padding: 2px 8px; border-radius: 12px; font-weight: 600;">Must Have</span>
                 </div>
                 <p style="font-size: 0.88rem; color: #64748b; margin: 0;">Free GitHub Copilot, domains, Azure/AWS cloud credits, JetBrains IDE licenses, and premium developer tools for students.</p>
             </div>
@@ -130,7 +130,8 @@
 
     <!-- 3. MATH, PHYSICS & ENGINEERING TOOLS -->
     <h2 style="font-size: 1.3rem; margin-bottom: 1rem; display: flex; align-items: center; gap: 10px;">
-        📐 Math, Physics & Productivity Tools
+        <img src="{{ url_for('static', filename='stem.svg') }}" width="20" height="20" alt="STEM" style="background: var(--primary-color, #2563eb); padding: 6px; border-radius: 8px; display: inline-block; object-fit: contain;">
+        Math, Physics & Productivity Tools
     </h2>
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; margin-bottom: 2.5rem;">
         
@@ -138,7 +139,7 @@
             <div>
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
                     <strong style="font-size: 1.05rem;">Overleaf LaTeX Editor</strong>
-                    <span style="font-size: 0.75rem; background: #059669; color: white; padding: 2px 8px; border-radius: 12px; font-weight: 600;">Free Editor</span>
+                    <span style="font-size: 0.75rem; background: var(--primary-color, #2563eb); color: white; padding: 2px 8px; border-radius: 12px; font-weight: 600;">Free Editor</span>
                 </div>
                 <p style="font-size: 0.88rem; color: #64748b; margin: 0;">Online collaborative LaTeX editor essential for writing university lab reports, math documents, and thesis papers.</p>
             </div>
@@ -189,7 +190,7 @@
 
     <!-- 4. INTERNATIONAL COMPETITIONS & OLYMPIADS -->
     <h2 style="font-size: 1.3rem; margin-bottom: 1rem; display: flex; align-items: center; gap: 10px;">
-        <img src="{{ url_for('static', filename='achievement.svg') }}" width="24" height="24" alt="Achievement">
+        <img src="{{ url_for('static', filename='achievement.svg') }}" width="20" height="20" alt="Achievement" style="background: var(--primary-color, #2563eb); padding: 6px; border-radius: 8px; display: inline-block; object-fit: contain;">
         Competitions, Olympiads & Fairs
     </h2>
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; margin-bottom: 2.5rem;">
@@ -230,7 +231,8 @@
 
     <!-- 5. CITIZEN SCIENCE & OPEN RESEARCH PORTALS -->
     <h2 style="font-size: 1.3rem; margin-bottom: 1rem; display: flex; align-items: center; gap: 10px;">
-        🔬 Open Research & Citizen Science
+        <img src="{{ url_for('static', filename='stem.svg') }}" width="20" height="20" alt="Research" style="background: var(--primary-color, #2563eb); padding: 6px; border-radius: 8px; display: inline-block; object-fit: contain;">
+        Open Research & Citizen Science
     </h2>
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; margin-bottom: 2.5rem;">
         
@@ -270,7 +272,7 @@
 
     <!-- 6. LESSON VAULTS, WORKSHEETS & GLOBAL ORGANIZATIONS -->
     <h2 style="font-size: 1.3rem; margin-bottom: 1rem; display: flex; align-items: center; gap: 10px;">
-        <img src="{{ url_for('static', filename='book.svg') }}" width="24" height="24" alt="Book">
+        <img src="{{ url_for('static', filename='book.svg') }}" width="20" height="20" alt="Book" style="background: var(--primary-color, #2563eb); padding: 6px; border-radius: 8px; display: inline-block; object-fit: contain;">
         Lesson Vaults, Worksheets & Organizations
     </h2>
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
