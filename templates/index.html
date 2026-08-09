@@ -4,182 +4,187 @@
 
 {% block content %}
 
-{% if not g.user %}
-    <section class="hero" style="word-break: break-word;">
-        <h1>Welcome to STEMNet Greece</h1>
-        <p>
-            STEMNet is an open platform centered arround Greek high school robotics clubs and STEM students. 
-            Connect with other teams, share your open-source code, showcase your 3D printing files, and ask technical troubleshooting questions.
-            I truly believe that this simple medium can make a difference in greek students networking and personal growth.
-        </p> 
-        <div class="hero-buttons" style="display: flex; flex-wrap: wrap; gap: 10px;">
-            <a href="{{ url_for('register') }}" class="btn btn-primary" style="flex: 1 1 140px; text-align: center;">Join STEMNet</a>
-            <a href="{{ url_for('login') }}" class="btn btn-outline" style="flex: 1 1 180px; text-align: center;">Log in to your account</a>
+<div style="width: 100%; max-width: 900px; margin: 0 auto; box-sizing: border-box; padding: 0 0.5rem;">
+
+    {% if not g.user %}
+        <section class="hero" style="word-break: break-word; width: 100%; box-sizing: border-box; padding: 2rem; margin-bottom: 2rem; border-radius: var(--radius); background: var(--card-bg, #fff); border: 1px solid var(--border-color, #e2e8f0);">
+            <h1 style="font-size: clamp(1.5rem, 5vw, 2.2rem); margin-top: 0;">Welcome to STEMNet Greece</h1>
+            <p style="line-height: 1.6; color: #475569;">
+                STEMNet is an open platform centered around Greek high school robotics clubs and STEM students. 
+                Connect with other teams, share your open-source code, showcase your 3D printing files, and ask technical troubleshooting questions.
+                I truly believe that this simple medium can make a difference in Greek students' networking and personal growth.
+            </p> 
+            <div class="hero-buttons" style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 1.5rem;">
+                <a href="{{ url_for('register') }}" class="btn btn-primary" style="flex: 1 1 140px; text-align: center; justify-content: center;">Join STEMNet</a>
+                <a href="{{ url_for('login') }}" class="btn btn-outline" style="flex: 1 1 180px; text-align: center; justify-content: center;">Log in to your account</a>
+            </div>
+        </section>
+    {% endif %}
+
+    <section style="width: 100%; box-sizing: border-box;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 10px;">
+            <h2 style="margin-bottom: 0; font-size: clamp(1.2rem, 4vw, 1.5rem); word-break: break-word;">Recent STEM Projects & Discussions</h2>
+        </div>
+
+        <!-- Category Filter Pill Bar -->
+        <div class="category-filter-bar">
+            <a href="{{ url_for('index') }}" class="category-pill {% if not selected_category %}active{% endif %}">
+                All
+            </a>
+            <a href="{{ url_for('index', category='Robotics') }}" class="category-pill {% if selected_category == 'Robotics' %}active{% endif %}">
+                Robotics
+            </a>
+            <a href="{{ url_for('index', category='3D Modeling') }}" class="category-pill {% if selected_category == '3D Modeling' %}active{% endif %}">
+                3D Modeling
+            </a>
+            <a href="{{ url_for('index', category='Software') }}" class="category-pill {% if selected_category == 'Software' %}active{% endif %}">
+                Software
+            </a>
+            <a href="{{ url_for('index', category='Electronics') }}" class="category-pill {% if selected_category == 'Electronics' %}active{% endif %}">
+                Electronics
+            </a>
+            <a href="{{ url_for('index', category='AI') }}" class="category-pill {% if selected_category == 'AI' %}active{% endif %}">
+                AI
+            </a>
+            <a href="{{ url_for('index', category='Other') }}" class="category-pill {% if selected_category == 'Other' %}active{% endif %}">
+                Other
+            </a>
+        </div>
+
+        <style>
+        .category-filter-bar {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 1.5rem;
+            overflow-x: auto;
+            padding-bottom: 8px;
+            white-space: nowrap;
+            -webkit-overflow-scrolling: touch;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .category-pill {
+            background-color: whitesmoke;
+            color: dimgray;
+            border: 1px solid silver;
+            font-size: 0.85rem;
+            padding: 0.4rem 1rem;
+            text-decoration: none;
+            border-radius: 6px;
+            display: inline-block;
+            flex-shrink: 0;
+        }
+
+        .category-pill.active {
+            background-color: darkslategray;
+            color: white;
+        }
+        </style>
+
+        <div id="posts-container" style="width: 100%; box-sizing: border-box;">
+            {% if posts %}
+                {% for post in posts %}
+                    <!-- Featured Group Chat Card -->
+                    {% if loop.index == 3 and featured_groups %}
+                        {% set g_item = featured_groups | random %}
+                        <div class="card" style="background: linear-gradient(135deg, rgba(var(--primary-rgb, 37, 99, 235), 0.05), rgba(0,0,0,0.02)); border: 2px dashed var(--primary-color, #2563eb); padding: 1.25rem; margin-bottom: 1rem; border-radius: var(--radius); word-break: break-word; box-sizing: border-box; width: 100%;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 5px;">
+                                <span style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: var(--primary-color, #2563eb); letter-spacing: 0.5px;">Featured Group Chat</span>
+                                <small style="color: gray;">Community Space</small>
+                            </div>
+                            <h4 style="margin: 0 0 0.25rem 0; word-break: break-word;"><a href="{{ url_for('group_detail', group_id=g_item['id']) }}">{{ g_item['name'] }}</a></h4>
+                            <p style="font-size: 0.9rem; color: #334155; margin-bottom: 0.75rem; word-break: break-word;">{{ g_item['description'] }}</p>
+                            <a href="{{ url_for('group_detail', group_id=g_item['id']) }}" class="btn btn-outline" style="font-size: 0.8rem; padding: 0.3rem 0.8rem;">Join Discussion ↗</a>
+                        </div>
+                    {% endif %}
+
+                    <!-- Post Card -->
+                    <div class="post-card" style="background: var(--card-bg, #fff); border: 1px solid var(--border-color, #e2e8f0); border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1rem; word-break: break-word; box-sizing: border-box; width: 100%;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 5px;">
+                            <a href="{{ url_for('profile', username=post['username']) }}" class="username" style="word-break: break-word; font-weight: bold;">
+                                @{{ post['username'] }}
+                            </a>
+                            <small style="color: gray;">
+                                <a href="{{ url_for('post_detail', post_id=post['id']) }}" style="color: gray; text-decoration: none;">
+                                    {{ post['created_at'] }} ↗
+                                </a>
+                            </small>
+                        </div>
+                        
+                        <!-- Parent Reply Snippet -->
+                        {% if post['parent_id'] and post['parent_content'] %}
+                        <div style="background: #f8fafc; border-left: 4px solid var(--primary-color, #2563eb); padding: 0.6rem 0.8rem; margin-top: 0.5rem; margin-bottom: 0.75rem; border-radius: 4px; font-size: 0.85rem; word-break: break-word;">
+                            <span style="font-weight: 600; color: #475569;">Replying to @{{ post['parent_username'] }}:</span>
+                            <p style="margin: 0.2rem 0 0 0; color: #334155; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-clamp: 2; word-break: break-word;">
+                                {{ post['parent_content'] }}
+                            </p>
+                        </div>
+                        {% endif %}
+                            
+                        <!-- Category Badge -->
+                        {% if post['category'] %}
+                        <div style="margin-top: 8px; margin-bottom: 4px;">
+                            <span style="display: inline-block; background-color: var(--bg-color, #f1f5f9); border: 1px solid var(--border-color, #e2e8f0); padding: 2px 8px; border-radius: var(--radius); font-size: 0.8em; color: #64748b; font-weight: 500;">
+                                🏷️ {{ post['category'] }}
+                            </span>
+                        </div>
+                        {% endif %}
+
+                        <!-- Content -->
+                        <p style="margin-bottom: 0.75rem; color: #334155; white-space: pre-line; word-break: break-word; line-height: 1.5;">{{ post['content'] }}</p>
+
+                        <!-- Optional GitHub Link Badge -->
+                        {% if post['github_link'] %}
+                        <div style="margin-bottom: 0.75rem; word-break: break-all;">
+                            <a href="{{ post['github_link'] }}" target="_blank" class="btn btn-outline" style="display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.8rem; padding: 0.3rem 0.6rem; text-decoration: none; max-width: 100%; overflow: hidden; text-overflow: ellipsis;">
+                                📦 View GitHub Repository
+                            </a>
+                        </div>
+                        {% endif %}
+
+                        <!-- Optional Media Attachment -->
+                        {% if post['media_path'] %}
+                        <div style="margin-bottom: 0.75rem; border-radius: var(--radius); overflow: hidden; max-height: 400px; width: 100%;">
+                            {% if post['media_path'].endswith(('mp4', 'webm')) %}
+                            <video controls style="width: 100%; max-height: 400px; object-fit: cover;">
+                                <source src="{{ post['media_path'] }}" type="video/mp4">
+                            </video>
+                            {% else %}
+                            <img src="{{ post['media_path'] }}" alt="Post media" style="width: 100%; max-height: 400px; object-fit: cover;">
+                            {% endif %}
+                        </div>
+                        {% endif %}
+
+                        <!-- Action Bar (Likes & Reply) -->
+                        <div style="display: flex; gap: 1.5rem; align-items: center; border-top: 1px solid #f1f5f9; padding-top: 0.75rem; margin-top: 0.5rem; flex-wrap: wrap;">
+                            <button type="button" 
+                                    data-post-id="{{ post['id'] }}" 
+                                    onclick="toggleLike(event, this.dataset.postId)" 
+                                    id="like-btn-{{ post['id'] }}" 
+                                    style="background: none; border: none; display: flex; align-items: center; gap: 0.35rem; cursor: pointer; color: #64748b; font-weight: 500;">
+                                <img id="like-icon-{{ post['id'] }}" 
+                                       src="{{ url_for('static', filename='liked.svg' if post['user_liked'] > 0 else 'like.svg') }}" 
+                                       data-like-url="{{ url_for('static', filename='like.svg') }}"
+                                       data-liked-url="{{ url_for('static', filename='liked.svg') }}"
+                                       width="16" height="16" alt="Like">
+                                <span id="like-count-{{ post['id'] }}">{{ post['like_count'] if post['like_count'] > 0 else 'Like' }}</span>
+                            </button>
+
+                            <a href="{{ url_for('create_post', reply_to=post['id']) }}" style="text-decoration: none; display: flex; align-items: center;">
+                                <img src="{{ url_for('static', filename='comment.svg') }}" width="20" height="20" alt="Comment">
+                            </a>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="card" style="text-align: center; padding: 3rem 1.5rem; width: 100%; box-sizing: border-box;">
+                    <p style="color: #64748b; margin: 0;">No posts found in this category yet.</p>
+                </div>
+            {% endif %}
         </div>
     </section>
-{% endif %}
-
-<section style="width: 100%; max-width: 100%; box-sizing: border-box; overflow-x: hidden;">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 10px;">
-        <h2 style="margin-bottom: 0; font-size: clamp(1.2rem, 4vw, 1.5rem); word-break: break-word;">Recent STEM Projects & Discussions</h2>
-    </div>
-
-    <!-- Category Filter Pill Bar -->
-    <div class="category-filter-bar">
-        <a href="{{ url_for('index') }}" class="category-pill {% if not selected_category %}active{% endif %}">
-            All
-        </a>
-        <a href="{{ url_for('index', category='Robotics') }}" class="category-pill {% if selected_category == 'Robotics' %}active{% endif %}">
-            Robotics
-        </a>
-        <a href="{{ url_for('index', category='3D Modeling') }}" class="category-pill {% if selected_category == '3D Modeling' %}active{% endif %}">
-            3D Modeling
-        </a>
-        <a href="{{ url_for('index', category='Software') }}" class="category-pill {% if selected_category == 'Software' %}active{% endif %}">
-            Software
-        </a>
-        <a href="{{ url_for('index', category='Electronics') }}" class="category-pill {% if selected_category == 'Electronics' %}active{% endif %}">
-            Electronics
-        </a>
-        <a href="{{ url_for('index', category='AI') }}" class="category-pill {% if selected_category == 'AI' %}active{% endif %}">
-            AI
-        </a>
-        <a href="{{ url_for('index', category='Other') }}" class="category-pill {% if selected_category == 'Other' %}active{% endif %}">
-            Other
-        </a>
-    </div>
-
-<style>
-.category-filter-bar {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 1.5rem;
-    overflow-x: auto;
-    padding-bottom: 5px;
-    white-space: nowrap;
-    -webkit-overflow-scrolling: touch;
-    max-width: 100%;
-}
-
-.category-pill {
-    background-color: whitesmoke;
-    color: dimgray;
-    border: 1px solid silver;
-    font-size: 0.85rem;
-    padding: 0.4rem 1rem;
-    text-decoration: none;
-    border-radius: 6px;
-    display: inline-block;
-    flex-shrink: 0;
-}
-
-.category-pill.active {
-    background-color: darkslategray;
-    color: white;
-}
-</style>
-
-    <div id="posts-container" style="width: 100%; max-width: 100%; box-sizing: border-box;">
-        {% if posts %}
-            {% for post in posts %}
-                <!-- Occasionally inject a Community Group recommendation card into the feed -->
-                {% if loop.index == 3 and featured_groups %}
-                    {% set g_item = featured_groups | random %}
-                    <div class="card" style="background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.05), rgba(0,0,0,0.02)); border: 2px dashed var(--primary-color); padding: 1.25rem; margin-bottom: 1rem; border-radius: var(--radius); word-break: break-word; box-sizing: border-box; max-width: 100%;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 5px;">
-                            <span style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: var(--primary-color); letter-spacing: 0.5px;">Featured Group Chat</span>
-                            <small style="color: gray;">Community Space</small>
-                        </div>
-                        <h4 style="margin: 0 0 0.25rem 0; word-break: break-word;"><a href="{{ url_for('group_detail', group_id=g_item['id']) }}">{{ g_item['name'] }}</a></h4>
-                        <p style="font-size: 0.9rem; color: #334155; margin-bottom: 0.75rem; word-break: break-word;">{{ g_item['description'] }}</p>
-                        <a href="{{ url_for('group_detail', group_id=g_item['id']) }}" class="btn btn-outline" style="font-size: 0.8rem; padding: 0.3rem 0.8rem;">Join Discussion ↗</a>
-                    </div>
-                {% endif %}
-
-                <div class="post-card" style="background: #fff; border: 1px solid var(--border-color); border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1rem; word-break: break-word; box-sizing: border-box; max-width: 100%;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 5px;">
-                        <a href="{{ url_for('profile', username=post['username']) }}" class="username" style="word-break: break-word;">
-                            @{{ post['username'] }}
-                        </a>
-                        <small style="color: gray;">
-                            <a href="{{ url_for('post_detail', post_id=post['id']) }}" style="color: gray; text-decoration: none;">
-                                {{ post['created_at'] }} ↗
-                            </a>
-                        </small>
-                    </div>
-                    
-                    <!-- Parent Reply Snippet -->
-                    {% if post['parent_id'] and post['parent_content'] %}
-                    <div style="background: #f8fafc; border-left: 4px solid var(--primary-color); padding: 0.6rem 0.8rem; margin-bottom: 0.75rem; border-radius: 4px; font-size: 0.85rem; word-break: break-word;">
-                        <span style="font-weight: 600; color: #475569;">Replying to @{{ post['parent_username'] }}:</span>
-                        <p style="margin: 0.2rem 0 0 0; color: #334155; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-clamp: 2; word-break: break-word;">
-                            {{ post['parent_content'] }}
-                        </p>
-                    </div>
-                    {% endif %}
-                        
-                    <!-- Category Badge -->
-                    {% if post['category'] %}
-                    <div style="margin-top: 8px; margin-bottom: 4px;">
-                        <span style="display: inline-block; background-color: var(--bg-color); border: 1px solid var(--border-color); padding: 2px 8px; border-radius: var(--radius); font-size: 0.8em; color: #64748b; font-weight: 500;">
-                            🏷️ {{ post['category'] }}
-                        </span>
-                    </div>
-                    {% endif %}
-
-                    <!-- Content -->
-                    <p style="margin-bottom: 0.75rem; color: #334155; white-space: pre-line; word-break: break-word;">{{ post['content'] }}</p>
-
-                    <!-- Optional GitHub Link Badge -->
-                    {% if post['github_link'] %}
-                    <div style="margin-bottom: 0.75rem; word-break: break-all;">
-                        <a href="{{ post['github_link'] }}" target="_blank" class="btn btn-outline" style="display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.8rem; padding: 0.3rem 0.6rem; text-decoration: none; max-width: 100%; overflow: hidden; text-overflow: ellipsis;">
-                            📦 View GitHub Repository
-                        </a>
-                    </div>
-                    {% endif %}
-
-                    <!-- Optional Media Attachment -->
-                    {% if post['media_path'] %}
-                    <div style="margin-bottom: 0.75rem; border-radius: var(--radius); overflow: hidden; max-height: 350px; width: 100%;">
-                        {% if post['media_path'].endswith(('mp4', 'webm')) %}
-                        <video controls style="width: 100%; max-height: 350px; object-fit: cover;">
-                            <source src="{{ post['media_path'] }}" type="video/mp4">
-                        </video>
-                        {% else %}
-                        <img src="{{ post['media_path'] }}" alt="Post media" style="width: 100%; max-height: 350px; object-fit: cover;">
-                        {% endif %}
-                    </div>
-                    {% endif %}
-
-                    <!-- Action Bar (Likes & Reply) -->
-                    <div style="display: flex; gap: 1.5rem; align-items: center; border-top: 1px solid #f1f5f9; padding-top: 0.75rem; margin-top: 0.5rem; flex-wrap: wrap;">
-                        <button type="button" 
-                                data-post-id="{{ post['id'] }}" 
-                                onclick="toggleLike(event, this.dataset.postId)" 
-                                id="like-btn-{{ post['id'] }}" 
-                                style="background: none; border: none; display: flex; align-items: center; gap: 0.35rem; cursor: pointer; color: #64748b; font-weight: 500;">
-                            <img id="like-icon-{{ post['id'] }}" 
-                                   src="{{ url_for('static', filename='liked.svg' if post['user_liked'] > 0 else 'like.svg') }}" 
-                                   data-like-url="{{ url_for('static', filename='like.svg') }}"
-                                   data-liked-url="{{ url_for('static', filename='liked.svg') }}"
-                                   width="16" height="16" alt="Like">
-                            <span id="like-count-{{ post['id'] }}">{{ post['like_count'] if post['like_count'] > 0 else 'Like' }}</span>
-                        </button>
-
-                        <a href="{{ url_for('create_post', reply_to=post['id']) }}" style="text-decoration: none; display: flex; align-items: center;">
-                            <img src="{{ url_for('static', filename='comment.svg') }}" width="20" height="20" alt="Comment">
-                        </a>
-                    </div>
-                </div>
-            {% endfor %}
-        {% else %}
-            <div class="card" style="text-align: center; padding: 3rem;">
-                <p style="color: #64748b;">No posts found in this category yet.</p>
-            </div>
-        {% endif %}
-    </div>
-</section>
+</div>
 
 <script>
 async function toggleLike(event, postId) {

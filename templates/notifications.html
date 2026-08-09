@@ -1,26 +1,37 @@
 {% extends "layout.html" %}
+
 {% block title %}Notifications - STEMNet Greece{% endblock %}
+
 {% block content %}
-<div style="max-width: var(--max-width); margin: 0 auto;">
-    <h2>Notifications</h2>
-    <div style="margin-top: 1.5rem;">
+<div style="width: 100%; max-width: 900px; margin: 0 auto; box-sizing: border-box; padding: 0 0.5rem;">
+    <h2 style="font-size: clamp(1.3rem, 4vw, 1.75rem); margin-bottom: 1.5rem; word-break: break-word;">Notifications</h2>
+    
+    <div style="width: 100%; box-sizing: border-box;">
         {% if notifications %}
             {% for n in notifications %}
-                <div class="card" style="display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.5rem; margin-bottom: 10px;">
-                    <div>
+                <div class="card" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; padding: 1.25rem; margin-bottom: 0.75rem; width: 100%; box-sizing: border-box; word-break: break-word;">
+                    <div style="flex: 1; min-width: 200px;">
                         {% if n.type == 'follow' %}
-                            <p><strong><a href="{{ url_for('profile', username=n.actor_username) }}" style="color: var(--primary-color); text-decoration: none;">@{{ n.actor_username }}</a></strong> started following you.</p>
+                            <p style="margin: 0 0 0.35rem 0; color: var(--text-color, #1e293b); font-size: 0.98rem; line-height: 1.4;">
+                                <strong><a href="{{ url_for('profile', username=n.actor_username) }}" style="color: var(--primary-color, #2563eb); text-decoration: none;">@{{ n.actor_username }}</a></strong> started following you.
+                            </p>
                         {% elif n.type == 'reply' %}
-                            <p><strong><a href="{{ url_for('profile', username=n.actor_username) }}" style="color: var(--primary-color); text-decoration: none;">@{{ n.actor_username }}</a></strong> replied to your post: "{{ n.post_content[:60] }}..."</p>
+                            <p style="margin: 0 0 0.35rem 0; color: var(--text-color, #1e293b); font-size: 0.98rem; line-height: 1.4;">
+                                <strong><a href="{{ url_for('profile', username=n.actor_username) }}" style="color: var(--primary-color, #2563eb); text-decoration: none;">@{{ n.actor_username }}</a></strong> replied to your post: "{{ n.post_content[:60] }}..."
+                            </p>
                         {% elif n.type == 'post' %}
-                            <p><strong><a href="{{ url_for('profile', username=n.actor_username) }}" style="color: var(--primary-color); text-decoration: none;">@{{ n.actor_username }}</a></strong> whom you follow uploaded a new post!</p>
+                            <p style="margin: 0 0 0.35rem 0; color: var(--text-color, #1e293b); font-size: 0.98rem; line-height: 1.4;">
+                                <strong><a href="{{ url_for('profile', username=n.actor_username) }}" style="color: var(--primary-color, #2563eb); text-decoration: none;">@{{ n.actor_username }}</a></strong> whom you follow uploaded a new post!
+                            </p>
                         {% endif %}
-                        <small style="color: #64748b; font-family: var(--font-mono); font-size: 0.8rem;">{{ n.created_at }}</small>
+                        <small style="color: #64748b; font-size: 0.8rem; display: block;">{{ n.created_at }}</small>
                     </div>
                 </div>
             {% endfor %}
         {% else %}
-            <p style="color: #64748b; text-align: center; padding: 2rem;">No notifications yet.</p>
+            <div class="card" style="text-align: center; padding: 3rem 1.5rem; width: 100%; box-sizing: border-box;">
+                <p style="color: #64748b; margin: 0; font-size: 1rem;">No notifications yet.</p>
+            </div>
         {% endif %}
     </div>
 </div>
