@@ -890,3 +890,32 @@ input:focus, button:focus-visible {
     color: var(--primary-color, #ccff00) !important;
     border: 1px solid var(--primary-color, #ccff00) !important;
 }
+/* ==========================================
+   PROFILE & FEED ICON STABILITY FIX
+   ========================================== */
+
+/* Prevent flex containers from squishing inline SVG icons to 0px */
+.btn img,
+button img,
+a img,
+.profile-link img {
+    flex-shrink: 0 !important;
+    display: block !important;
+    object-fit: contain !important;
+}
+
+/* Ensure fixed width/height attributes override global 'height: auto' */
+img[width="24"][height="24"] {
+    width: 24px !important;
+    height: 24px !important;
+}
+
+img[width="20"][height="20"] {
+    width: 20px !important;
+    height: 20px !important;
+}
+
+img[width="16"][height="16"] {
+    width: 16px !important;
+    height: 16px !important;
+}

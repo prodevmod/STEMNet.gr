@@ -7,7 +7,7 @@
     <!-- Profile Picture Header Display -->
     <div style="margin-bottom: 15px;">
         {% if profile_user['profile_pic'] %}
-            <img src="{{ url_for('static', filename=profile_user['profile_pic']) }}" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 2px solid var(--border-color);">
+            <img src="{{ url_for('static', filename=profile_user['profile_pic']) }}" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 2px solid var(--border-color);" alt="Profile Picture">
         {% else %}
             <!-- Default avatar fallback -->
             <img src="{{ url_for('static', filename='uploads/default_avatar.svg') }}" alt="Default Avatar" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 2px solid var(--border-color);">
@@ -47,24 +47,24 @@
     <p style="color: gray; font-size: 0.85rem; margin-top: 10px;">Member since {{ profile_user['created_at'] }}</p>
 
     <!-- Affiliate Links Layer -->
-    <div style="display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap;">
+    <div style="display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap; align-items: center;">
         {% if profile_user['github_user'] %}
-        <a href="{{ profile_user['github_user'] }}" target="_blank" class="btn btn-outline" style="display: inline-flex; align-items: center; text-decoration: none;">
-            <img src="{{ url_for('static', filename='github.svg') }}" width="24" height="24" alt="GitHub"> 
+        <a href="{{ profile_user['github_user'] }}" target="_blank" rel="noopener" class="btn btn-outline" style="display: inline-flex; align-items: center; justify-content: center; text-decoration: none;">
+            <img src="{{ url_for('static', filename='github.svg') }}?v=1" width="24" height="24" loading="eager" alt="GitHub" style="flex-shrink: 0; width: 24px; height: 24px;"> 
         </a>
         {% endif %}
 
         {% if profile_user['linkedin_url'] %}
-        <a href="{{ profile_user['linkedin_url'] }}" target="_blank" class="btn btn-outline" style="display: inline-flex; align-items: center; text-decoration: none;">
-            <img src="{{ url_for('static', filename='linkedin.svg') }}" width="24" height="24" alt="LinkedIn"> 
+        <a href="{{ profile_user['linkedin_url'] }}" target="_blank" rel="noopener" class="btn btn-outline" style="display: inline-flex; align-items: center; justify-content: center; text-decoration: none;">
+            <img src="{{ url_for('static', filename='linkedin.svg') }}?v=1" width="24" height="24" loading="eager" alt="LinkedIn" style="flex-shrink: 0; width: 24px; height: 24px;"> 
         </a>
         {% endif %}
         
         {% for i in range(1, 6) %}
             {% set custom_link = profile_user['custom_link_' ~ i] %}
             {% if custom_link %}
-            <a href="{{ custom_link }}" target="_blank" class="btn btn-outline" style="display: inline-flex; align-items: center; text-decoration: none;">
-                <img src="{{ url_for('static', filename='link.svg') }}" width="24" height="24" alt="Link">
+            <a href="{{ custom_link }}" target="_blank" rel="noopener" class="btn btn-outline" style="display: inline-flex; align-items: center; justify-content: center; text-decoration: none;">
+                <img src="{{ url_for('static', filename='link.svg') }}?v=1" width="24" height="24" loading="eager" alt="Link" style="flex-shrink: 0; width: 24px; height: 24px;">
             </a>
             {% endif %}
         {% endfor %}
@@ -82,6 +82,8 @@
 
 <!-- Posts by User -->
 <h3>Posts by @{{ profile_user['username'] }}</h3>
+
+<div id="posts-container">
 {% if posts %}
     {% for post in posts %}
     {% set item = reply if reply is defined else post %}
@@ -128,15 +130,16 @@
                 id="like-btn-{{ item['id'] }}" 
                 style="background: none; border: none; display: flex; align-items: center; gap: 0.35rem; cursor: pointer; color: #64748b; font-weight: 500;">
             <img id="like-icon-{{ item['id'] }}" 
-                 src="{{ url_for('static', filename='liked.svg' if item['user_liked'] > 0 else 'like.svg') }}" 
-                 data-like-url="{{ url_for('static', filename='like.svg') }}"
-                 data-liked-url="{{ url_for('static', filename='liked.svg') }}"
-                 width="16" height="16" alt="Like">
+                 src="{{ url_for('static', filename='liked.svg' if item['user_liked'] > 0 else 'like.svg') }}?v=1" 
+                 data-like-url="{{ url_for('static', filename='like.svg') }}?v=1"
+                 data-liked-url="{{ url_for('static', filename='liked.svg') }}?v=1"
+                 width="16" height="16" loading="eager" alt="Like"
+                 style="flex-shrink: 0; width: 16px; height: 16px;">
             <span id="like-count-{{ item['id'] }}">{{ item['like_count'] if item['like_count'] > 0 else 'Like' }}</span>
         </button>
 
         <a href="{{ url_for('create_post', reply_to=post['id']) }}" style="text-decoration: none; display: flex; align-items: center;">
-            <img src="{{ url_for('static', filename='comment.svg') }}" width="20" height="20" alt="Comment">
+            <img src="{{ url_for('static', filename='comment.svg') }}?v=1" width="20" height="20" loading="eager" alt="Comment" style="flex-shrink: 0; width: 20px; height: 20px;">
         </a>
     </div>
 </div>
@@ -144,6 +147,7 @@
 {% else %}
     <p>This user hasn't published any posts yet.</p>
 {% endif %}
+</div>
 
 <script>
 async function toggleLike(event, postId) {
