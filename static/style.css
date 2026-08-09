@@ -574,3 +574,111 @@ nav a {
     font-weight: 400;
     font-style: normal;
 }
+
+body[data-theme="dark"] {
+    --bg-color: #0f172a;
+    --text-color: #e2e8f0;
+    --card-bg: #111827;
+    --border-color: #334155;
+}
+
+body[data-theme="light"] {
+    --bg-color: #f4f4f5;
+    --text-color: #2b2b2b;
+    --card-bg: #ffffff;
+    --border-color: #d4d4d4;
+}
+
+.post-card,
+.card,
+article {
+    background: var(--card-bg) !important;
+    color: var(--text-color);
+}
+
+.post-card p,
+.card p,
+.post-title,
+.post-body,
+h1, h2, h3, h4, h5, h6,
+label {
+    color: var(--text-color) !important;
+}
+
+.username {
+    color: var(--text-color) !important;
+}
+
+.achievement-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+}
+
+.achievement-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-size: 0.95rem;
+    color: var(--text-color);
+}
+
+.tag-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    margin-bottom: 0.75rem;
+}
+
+.tag-chip {
+    display: inline-block;
+    background-color: rgba(148, 163, 184, 0.2);
+    border: 1px solid var(--border-color);
+    border-radius: 999px;
+    padding: 0.15rem 0.55rem;
+    font-size: 0.78rem;
+    color: var(--text-color);
+}
+
+.post-carousel {
+    position: relative;
+    margin-bottom: 0.8rem;
+}
+
+.carousel-track-container {
+    border-radius: var(--radius);
+    overflow: hidden;
+}
+
+.carousel-slide {
+    display: none;
+    width: 100%;
+    max-height: 350px;
+    object-fit: cover;
+}
+
+.carousel-slide.active {
+    display: block;
+}
+
+.carousel-control {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 2;
+    border: none;
+    background: rgba(15, 23, 42, 0.7);
+    color: #ffffff;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 999px;
+    cursor: pointer;
+}
+
+.carousel-control.prev {
+    left: 0.5rem;
+}
+
+.carousel-control.next {
+    right: 0.5rem;
+}

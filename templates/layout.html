@@ -11,7 +11,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Rubik+Spray+Paint&display=swap" rel="stylesheet">
 </head>
-<body>
+<body data-theme="{{ current_theme }}">
 
     <header>
         <nav>
@@ -45,6 +45,9 @@
                         <a href="{{ url_for('search') }}" style="display: flex; align-items: center;" title="Search">
                             <img src="{{ url_for('static', filename='search.svg') }}" width="22" height="22" alt="Search">
                         </a>
+                        <button type="button" id="themeToggle" class="btn btn-outline" style="padding: 0.35rem 0.7rem;">
+                            Switch to {{ "Light" if current_theme == "dark" else "Dark" }}
+                        </button>
                         <a href="{{ url_for('create_post') }}" class="btn btn-primary">+ New Post</a>
                         <a href="{{ url_for('logout') }}">Logout</a>
                 {% else %}
@@ -76,6 +79,32 @@
         if (menuToggle && navLinks) {
             menuToggle.addEventListener('click', () => {
                 navLinks.classList.toggle('active');
+            });
+        }
+
+        const themeToggle = document.getElementById('themeToggle');
+        if (themeToggle) {
+            themeToggle.addEventListener('click', async () => {
+                const currentTheme = document.body.dataset.theme === 'light' ? 'light' : 'dark';
+                const nextTheme = currentTheme === 'dark' ? 'light' : 'dark';
+                document.body.dataset.theme = nextTheme;
+                themeToggle.textContent = `Switch to ${nextTheme === 'dark' ? 'Light' : 'Dark'}`;
+
+                try {
+                    const response = await fetch('{{ url_for("set_theme") }}', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ theme: nextTheme })
+                    });
+                    if (!response.ok) {
+                        document.body.dataset.theme = currentTheme;
+                        themeToggle.textContent = `Switch to ${currentTheme === 'dark' ? 'Light' : 'Dark'}`;
+                    }
+                } catch (error) {
+                    console.error('Failed to persist theme preference:', error);
+                    document.body.dataset.theme = currentTheme;
+                    themeToggle.textContent = `Switch to ${currentTheme === 'dark' ? 'Light' : 'Dark'}`;
+                }
             });
         }
     </script>

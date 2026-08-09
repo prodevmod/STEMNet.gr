@@ -21,6 +21,7 @@ from flask import (
     Flask,
     flash,
     g,
+    jsonify,
     redirect,
     render_template,
     request,
@@ -161,17 +162,124 @@ app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "fallback-dev-key-change
 csrf = CSRFProtect(app)  
 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'mp4', 'webm'}
+ALLOWED_IMAGE_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
+FEED_PAGE_SIZE = 8
+LIVE_UPDATE_BATCH_SIZE = 20
+HASHTAG_PATTERN = re.compile(r"#([A-Za-z0-9_]+)")
 
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+def allowed_image_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_IMAGE_EXTENSIONS
+
 ALLOWED_PFP_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 def allowed_pfp_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_PFP_EXTENSIONS
+
+def row_to_dict(row):
+    if row is None:
+        return None
+    return dict(row)
+
+def extract_content_tags(content: str | None) -> list[str]:
+    if not content:
+        return []
+    tags: list[str] = []
+    seen: set[str] = set()
+    for match in HASHTAG_PATTERN.findall(content):
+        tag = match.lower()
+        if tag not in seen:
+            seen.add(tag)
+            tags.append(tag)
+    return tags
+
+def fetch_post_gallery_map(db, post_ids: list[int]) -> dict[int, list[str]]:
+    if not post_ids:
+        return {}
+    placeholders = ", ".join(["?"] * len(post_ids))
+    rows = db.execute(
+        f"""
+        SELECT post_id, image_path
+        FROM post_images
+        WHERE post_id IN ({placeholders})
+        ORDER BY sort_order ASC, id ASC
+        """,
+        tuple(post_ids)
+    ).fetchall()
+    gallery_map: dict[int, list[str]] = {post_id: [] for post_id in post_ids}
+    for row in rows:
+        gallery_map[row["post_id"]].append(row["image_path"])
+    return gallery_map
+
+def enrich_post_rows(db, rows):
+    posts = [row_to_dict(row) for row in rows]
+    gallery_map = fetch_post_gallery_map(db, [post["id"] for post in posts])
+    for post in posts:
+        post["gallery_images"] = gallery_map.get(post["id"], [])
+        post["tags"] = extract_content_tags(post.get("content"))
+    return posts
+
+def upload_to_supabase(file_obj, user_id: int, prefix: str) -> str:
+    filename = secure_filename(file_obj.filename)
+    unique_filename = f"{prefix}_{user_id}_{int(time.time())}_{filename}"
+    file_bytes = file_obj.read()
+    supabase.storage.from_("uploads").upload(
+        path=unique_filename,
+        file=file_bytes,
+        file_options={"content-type": file_obj.content_type, "upsert": "false"}
+    )
+    public_url_response = supabase.storage.from_("uploads").get_public_url(unique_filename)
+    if isinstance(public_url_response, dict):
+        return public_url_response.get("publicUrl", "")
+    return public_url_response
+
+def get_user_achievements(db, user_id: int):
+    stats = db.execute(
+        """
+        SELECT
+            (SELECT COUNT(*) FROM posts WHERE user_id = ?) AS post_count,
+            (SELECT COUNT(*) FROM posts WHERE user_id = ? AND category = 'Robotics') AS robotics_posts,
+            (SELECT COUNT(*) FROM posts WHERE user_id = ? AND category = '3D Modeling') AS cad_posts,
+            (SELECT COUNT(*) FROM posts WHERE user_id = ? AND category = 'AI') AS ai_posts,
+            (SELECT COALESCE(COUNT(l.id), 0)
+             FROM likes l
+             JOIN posts p ON p.id = l.post_id
+             WHERE p.user_id = ?) AS total_likes,
+            (SELECT interest FROM users WHERE id = ?) AS interest
+        """,
+        (user_id, user_id, user_id, user_id, user_id, user_id)
+    ).fetchone()
+
+    achievements = []
+    if stats["post_count"] >= 1:
+        achievements.append("First Project")
+    if stats["total_likes"] >= 10:
+        achievements.append("10 Likes")
+    if stats["total_likes"] >= 100:
+        achievements.append("100 Likes")
+    if stats["robotics_posts"] >= 3:
+        achievements.append("Robotics Expert")
+    if stats["cad_posts"] >= 3:
+        achievements.append("CAD Creator")
+    interest = (stats["interest"] or "").lower()
+    if stats["ai_posts"] >= 3 or "ai" in interest:
+        achievements.append("AI Enthusiast")
+    return achievements
+
+def get_current_theme_value() -> str:
+    if g.get("user"):
+        try:
+            stored_theme = g.user["theme_preference"]
+        except (KeyError, TypeError):
+            stored_theme = None
+        if stored_theme in ("dark", "light"):
+            return stored_theme
+    return "dark"
 
 
 class PostgresCursorWrapper:
@@ -454,6 +562,17 @@ def upgrade_database():
             db.execute("ALTER TABLE posts ADD COLUMN IF NOT EXISTS event_type TEXT;")
             db.execute("ALTER TABLE posts ADD COLUMN IF NOT EXISTS event_time TEXT;")
             db.execute("ALTER TABLE posts ADD COLUMN IF NOT EXISTS event_location TEXT;")
+            db.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS theme_preference TEXT;")
+            db.execute(
+                """
+                CREATE TABLE IF NOT EXISTS post_images (
+                    id SERIAL PRIMARY KEY,
+                    post_id INTEGER NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+                    image_path TEXT NOT NULL,
+                    sort_order INTEGER DEFAULT 0
+                );
+                """
+            )
             db.commit()
         else:
             cursor = db.execute("PRAGMA table_info(posts);")
@@ -467,6 +586,23 @@ def upgrade_database():
             for col_name, col_type in missing_cols.items():
                 if col_name not in columns:
                     db.execute(f"ALTER TABLE posts ADD COLUMN {col_name} {col_type};")
+
+            user_columns_cursor = db.execute("PRAGMA table_info(users);")
+            user_columns = [row["name"] for row in user_columns_cursor.fetchall()]
+            if "theme_preference" not in user_columns:
+                db.execute("ALTER TABLE users ADD COLUMN theme_preference TEXT;")
+
+            db.execute(
+                """
+                CREATE TABLE IF NOT EXISTS post_images (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    post_id INTEGER NOT NULL,
+                    image_path TEXT NOT NULL,
+                    sort_order INTEGER DEFAULT 0,
+                    FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE
+                );
+                """
+            )
             db.commit()
 
     except Exception as e:
@@ -504,7 +640,10 @@ def utility_processor():
             count = row['count'] if isinstance(row, dict) else row[0]
             return count > 0
         return False
-    return dict(has_unread_notifications=get_unread_notifications())
+    return dict(
+        has_unread_notifications=get_unread_notifications(),
+        current_theme=get_current_theme_value()
+    )
 
 @app.teardown_appcontext
 def close_db(exception: BaseException | None) -> None:
@@ -537,37 +676,122 @@ def login_required(view):
 
 
 # Route Stubs
-@app.route("/")
-def index():
-    db = get_db()
-    current_user_id = g.user["id"] if g.get("user") else 0
-    selected_category = request.args.get("category", "").strip()
-    
-    # Base query: Exclude 'Events' from the main feed
+def fetch_feed_batch(db, current_user_id: int, selected_category: str, limit: int, before_id: int | None = None):
     query = """
         SELECT posts.*, users.username,
                parent_posts.content AS parent_content,
                parent_users.username AS parent_username,
                (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id) AS like_count,
                (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id AND likes.user_id = ?) AS user_liked
-        FROM posts 
-        JOIN users ON posts.user_id = users.id 
-        LEFT JOIN posts AS parent_posts ON posts.parent_id = parent_posts.id 
-        LEFT JOIN users AS parent_users ON parent_posts.user_id = parent_users.id 
+        FROM posts
+        JOIN users ON posts.user_id = users.id
+        LEFT JOIN posts AS parent_posts ON posts.parent_id = parent_posts.id
+        LEFT JOIN users AS parent_users ON parent_posts.user_id = parent_users.id
         WHERE posts.category != 'Events'
     """
     params = [current_user_id]
-    
-    # Apply category filter if selected
     if selected_category:
         query += " AND posts.category = ?"
         params.append(selected_category)
-        
-    query += " ORDER BY posts.created_at DESC"
-    
-    posts = db.execute(query, params).fetchall()
-    
-    return render_template("index.html", posts=posts, selected_category=selected_category)
+    if before_id is not None:
+        query += " AND posts.id < ?"
+        params.append(before_id)
+    query += " ORDER BY posts.created_at DESC, posts.id DESC LIMIT ?"
+    params.append(limit + 1)
+    rows = db.execute(query, params).fetchall()
+    has_more = len(rows) > limit
+    if has_more:
+        rows = rows[:limit]
+    return enrich_post_rows(db, rows), has_more
+
+@app.route("/")
+def index():
+    db = get_db()
+    current_user_id = g.user["id"] if g.get("user") else 0
+    selected_category = request.args.get("category", "").strip()
+
+    posts, has_more = fetch_feed_batch(
+        db=db,
+        current_user_id=current_user_id,
+        selected_category=selected_category,
+        limit=FEED_PAGE_SIZE,
+    )
+    oldest_id = posts[-1]["id"] if posts else None
+    newest_id = posts[0]["id"] if posts else None
+
+    return render_template(
+        "index.html",
+        posts=posts,
+        selected_category=selected_category,
+        has_more=has_more,
+        oldest_id=oldest_id,
+        newest_id=newest_id,
+    )
+
+@app.route("/api/posts")
+def api_posts():
+    db = get_db()
+    current_user_id = g.user["id"] if g.get("user") else 0
+    selected_category = request.args.get("category", "").strip()
+    before_id = request.args.get("before_id", type=int)
+    after_id = request.args.get("after_id", type=int)
+
+    if after_id is not None:
+        query = """
+            SELECT posts.*, users.username,
+                   parent_posts.content AS parent_content,
+                   parent_users.username AS parent_username,
+                   (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id) AS like_count,
+                   (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id AND likes.user_id = ?) AS user_liked
+            FROM posts
+            JOIN users ON posts.user_id = users.id
+            LEFT JOIN posts AS parent_posts ON posts.parent_id = parent_posts.id
+            LEFT JOIN users AS parent_users ON parent_posts.user_id = parent_users.id
+            WHERE posts.category != 'Events'
+              AND posts.id > ?
+        """
+        params = [current_user_id, after_id]
+        if selected_category:
+            query += " AND posts.category = ?"
+            params.append(selected_category)
+        query += " ORDER BY posts.created_at ASC, posts.id ASC LIMIT ?"
+        params.append(LIVE_UPDATE_BATCH_SIZE)
+        rows = db.execute(query, params).fetchall()
+        posts = enrich_post_rows(db, rows)
+        items = [
+            {"id": post["id"], "html": render_template("_post_card.html", post=post)}
+            for post in posts
+        ]
+        newest_id = posts[-1]["id"] if posts else after_id
+        return jsonify({"items": items, "newest_id": newest_id})
+
+    posts, has_more = fetch_feed_batch(
+        db=db,
+        current_user_id=current_user_id,
+        selected_category=selected_category,
+        limit=FEED_PAGE_SIZE,
+        before_id=before_id,
+    )
+    items = [{"id": post["id"], "html": render_template("_post_card.html", post=post)} for post in posts]
+    oldest_id = posts[-1]["id"] if posts else before_id
+    return jsonify({"items": items, "has_more": has_more, "oldest_id": oldest_id})
+
+@app.route("/theme", methods=["POST"])
+@csrf.exempt
+def set_theme():
+    if g.get("user") is None:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    payload = request.get_json(silent=True) or {}
+    theme = (payload.get("theme") or "").strip().lower()
+    if theme not in {"dark", "light"}:
+        return jsonify({"error": "Invalid theme"}), 400
+
+    db = get_db()
+    db.execute("UPDATE users SET theme_preference = ? WHERE id = ?", (theme, g.user["id"]))
+    db.commit()
+    g.user["theme_preference"] = theme
+    return jsonify({"theme": theme})
 
 
 
@@ -643,6 +867,7 @@ def create_post():
                 category = custom_category if custom_category else "Other"
 
         media_path = None
+        gallery_image_urls = []
 
         if not content:
             flash("Post content cannot be empty.", "danger")
@@ -652,31 +877,26 @@ def create_post():
         file = request.files.get("media")
         if file and file.filename != '':
             if allowed_file(file.filename):
-                filename = secure_filename(file.filename)
-                unique_filename = f"{g.user['id']}_{int(time.time())}_{filename}"
-                file_bytes = file.read()
-                
                 try:
-                    # Upload directly to the Supabase Storage bucket named 'uploads'
-                    supabase.storage.from_("uploads").upload(
-                        path=unique_filename,
-                        file=file_bytes,
-                        file_options={"content-type": file.content_type, "upsert": "false"}
-                    )
-                    
-                    # Fetch the permanent public URL
-                    public_url_response = supabase.storage.from_("uploads").get_public_url(unique_filename)
-                    
-                    if isinstance(public_url_response, dict):
-                        media_path = public_url_response.get("publicUrl")
-                    else:
-                        media_path = public_url_response
+                    media_path = upload_to_supabase(file, g.user["id"], "post")
                 except Exception as e:
                     app.logger.error(f"Supabase upload error: {e}")
                     flash("Failed to upload media file to cloud storage.", "danger")
                     return render_template("create.html", parent_post=parent_post)
             else:
                 flash("Invalid file type. Allowed: images (png, jpg, gif) and short videos (mp4, webm).", "danger")
+                return render_template("create.html", parent_post=parent_post)
+
+        gallery_files = [image for image in request.files.getlist("gallery_images") if image and image.filename]
+        for image in gallery_files:
+            if not allowed_image_file(image.filename):
+                flash("Invalid gallery image type. Allowed: png, jpg, jpeg, gif, webp.", "danger")
+                return render_template("create.html", parent_post=parent_post)
+            try:
+                gallery_image_urls.append(upload_to_supabase(image, g.user["id"], "gallery"))
+            except Exception as e:
+                app.logger.error(f"Supabase gallery upload error: {e}")
+                flash("Failed to upload one of the gallery images.", "danger")
                 return render_template("create.html", parent_post=parent_post)
 
         # Insert into database with event fields and cloud media URL
@@ -688,6 +908,12 @@ def create_post():
             (g.user["id"], content, media_path, github_link, category, parent_id, event_type, event_time, event_location)
         )
         post_id = cursor.lastrowid
+
+        for idx, image_url in enumerate(gallery_image_urls):
+            db.execute(
+                "INSERT INTO post_images (post_id, image_path, sort_order) VALUES (?, ?, ?)",
+                (post_id, image_url, idx)
+            )
 
         # Notification loops
         if parent_id:
@@ -710,8 +936,6 @@ def create_post():
         return redirect(url_for("index"))
 
     return render_template("create.html", parent_post=parent_post)
-
-from flask import jsonify
 
 @app.route("/like/<int:post_id>", methods=["POST"])
 @csrf.exempt
@@ -787,7 +1011,7 @@ def profile(username: str | None = None):
     profile_user = sanitize_profile_links(raw_user)
 
     # 4. Fetch user's posts (fixed ? to %s)
-    posts = db.execute(
+    post_rows = db.execute(
         """
         SELECT posts.*, users.username,
                parent_posts.content AS parent_content,
@@ -803,6 +1027,7 @@ def profile(username: str | None = None):
         """,
         (current_user_id, profile_user["id"])
     ).fetchall()
+    posts = enrich_post_rows(db, post_rows)
 
     # 5. Fetch Follower and Following counts safely (fixed ? to %s)
     followers_row = db.execute(
@@ -824,13 +1049,16 @@ def profile(username: str | None = None):
         ).fetchone()
         is_following = check_follow is not None
 
+    achievements = get_user_achievements(db, profile_user["id"])
+
     return render_template(
         "profile.html", 
         profile_user=profile_user, 
         posts=posts, 
         followers_count=followers_count, 
         following_count=following_count, 
-        is_following=is_following
+        is_following=is_following,
+        achievements=achievements
     )
 
 
@@ -1052,7 +1280,7 @@ def post_detail(post_id):
     db = get_db()
     current_user_id = g.user["id"] if g.get("user") else 0
     
-    post = db.execute(
+    post_row = db.execute(
         """
         SELECT posts.*, users.username,
                parent_posts.content AS parent_content,
@@ -1067,13 +1295,16 @@ def post_detail(post_id):
         """,
         (current_user_id, post_id)
     ).fetchone()
+    post = row_to_dict(post_row)
 
     if not post:
         flash("Post not found.", "danger")
         return redirect(url_for("index"))
 
+    post = enrich_post_rows(db, [post])[0]
+
     # Fetch direct replies to this specific post
-    replies = db.execute(
+    reply_rows = db.execute(
         """
         SELECT posts.*, users.username,
                (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id) AS like_count,
@@ -1085,6 +1316,7 @@ def post_detail(post_id):
         """,
         (current_user_id, post_id)
     ).fetchall()
+    replies = enrich_post_rows(db, reply_rows)
 
     return render_template("post_detail.html", post=post, replies=replies)
 
@@ -1179,7 +1411,7 @@ def events_feed():
     db = get_db()
     current_user_id = g.user["id"] if g.get("user") else 0
     
-    posts = db.execute(
+    post_rows = db.execute(
         """
         SELECT posts.*, users.username,
                parent_posts.content AS parent_content,
@@ -1195,6 +1427,7 @@ def events_feed():
         """,
         (current_user_id,)
     ).fetchall()
+    posts = enrich_post_rows(db, post_rows)
     
     return render_template("events.html", posts=posts)
 
@@ -1211,7 +1444,7 @@ def search():
         search_term = f"%{query}%"
         
         # 1. Search posts (content, categories, etc.)
-        posts = db.execute(
+        post_rows = db.execute(
             """
             SELECT posts.*, users.username,
                    parent_posts.content AS parent_content,
@@ -1227,6 +1460,7 @@ def search():
             """,
             (current_user_id, search_term, search_term)
         ).fetchall()
+        posts = enrich_post_rows(db, post_rows)
 
         # 2. Search users (by username or bio)
         users = db.execute(

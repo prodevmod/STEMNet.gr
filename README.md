@@ -74,6 +74,28 @@ Users can create posts containing:
 * Background JavaScript `fetch()` requests eliminate page reloads
 * Dynamic UI updates for a smoother user experience
 
+### User Achievements
+
+* Profile achievement badges with an icon-based list
+* Milestones such as first project and like-based thresholds
+* Topic-specific achievements for Robotics, CAD, and AI activity
+
+### Infinite Feed + Live Updates
+
+* AJAX-powered "Load More" feed instead of full-page pagination
+* Incremental loading keeps browsing smooth on long feeds
+* Real-time feed polling adds newly published posts without refreshing
+
+### Dark / Light Mode
+
+* Theme preference persisted per user in the database
+* Defaults to dark mode when no preference exists yet
+
+### Project Image Gallery
+
+* Multiple images per post/project
+* Carousel controls for browsing project galleries
+
 ### Security
 
 Security was an important part of the project and includes:

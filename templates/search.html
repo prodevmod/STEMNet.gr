@@ -69,10 +69,53 @@
             {% endif %}
            
             <p style="margin-top: 10px; white-space: pre-line;">{{ post['content'] }}</p>
+
+            {% if post['tags'] %}
+            <div class="tag-list">
+                {% for tag in post['tags'] %}
+                <span class="tag-chip">#{{ tag }}</span>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            {% if post['gallery_images'] %}
+            <div class="post-carousel" data-carousel-id="post-{{ post['id'] }}">
+                <button type="button" class="carousel-control prev" data-carousel-target="post-{{ post['id'] }}" aria-label="Previous image">‹</button>
+                <div class="carousel-track-container">
+                    <div class="carousel-track">
+                        {% for image_url in post['gallery_images'] %}
+                        <img src="{{ image_url }}" alt="Project gallery image {{ loop.index }}" class="carousel-slide {% if loop.first %}active{% endif %}">
+                        {% endfor %}
+                    </div>
+                </div>
+                <button type="button" class="carousel-control next" data-carousel-target="post-{{ post['id'] }}" aria-label="Next image">›</button>
+            </div>
+            {% endif %}
         </div>
         {% endfor %}
     {% else %}
         <p style="color: gray;">No posts found matching your search term.</p>
     {% endif %}
 {% endif %}
+<script>
+function cycleCarousel(carouselId, direction) {
+    const carousel = document.querySelector(`[data-carousel-id="${carouselId}"]`);
+    if (!carousel) return;
+    const slides = Array.from(carousel.querySelectorAll('.carousel-slide'));
+    if (slides.length <= 1) return;
+
+    const activeIndex = slides.findIndex((slide) => slide.classList.contains('active'));
+    const nextIndex = (activeIndex + direction + slides.length) % slides.length;
+    slides[activeIndex].classList.remove('active');
+    slides[nextIndex].classList.add('active');
+}
+
+document.addEventListener('click', (event) => {
+    const carouselControl = event.target.closest('.carousel-control');
+    if (!carouselControl) return;
+    const carouselId = carouselControl.dataset.carouselTarget;
+    const direction = carouselControl.classList.contains('next') ? 1 : -1;
+    cycleCarousel(carouselId, direction);
+});
+</script>
 {% endblock %}

@@ -1,0 +1,95 @@
+<div class="post-card" data-post-id="{{ post['id'] }}" style="background: var(--card-bg); border: 1px solid var(--border-color); border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <a href="{{ url_for('profile', username=post['username']) }}" class="username">
+            @{{ post['username'] }}
+        </a>
+        <small style="color: gray;">
+            <a href="{{ url_for('post_detail', post_id=post['id']) }}" style="color: gray; text-decoration: none;">
+                {{ post['created_at'] }} ↗
+            </a>
+        </small>
+    </div>
+
+    {% if post['parent_id'] and post['parent_content'] %}
+    <div style="background: #f8fafc; border-left: 4px solid var(--primary-color); padding: 0.6rem 0.8rem; margin-bottom: 0.75rem; border-radius: 4px; font-size: 0.85rem;">
+        <span style="font-weight: 600; color: #475569;">Replying to @{{ post['parent_username'] }}:</span>
+        <p style="margin: 0.2rem 0 0 0; color: #334155; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-clamp: 2;">
+            {{ post['parent_content'] }}
+        </p>
+    </div>
+    {% endif %}
+
+    {% if post['category'] %}
+    <div style="margin-top: 8px; margin-bottom: 4px;">
+        <span style="display: inline-block; background-color: var(--bg-color); border: 1px solid var(--border-color); padding: 2px 8px; border-radius: var(--radius); font-size: 0.8em; color: #64748b; font-weight: 500;">
+            🏷️ {{ post['category'] }}
+        </span>
+    </div>
+    {% endif %}
+
+    <p style="margin-bottom: 0.75rem; color: #334155; white-space: pre-line;">{{ post['content'] }}</p>
+
+    {% if post['tags'] %}
+    <div class="tag-list">
+        {% for tag in post['tags'] %}
+        <span class="tag-chip">#{{ tag }}</span>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if post['github_link'] %}
+    <div style="margin-bottom: 0.75rem;">
+        <a href="{{ post['github_link'] }}" target="_blank" class="btn btn-outline" style="display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.8rem; padding: 0.3rem 0.6rem; text-decoration: none;">
+            📦 View GitHub Repository
+        </a>
+    </div>
+    {% endif %}
+
+    {% if post['gallery_images'] %}
+    <div class="post-carousel" data-carousel-id="post-{{ post['id'] }}">
+        <button type="button" class="carousel-control prev" data-carousel-target="post-{{ post['id'] }}" aria-label="Previous image">‹</button>
+        <div class="carousel-track-container">
+            <div class="carousel-track">
+                {% for image_url in post['gallery_images'] %}
+                <img src="{{ image_url }}" alt="Project gallery image {{ loop.index }}" class="carousel-slide {% if loop.first %}active{% endif %}">
+                {% endfor %}
+            </div>
+        </div>
+        <button type="button" class="carousel-control next" data-carousel-target="post-{{ post['id'] }}" aria-label="Next image">›</button>
+    </div>
+    {% endif %}
+
+    {% if post['media_path'] %}
+    {% set media_path = post['media_path']|lower %}
+    {% if media_path.endswith(('mp4', 'webm')) %}
+    <div style="margin-bottom: 0.75rem; border-radius: var(--radius); overflow: hidden; max-height: 350px;">
+        <video controls style="width: 100%; max-height: 350px; object-fit: cover;">
+            <source src="{{ post['media_path'] }}" type="video/mp4">
+        </video>
+    </div>
+    {% elif not post['gallery_images'] %}
+    <div style="margin-bottom: 0.75rem; border-radius: var(--radius); overflow: hidden; max-height: 350px;">
+        <img src="{{ post['media_path'] }}" alt="Post media" style="width: 100%; max-height: 350px; object-fit: cover;">
+    </div>
+    {% endif %}
+    {% endif %}
+
+    <div style="display: flex; gap: 1.5rem; align-items: center; border-top: 1px solid #f1f5f9; padding-top: 0.75rem; margin-top: 0.5rem;">
+        <button type="button"
+                data-post-id="{{ post['id'] }}"
+                onclick="toggleLike(event, this.dataset.postId)"
+                id="like-btn-{{ post['id'] }}"
+                style="background: none; border: none; display: flex; align-items: center; gap: 0.35rem; cursor: pointer; color: #64748b; font-weight: 500;">
+            <img id="like-icon-{{ post['id'] }}"
+                 src="{{ url_for('static', filename='liked.svg' if post['user_liked'] > 0 else 'like.svg') }}"
+                 data-like-url="{{ url_for('static', filename='like.svg') }}"
+                 data-liked-url="{{ url_for('static', filename='liked.svg') }}"
+                 width="16" height="16" alt="Like">
+            <span id="like-count-{{ post['id'] }}">{{ post['like_count'] if post['like_count'] > 0 else 'Like' }}</span>
+        </button>
+
+        <a href="{{ url_for('create_post', reply_to=post['id']) }}" style="text-decoration: none; display: flex; align-items: center;">
+            <img src="{{ url_for('static', filename='comment.svg') }}" width="20" height="20" alt="Comment">
+        </a>
+    </div>
+</div>

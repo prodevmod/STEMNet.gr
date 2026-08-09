@@ -25,6 +25,7 @@
         <div class="form-group">
             <label for="content">Post Content *</label>
             <textarea id="content" name="content" rows="5" required placeholder="What are you working on?" style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: var(--radius); resize: vertical;"></textarea>
+            <small style="color: #64748b;">Tip: add hashtags like #robotics #arduino #fusion360.</small>
         </div>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
@@ -32,6 +33,10 @@
             <div class="form-group" style="margin-bottom: 0;">
                 <label for="media" style="font-size: 0.85rem;">Attach Media (Optional)</label>
                 <input type="file" id="media" name="media" accept="image/*,video/mp4,video/webm">
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+                <label for="gallery_images" style="font-size: 0.85rem;">Project Image Gallery (Optional)</label>
+                <input type="file" id="gallery_images" name="gallery_images" accept="image/*" multiple>
             </div>
         </div>
 

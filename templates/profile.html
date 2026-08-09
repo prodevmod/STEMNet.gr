@@ -46,6 +46,20 @@
     <!-- Member Since -->
     <p style="color: gray; font-size: 0.85rem; margin-top: 10px;">Member since {{ profile_user['created_at'] }}</p>
 
+    {% if achievements %}
+    <div class="achievements-section">
+        <h3 style="margin: 1rem 0 0.5rem 0;">User Achievements</h3>
+        <div class="achievement-list">
+            {% for achievement in achievements %}
+            <div class="achievement-item">
+                <img src="{{ url_for('static', filename='achievement.svg') }}" alt="Achievement icon" width="18" height="18">
+                <span>{{ achievement }}</span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
     <!-- Affiliate Links Layer -->
     <div style="display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap;">
         {% if profile_user['github_user'] %}
@@ -84,68 +98,33 @@
 <h3>Posts by @{{ profile_user['username'] }}</h3>
 {% if posts %}
     {% for post in posts %}
-    {% set item = reply if reply is defined else post %}
-<div class="card" style="margin-bottom: 15px; word-break: break-word; overflow-wrap: break-word;">
-    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
-        <a href="{{ url_for('profile', username=post['username']) }}" class="username">
-            @{{ post['username'] }}
-        </a>
-        
-        <small style="color: gray;">
-            <a href="{{ url_for('post_detail', post_id=post['id']) }}" style="color: gray; text-decoration: none;">
-                {{ post['created_at'] }} ↗
-            </a>
-        </small>
-    </div>
-    
-    {% if post['category'] %}
-    <div style="margin-top: 8px; margin-bottom: 4px;">
-        <span style="display: inline-block; background-color: var(--bg-color); border: 1px solid var(--border-color); padding: 2px 8px; border-radius: var(--radius); font-size: 0.8em; color: #64748b; font-weight: 500;">
-            🏷️ {{ post['category'] }}
-        </span>
-    </div>
-    {% endif %}
-   
-    <p style="margin-top: 10px; white-space: pre-line;">{{ post['content'] }}</p>
-
-    {% if post['media_path'] %}
-    <div style="margin-bottom: 0.75rem; border-radius: var(--radius); overflow: hidden; max-height: 350px;">
-        {% if post['media_path'].endswith(('mp4', 'webm')) %}
-        <video controls style="width: 100%; max-height: 350px; object-fit: cover;">
-            <source src="{{ post['media_path'] }}" type="video/mp4">
-        </video>
-        {% else %}
-        <img src="{{ post['media_path'] }}" alt="Post media" style="width: 100%; max-height: 350px; object-fit: cover;">
-        {% endif %}
-    </div>
-    {% endif %}
-
-    <!-- Like and Reply Action Bar -->
-    <div style="display: flex; gap: 15px; margin-top: 15px; align-items: center; flex-wrap: wrap;">
-        <button type="button" 
-                data-post-id="{{ item['id'] }}" 
-                onclick="toggleLike(event, this.dataset.postId)" 
-                id="like-btn-{{ item['id'] }}" 
-                style="background: none; border: none; display: flex; align-items: center; gap: 0.35rem; cursor: pointer; color: #64748b; font-weight: 500;">
-            <img id="like-icon-{{ item['id'] }}" 
-                 src="{{ url_for('static', filename='liked.svg' if item['user_liked'] > 0 else 'like.svg') }}" 
-                 data-like-url="{{ url_for('static', filename='like.svg') }}"
-                 data-liked-url="{{ url_for('static', filename='liked.svg') }}"
-                 width="16" height="16" alt="Like">
-            <span id="like-count-{{ item['id'] }}">{{ item['like_count'] if item['like_count'] > 0 else 'Like' }}</span>
-        </button>
-
-        <a href="{{ url_for('create_post', reply_to=post['id']) }}" style="text-decoration: none; display: flex; align-items: center;">
-            <img src="{{ url_for('static', filename='comment.svg') }}" width="20" height="20" alt="Comment">
-        </a>
-    </div>
-</div>
+        {% include "_post_card.html" %}
     {% endfor %}
 {% else %}
     <p>This user hasn't published any posts yet.</p>
 {% endif %}
 
 <script>
+function cycleCarousel(carouselId, direction) {
+    const carousel = document.querySelector(`[data-carousel-id="${carouselId}"]`);
+    if (!carousel) return;
+    const slides = Array.from(carousel.querySelectorAll('.carousel-slide'));
+    if (slides.length <= 1) return;
+
+    const activeIndex = slides.findIndex((slide) => slide.classList.contains('active'));
+    const nextIndex = (activeIndex + direction + slides.length) % slides.length;
+    slides[activeIndex].classList.remove('active');
+    slides[nextIndex].classList.add('active');
+}
+
+document.addEventListener('click', (event) => {
+    const carouselControl = event.target.closest('.carousel-control');
+    if (!carouselControl) return;
+    const carouselId = carouselControl.dataset.carouselTarget;
+    const direction = carouselControl.classList.contains('next') ? 1 : -1;
+    cycleCarousel(carouselId, direction);
+});
+
 async function toggleLike(event, postId) {
     if (event) event.preventDefault();
     
