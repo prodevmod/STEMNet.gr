@@ -713,3 +713,20 @@ body {
 [data-theme="dark"] div[style*="background: #f8fafc"] span {
     color: #ffffff !important;
 }
+
+/* Force all button text to stay black in dark mode for neon button contrast */
+[data-theme="dark"] .btn,
+[data-theme="dark"] .btn-primary,
+[data-theme="dark"] .btn-outline,
+[data-theme="dark"] button,
+[data-theme="dark"] input[type="submit"],
+[data-theme="dark"] a.btn {
+    color: #000000 !important;
+}
+
+/* Also ensure hover states for buttons keep black text if needed */
+[data-theme="dark"] .btn:hover,
+[data-theme="dark"] .btn-primary:hover,
+[data-theme="dark"] .btn-outline:hover {
+    color: #000000 !important;
+}
