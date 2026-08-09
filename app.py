@@ -1304,6 +1304,17 @@ def api_posts():
     posts_list = [dict(row) for row in posts]
     return jsonify(posts_list)
 
+@app.route("/groups")
+def groups():
+    db = get_db()
+    all_groups = db.execute("""
+        SELECT g.*, u.username 
+        FROM groups g 
+        JOIN users u ON g.user_id = u.id 
+        ORDER BY g.created_at DESC
+    """).fetchall()
+    return render_template("groups.html", groups=all_groups)
+
 @app.route('/group/create', methods=['GET', 'POST'])
 @login_required
 def create_group():
