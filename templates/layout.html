@@ -16,6 +16,20 @@
         })();
     </script>
 
+    <!-- Instant CSS rules for Theme Icons to prevent delay/flash -->
+    <style>
+        .theme-toggle-btn .theme-icon {
+            transition: none !important;
+            display: none !important;
+        }
+        html:not([data-theme="dark"]) .theme-icon-dark {
+            display: inline-block !important;
+        }
+        html[data-theme="dark"] .theme-icon-light {
+            display: inline-block !important;
+        }
+    </style>
+
     <!-- Link to stylesheet -->
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='logo.svg') }}?v=2">
@@ -37,9 +51,9 @@
             <!-- Navigation Links -->
             <div class="nav-links" id="navLinks">
                 {% if g.user %}
-                <a href="{{ url_for('stem_extras') }}" style="display: flex; align-items: center;" title="STEM Extras">
-                    <img src="{{ url_for('static', filename='stem.svg') }}" width="22" height="22" alt="STEM Extras">
-                </a>
+                    <a href="{{ url_for('stem_extras') }}" style="display: flex; align-items: center;" title="STEM Extras">
+                        <img src="{{ url_for('static', filename='stem.svg') }}" width="22" height="22" alt="STEM Extras">
+                    </a>
                     <a href="{{ url_for('groups') }}" style="display: flex; align-items: center;" title="Groups">
                         <img src="{{ url_for('static', filename='group.svg') }}" width="22" height="22" alt="Groups">
                     </a>
@@ -64,9 +78,10 @@
                         <img src="{{ url_for('static', filename='search.svg') }}" width="22" height="22" alt="Search">
                     </a>
 
-                    <!-- Theme Toggle Button -->
+                    <!-- Theme Toggle Button with Both Icons Rendered -->
                     <button id="theme-toggle" class="theme-toggle-btn" aria-label="Toggle Dark Mode">
-                        <img id="theme-icon" src="{{ url_for('static', filename='dark_mode.svg') }}" alt="Toggle Theme">
+                        <img src="{{ url_for('static', filename='dark_mode.svg') }}" class="theme-icon theme-icon-dark" alt="Dark Mode">
+                        <img src="{{ url_for('static', filename='light_mode.svg') }}" class="theme-icon theme-icon-light" alt="Light Mode">
                     </button>
 
                     <a href="{{ url_for('create_post') }}" class="btn btn-primary">+ New Post</a>
@@ -104,33 +119,17 @@
             });
         }
 
-        // Dark / Light Mode Toggle Logic
+        // Instant Dark / Light Mode Toggle Logic
         document.addEventListener('DOMContentLoaded', () => {
             const toggleBtn = document.getElementById('theme-toggle');
-            const themeIcon = document.getElementById('theme-icon');
             
-            if (toggleBtn && themeIcon) {
-                const darkModeIconPath = "{{ url_for('static', filename='dark_mode.svg') }}";
-                const lightModeIconPath = "{{ url_for('static', filename='light_mode.svg') }}";
-
-                function updateIcon() {
-                    const currentTheme = document.documentElement.getAttribute('data-theme');
-                    if (currentTheme === 'dark') {
-                        themeIcon.src = lightModeIconPath;
-                    } else {
-                        themeIcon.src = darkModeIconPath;
-                    }
-                }
-
-                updateIcon();
-
+            if (toggleBtn) {
                 toggleBtn.addEventListener('click', () => {
                     const currentTheme = document.documentElement.getAttribute('data-theme');
                     const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
                     
                     document.documentElement.setAttribute('data-theme', newTheme);
                     localStorage.setItem('theme', newTheme);
-                    updateIcon();
                 });
             }
         });
