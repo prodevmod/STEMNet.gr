@@ -16,7 +16,15 @@
         })();
     </script>
 
-    <!-- Header Alignment, Brand, Mobile Dropdown & Lightbox CSS -->
+    <!-- Link to stylesheet FIRST -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='logo.svg') }}?v=2">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Rubik+Spray+Paint&display=swap" rel="stylesheet">
+
+    <!-- Header Alignment, Brand, Mobile Dropdown & Lightbox CSS placed AFTER style.css to ensure precedence -->
     <style>
         /* Header Navigation Flex Layout */
         header nav {
@@ -35,7 +43,6 @@
             align-items: center;
             gap: 0.6rem;
             text-decoration: none;
-            color: inherit;
             font-weight: 700;
             font-size: 1.15rem;
             flex-shrink: 0;
@@ -45,10 +52,10 @@
             opacity: 0.9;
         }
 
-        /* Force STEMNet.gr Brand Text & Logout Link to be the exact same color in all modes */
+        /* Force STEMNet.gr Brand Text & Logout Link to be the exact same visible color in all modes */
         .nav-brand span,
         .nav-logout-link {
-            color: #ccff00 !important;
+            color: #0074D9 !important;
         }
 
         /* Nav links container */
@@ -75,7 +82,9 @@
         /* Force Login prompt text/background to stay white in every mode */
         .nav-login-btn,
         [data-theme="light"] .nav-login-btn,
-        [data-theme="dark"] .nav-login-btn {
+        [data-theme="dark"] .nav-login-btn,
+        [data-theme="None"] .nav-login-btn,
+        [data-theme="none"] .nav-login-btn {
             color: #ffffff !important;
         }
 
@@ -208,13 +217,6 @@
             }
         }
     </style>
-
-    <!-- Link to stylesheet -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='logo.svg') }}?v=2">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Rubik+Spray+Paint&display=swap" rel="stylesheet">
 </head>
 <body>
 
