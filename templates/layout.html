@@ -35,7 +35,7 @@
             align-items: center;
             gap: 0.6rem;
             text-decoration: none;
-            color: #ffffff;
+            color: inherit;
             font-weight: 700;
             font-size: 1.15rem;
             flex-shrink: 0;
@@ -43,6 +43,12 @@
 
         .nav-brand:hover {
             opacity: 0.9;
+        }
+
+        /* Force STEMNet.gr Brand Text & Logout Link to be the exact same color in all modes */
+        .nav-brand span,
+        .nav-logout-link {
+            color: #0074D9 !important;
         }
 
         /* Nav links container */
@@ -72,7 +78,6 @@
         [data-theme="dark"] .nav-login-btn {
             color: #ffffff !important;
         }
-
 
         /* Preserve navbar SVG fills without unwanted filter inversions */
         .nav-links a:not(.btn) svg,
@@ -215,7 +220,7 @@
 
     <header>
         <nav>
-            <!-- Brand Logo & Title (STEMNet.gr Reference Link serving as Feed) -->
+            <!-- Brand Logo & Title -->
             <a href="{{ url_for('index') }}" class="nav-brand" title="STEMNet Greece Home">
                 {{ 'logo.svg' | inline_svg(30, 30) }}
                 <span>STEMNet.gr</span>
@@ -262,7 +267,7 @@
 
                 {% if g.user %}
                     <a href="{{ url_for('create_post') }}" class="btn btn-primary">+ New Post</a>
-                    <a href="{{ url_for('logout') }}">Logout</a>
+                    <a href="{{ url_for('logout') }}" class="nav-logout-link">Logout</a>
                 {% else %}
                     <a href="{{ url_for('login') }}" class="nav-login-btn">Log In</a>
                     <a href="{{ url_for('register') }}" class="btn btn-primary">Register</a>
