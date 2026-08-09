@@ -3,16 +3,17 @@
 {% block title %}Search - STEMNet Greece{% endblock %}
 
 {% block content %}
-<div class="card" style="margin-bottom: 2rem;">
-    <h2>Search STEMNet Greece</h2>
-    <p style="color: #64748b; font-size: 0.9rem; margin-top: 5px;">Find members, projects, and discussions.</p>
+<div class="card" style="margin-bottom: 2rem; max-width: 800px; margin-left: auto; margin-right: auto; padding: 2rem;">
+    <h2 style="font-size: 1.5rem; margin-bottom: 0.5rem;">Search STEMNet Greece</h2>
+    <p style="color: #64748b; font-size: 0.95rem; margin-top: 0; margin-bottom: 1.5rem;">Find members, projects, and discussions.</p>
     
-    <form action="{{ url_for('search') }}" method="GET" style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 15px;">
-        <input type="text" name="q" value="{{ query }}" placeholder="Search users, tech stacks, or topics..." required style="flex: 1 1 200px; min-width: 0; padding: 10px; border-radius: var(--radius); border: 1px solid var(--border-color); font-size: 1rem;">
-        <button type="submit" class="btn btn-primary" style="padding: 10px 20px; flex-shrink: 0;">Search</button>
+    <form action="{{ url_for('search') }}" method="GET" style="display: flex; gap: 12px; align-items: center; width: 100%;">
+        <input type="text" name="q" value="{{ query }}" placeholder="Search users, tech stacks, or topics..." required style="flex: 1; padding: 12px 16px; border-radius: var(--radius); border: 1px solid var(--border-color); font-size: 1rem; min-width: 0; height: 48px; box-sizing: border-box;">
+        <button type="submit" class="btn btn-primary" style="padding: 0 24px; height: 48px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; font-size: 1rem;">Search</button>
     </form>
 </div>
 
+<div style="max-width: 900px; margin-left: auto; margin-right: auto;">
 {% if query %}
     <!-- USERS RESULTS SECTION -->
     <h3 style="margin-bottom: 15px; word-break: break-word;">Users matching "{{ query }}" ({{ users|length }})</h3>
@@ -81,7 +82,7 @@
         {% if groups %}
             <div style="display: grid; gap: 1rem; margin-top: 1rem;">
                 {% for group in groups %}
-                    <div class="card" style="padding: 1rem; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; word-break: break-word;">
+                    <div class="card" style="padding: 1rem; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; word-break: break-word; margin-bottom: 0;">
                         <div style="flex: 1; min-width: 0;">
                             <h4 style="margin: 0;"><a href="{{ url_for('group_detail', group_id=group['id']) }}">{{ group['name'] }}</a></h4>
                             <p style="margin: 0.25rem 0 0 0; font-size: 0.85rem; color: #64748b;">Hosted by @{{ group['username'] }}</p>
@@ -95,4 +96,5 @@
         {% endif %}
     </div>
 {% endif %}
+</div>
 {% endblock %}
