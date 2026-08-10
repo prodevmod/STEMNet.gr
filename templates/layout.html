@@ -203,11 +203,11 @@
         }
         
         /* Force Login prompt text/background to stay white in every mode */
-        .nav-logi-btn-imp,
-        [data-theme="light"] .nav-logi-btn-imp,
-        [data-theme="dark"] .nav-logi-btn-imp,
-        [data-theme="None"] .nav-logi-btn-imp,
-        [data-theme="none"] .nav-logi-btn-imp {
+        .login,
+        [data-theme="light"] .login,
+        [data-theme="dark"] .login,
+        [data-theme="None"] .login,
+        [data-theme="none"] .login {
             color: #ffffff !important;
         }
 
@@ -266,7 +266,7 @@
                     <a href="{{ url_for('create_post') }}" class="btn btn-primary">+ New Post</a>
                     <a href="{{ url_for('logout') }}" class="nav-logout-link">Logout</a>
                 {% else %}
-                    <a href="{{ url_for('login') }}" class="nav-logi-btn-imp">Log In</a>
+                    <a href="{{ url_for('login') }}" class="login">Log In</a>
                     <a href="{{ url_for('register') }}" class="btn btn-primary">Register</a>
                 {% endif %}
             </div>
