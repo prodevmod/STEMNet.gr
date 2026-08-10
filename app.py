@@ -519,14 +519,7 @@ def upgrade_database():
             db.conn.rollback()
 
     app._db_checked = True
-    except Exception as e:
-        print(f"Database initialization error: {e}")
-        if hasattr(db, 'rollback'):
-            db.rollback()
-        elif hasattr(db, 'conn'):
-            db.conn.rollback()
 
-    app._db_checked = True
 
 
 @app.after_request
