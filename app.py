@@ -293,17 +293,20 @@ def login():
                 flash("Invalid username/email or password.", "danger")
                 return render_template("login.html")
 
+            # Convert user row to a standard dict so .get() works on both SQLite and PostgreSQL
+            user_dict = dict(user)
+
             # 1. Check if the account is currently locked out
             current_time = time.time()
-            locked_until = user.get("locked_until", 0) or 0
+            locked_until = user_dict.get("locked_until", 0) or 0
             if locked_until > current_time:
                 remaining_mins = max(1, int((locked_until - current_time) / 60))
                 flash(f"Too many failed login attempts. Account is temporarily locked. Please try again in {remaining_mins} minute(s).", "danger")
                 return render_template("login.html")
 
             # 2. Verify Password
-            if not check_password_hash(user["password_hash"], password):
-                failed_attempts = user.get("failed_attempts", 0) + 1
+            if not check_password_hash(user_dict["password_hash"], password):
+                failed_attempts = user_dict.get("failed_attempts", 0) + 1
                 new_locked_until = 0
                 
                 # Lock account for 5 minutes (300 seconds) after 5 failed attempts
@@ -315,25 +318,25 @@ def login():
                 
                 db.execute(
                     "UPDATE users SET failed_attempts = ?, locked_until = ? WHERE id = ?",
-                    (failed_attempts, new_locked_until, user["id"])
+                    (failed_attempts, new_locked_until, user_dict["id"])
                 )
                 db.commit()
                 return render_template("login.html")
 
-            elif user["is_verified"] == 0:
+            elif user_dict["is_verified"] == 0:
                 flash("Please verify your email address before logging in. Check your inbox.", "warning")
                 return render_template("login.html")
             else:
                 # 3. Successful Login: Reset failed attempts and lockout timers
                 db.execute(
                     "UPDATE users SET failed_attempts = 0, locked_until = 0 WHERE id = ?",
-                    (user["id"],)
+                    (user_dict["id"],)
                 )
                 db.commit()
 
                 session.clear()
                 session.permanent = True if remember else False
-                session["user_id"] = user["id"]
+                session["user_id"] = user_dict["id"]
                 session["just_logged_in"] = True
                 flash("Logged in successfully!", "success")
                 return redirect(url_for("index"))
