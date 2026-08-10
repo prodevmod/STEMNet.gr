@@ -1149,3 +1149,13 @@ html body header nav a.nav-logout-link:hover {
 header nav a.nav-logout-link:hover {
     opacity: 0.8 !important;
 }
+/* Protect the login button from theme inversion and script overrides */
+.login-btn, 
+#login-btn, 
+.auth-button {
+    color: #ffffff !important;
+    background-color: #3ba47c !important; /* Replace with your desired button color */
+    border-color: #3ba47c !important;
+    filter: none !important;
+    isolation: isolate;
+}
