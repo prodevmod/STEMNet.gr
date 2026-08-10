@@ -275,7 +275,7 @@ def login():
     if request.method == "POST":
         identifier = request.form.get("username_or_email", "").strip()
         password = request.form.get("password", "")
-        remember = request.form.get("remember")  # <--- Read the "remember" checkbox value
+        remember = request.form.get("remember")
 
         if not identifier or not password:
             flash("Please enter both your username/email and password.", "danger")
@@ -284,7 +284,6 @@ def login():
         db = get_db()
         
         try:
-            # Check if the identifier matches EITHER the username OR the email
             user = db.execute(
                 "SELECT * FROM users WHERE username = ? OR email = ?", 
                 (identifier, identifier)
@@ -292,15 +291,48 @@ def login():
 
             if user is None:
                 flash("Invalid username/email or password.", "danger")
-            elif not check_password_hash(user["password_hash"], password):
-                flash("Invalid username/email or password.", "danger")
+                return render_template("login.html")
+
+            # 1. Check if the account is currently locked out
+            current_time = time.time()
+            locked_until = user.get("locked_until", 0) or 0
+            if locked_until > current_time:
+                remaining_mins = max(1, int((locked_until - current_time) / 60))
+                flash(f"Too many failed login attempts. Account is temporarily locked. Please try again in {remaining_mins} minute(s).", "danger")
+                return render_template("login.html")
+
+            # 2. Verify Password
+            if not check_password_hash(user["password_hash"], password):
+                failed_attempts = user.get("failed_attempts", 0) + 1
+                new_locked_until = 0
+                
+                # Lock account for 5 minutes (300 seconds) after 5 failed attempts
+                if failed_attempts >= 5:
+                    new_locked_until = current_time + 300
+                    flash("Too many failed login attempts. Your account has been locked for 5 minutes.", "danger")
+                else:
+                    flash(f"Invalid username/email or password. Attempt {failed_attempts}/5.", "danger")
+                
+                db.execute(
+                    "UPDATE users SET failed_attempts = ?, locked_until = ? WHERE id = ?",
+                    (failed_attempts, new_locked_until, user["id"])
+                )
+                db.commit()
+                return render_template("login.html")
+
             elif user["is_verified"] == 0:
                 flash("Please verify your email address before logging in. Check your inbox.", "warning")
                 return render_template("login.html")
             else:
+                # 3. Successful Login: Reset failed attempts and lockout timers
+                db.execute(
+                    "UPDATE users SET failed_attempts = 0, locked_until = 0 WHERE id = ?",
+                    (user["id"],)
+                )
+                db.commit()
+
                 session.clear()
-                # If checked, session becomes permanent (uses app.config["PERMANENT_SESSION_LIFETIME"])
-                session.permanent = True if remember else False  # <--- Updated line
+                session.permanent = True if remember else False
                 session["user_id"] = user["id"]
                 session["just_logged_in"] = True
                 flash("Logged in successfully!", "success")
@@ -316,7 +348,6 @@ def login():
             return render_template("login.html")
 
     return render_template("login.html")
-
 
 @app.route("/register", methods=["GET", "POST"])
 def register():
@@ -418,7 +449,6 @@ def register():
 
     return render_template("register.html")
 
-
 @app.before_request
 def upgrade_database():
     if getattr(app, '_db_checked', False):
@@ -454,6 +484,9 @@ def upgrade_database():
             db.execute("ALTER TABLE posts ADD COLUMN IF NOT EXISTS event_type TEXT;")
             db.execute("ALTER TABLE posts ADD COLUMN IF NOT EXISTS event_time TEXT;")
             db.execute("ALTER TABLE posts ADD COLUMN IF NOT EXISTS event_location TEXT;")
+            # --- Added for Login Brute Force Mitigation ---
+            db.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS failed_attempts INTEGER DEFAULT 0;")
+            db.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS locked_until REAL DEFAULT 0;")
             db.commit()
         else:
             cursor = db.execute("PRAGMA table_info(posts);")
@@ -467,8 +500,25 @@ def upgrade_database():
             for col_name, col_type in missing_cols.items():
                 if col_name not in columns:
                     db.execute(f"ALTER TABLE posts ADD COLUMN {col_name} {col_type};")
+            
+            # --- Added for Login Brute Force Mitigation (SQLite) ---
+            user_cursor = db.execute("PRAGMA table_info(users);")
+            user_columns = [row["name"] for row in user_cursor.fetchall()]
+            if "failed_attempts" not in user_columns:
+                db.execute("ALTER TABLE users ADD COLUMN failed_attempts INTEGER DEFAULT 0;")
+            if "locked_until" not in user_columns:
+                db.execute("ALTER TABLE users ADD COLUMN locked_until REAL DEFAULT 0;")
+
             db.commit()
 
+    except Exception as e:
+        print(f"Database initialization error: {e}")
+        if hasattr(db, 'rollback'):
+            db.rollback()
+        elif hasattr(db, 'conn'):
+            db.conn.rollback()
+
+    app._db_checked = True
     except Exception as e:
         print(f"Database initialization error: {e}")
         if hasattr(db, 'rollback'):
