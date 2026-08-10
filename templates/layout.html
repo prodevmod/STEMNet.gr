@@ -73,15 +73,6 @@
             cursor: pointer;
         }
 
-        /* Force Login prompt text/background to stay white in every mode */
-        .nav-login-btn,
-        [data-theme="light"] .nav-login-btn,
-        [data-theme="dark"] .nav-login-btn,
-        [data-theme="None"] .nav-login-btn,
-        [data-theme="none"] .nav-login-btn {
-            color: #ffffff !important;
-        }
-
         /* Preserve navbar SVG fills without unwanted filter inversions */
         .nav-links a:not(.btn) svg,
         .nav-brand svg,
@@ -210,6 +201,16 @@
                 display: flex;
             }
         }
+        
+        /* Force Login prompt text/background to stay white in every mode */
+        .nav-login-btn,
+        [data-theme="light"] .nav-login-btn,
+        [data-theme="dark"] .nav-login-btn,
+        [data-theme="None"] .nav-login-btn,
+        [data-theme="none"] .nav-login-btn {
+            color: #ffffff !important;
+        }
+
     </style>
 </head>
 <body>
