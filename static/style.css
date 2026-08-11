@@ -1149,3 +1149,16 @@ header nav a.nav-logout-link:hover {
     filter: none !important;
     isolation: isolate;
 }
+/* Force hCaptcha's hidden token textareas to remain invisible */
+textarea[name="h-captcha-response"],
+input[name="h-captcha-response"],
+#h-captcha-response {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    height: 0 !important;
+    width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+}
