@@ -18,6 +18,7 @@ from pathlib import Path
 import requests
 
 from flask import (
+    jsonify,
     Flask,
     flash,
     g,
@@ -38,6 +39,49 @@ SUPABASE_URL = os.environ.get("SUPABASE_URL")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
+
+
+# Path Configuration
+BASE_DIR = Path(__file__).resolve().parent
+DATABASE = BASE_DIR / "project.db"
+SCHEMA = BASE_DIR / "schema.sql"
+
+# Flask App Initialization
+app = Flask(__name__)
+app.config["SESSION_PERMANENT"] = False
+app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=30)
+
+if not app.debug:
+    app.config.update(
+        SESSION_COOKIE_SECURE=True,
+        SESSION_COOKIE_HTTPONLY=True,
+        SESSION_COOKIE_SAMESITE='Lax',
+    )
+app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "fallback-dev-key-change-in-prod")
+csrf = CSRFProtect(app)  
+
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'mp4', 'webm'}
+app.config['UPLOAD_FOLDER'] = 'static/uploads'
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
+
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+
+ALLOWED_PFP_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
+def allowed_pfp_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_PFP_EXTENSIONS
+
+db_url = os.environ.get("DATABASE_URL", "sqlite:///app.db")
+if db_url.startswith("postgres://"):
+    db_url = db_url.replace("postgres://", "postgresql://", 1)
+app.config["SQLALCHEMY_DATABASE_URI"] = db_url
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
+limiter = Limiter(
+    app=app,
+    key_func=get_remote_address,
+    default_limits=["200 per day", "50 per hour"],
+    storage_uri="memory://"
+)
 
 def get_serializer():
     return URLSafeTimedSerializer(app.secret_key)
@@ -141,40 +185,8 @@ def sanitize_profile_links(user):
 
     return user_dict
 
-
-# Path Configuration
-BASE_DIR = Path(__file__).resolve().parent
-DATABASE = BASE_DIR / "project.db"
-SCHEMA = BASE_DIR / "schema.sql"
-
-# Flask App Initialization
-app = Flask(__name__)
-app.config["SESSION_PERMANENT"] = False
-app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=30)
-
-if not app.debug:
-    app.config.update(
-        SESSION_COOKIE_SECURE=True,
-        SESSION_COOKIE_HTTPONLY=True,
-        SESSION_COOKIE_SAMESITE='Lax',
-    )
-app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "fallback-dev-key-change-in-prod")
-csrf = CSRFProtect(app)  
-
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'mp4', 'webm'}
-app.config['UPLOAD_FOLDER'] = 'static/uploads'
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
-
-os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
-ALLOWED_PFP_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
-def allowed_pfp_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_PFP_EXTENSIONS
-
-
 class PostgresCursorWrapper:
     """Wraps psycopg2 cursor to support .lastrowid seamlessly."""
     def __init__(self, cursor, lastrowid=None):
@@ -262,23 +274,91 @@ def close_db(exception):
     if db is not None:
         if hasattr(db, 'close'):
             db.close()
-db_url = os.environ.get("DATABASE_URL", "sqlite:///app.db")
-if db_url.startswith("postgres://"):
-    db_url = db_url.replace("postgres://", "postgresql://", 1)
 
-app.config["SQLALCHEMY_DATABASE_URI"] = db_url
-app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+## Before Request: Database Upgrade and Schema Management
+@app.before_request
+def upgrade_database():
+    if getattr(app, '_db_checked', False):
+        return
 
+    db = get_db()
+    is_postgres = bool(os.environ.get("DATABASE_URL"))
 
+    try:
+        # Run schema creation if tables don't exist
+        with app.open_resource("schema.sql", mode="r") as f:
+            schema_script = f.read()
 
+        if is_postgres:
+            schema_script = re.sub(r'(?i)PRAGMA\s+[^;]+;', '', schema_script)
+            schema_script = re.sub(
+                r'(?i)INTEGER\s+PRIMARY\s+KEY\s+AUTOINCREMENT', 
+                'SERIAL PRIMARY KEY', 
+                schema_script
+            )
 
-limiter = Limiter(
-    app=app,
-    key_func=get_remote_address,
-    default_limits=["200 per day", "50 per hour"],
-    storage_uri="memory://"
-)
+            raw_conn = db.conn if hasattr(db, 'conn') else db
+            with raw_conn.cursor() as cur:
+                cur.execute(schema_script)
+        else:
+            db.cursor().executescript(schema_script)
 
+        db.commit()
+
+        # Safely add evolving columns using native Postgres IF NOT EXISTS
+        if is_postgres:
+            db.execute("ALTER TABLE posts ADD COLUMN IF NOT EXISTS parent_id INTEGER;")
+            db.execute("ALTER TABLE posts ADD COLUMN IF NOT EXISTS event_type TEXT;")
+            db.execute("ALTER TABLE posts ADD COLUMN IF NOT EXISTS event_time TEXT;")
+            db.execute("ALTER TABLE posts ADD COLUMN IF NOT EXISTS event_location TEXT;")
+            # --- Added for Login Brute Force Mitigation ---
+            db.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS failed_attempts INTEGER DEFAULT 0;")
+            db.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS locked_until REAL DEFAULT 0;")
+            db.commit()
+        else:
+            cursor = db.execute("PRAGMA table_info(posts);")
+            columns = [row["name"] for row in cursor.fetchall()]
+            missing_cols = {
+                "parent_id": "INTEGER",
+                "event_type": "TEXT",
+                "event_time": "TEXT",
+                "event_location": "TEXT"
+            }
+            for col_name, col_type in missing_cols.items():
+                if col_name not in columns:
+                    db.execute(f"ALTER TABLE posts ADD COLUMN {col_name} {col_type};")
+            
+            # --- Added for Login Brute Force Mitigation (SQLite) ---
+            user_cursor = db.execute("PRAGMA table_info(users);")
+            user_columns = [row["name"] for row in user_cursor.fetchall()]
+            if "failed_attempts" not in user_columns:
+                db.execute("ALTER TABLE users ADD COLUMN failed_attempts INTEGER DEFAULT 0;")
+            if "locked_until" not in user_columns:
+                db.execute("ALTER TABLE users ADD COLUMN locked_until REAL DEFAULT 0;")
+
+            db.commit()
+
+    except Exception as e:
+        print(f"Database initialization error: {e}")
+        if hasattr(db, 'rollback'):
+            db.rollback()
+        elif hasattr(db, 'conn'):
+            db.conn.rollback()
+
+    app._db_checked = True
+
+# Before Request: User Session Management 
+@app.before_request
+def load_current_user() -> None:
+    user_id = session.get("user_id")
+    if user_id is None:
+        g.user = None
+    else:
+        g.user = get_db().execute(
+            "SELECT * FROM users WHERE id = ?", (user_id,)
+        ).fetchone()
+ 
+# Registration Route with reCAPTCHA v3 and Email Verification
 @app.route("/register", methods=["GET", "POST"])
 def register():
     if request.method == "POST":
@@ -404,7 +484,7 @@ def register():
 
     return render_template("register.html")
 
-
+# Login Route with reCAPTCHA v3 and Brute Force Mitigation
 @app.route("/login", methods=["GET", "POST"])
 @limiter.limit("5 per minute")
 def login():
@@ -508,79 +588,8 @@ def login():
             return render_template("login.html")
 
     return render_template("login.html")
-@app.before_request
-def upgrade_database():
-    if getattr(app, '_db_checked', False):
-        return
 
-    db = get_db()
-    is_postgres = bool(os.environ.get("DATABASE_URL"))
-
-    try:
-        # Run schema creation if tables don't exist
-        with app.open_resource("schema.sql", mode="r") as f:
-            schema_script = f.read()
-
-        if is_postgres:
-            schema_script = re.sub(r'(?i)PRAGMA\s+[^;]+;', '', schema_script)
-            schema_script = re.sub(
-                r'(?i)INTEGER\s+PRIMARY\s+KEY\s+AUTOINCREMENT', 
-                'SERIAL PRIMARY KEY', 
-                schema_script
-            )
-
-            raw_conn = db.conn if hasattr(db, 'conn') else db
-            with raw_conn.cursor() as cur:
-                cur.execute(schema_script)
-        else:
-            db.cursor().executescript(schema_script)
-
-        db.commit()
-
-        # Safely add evolving columns using native Postgres IF NOT EXISTS
-        if is_postgres:
-            db.execute("ALTER TABLE posts ADD COLUMN IF NOT EXISTS parent_id INTEGER;")
-            db.execute("ALTER TABLE posts ADD COLUMN IF NOT EXISTS event_type TEXT;")
-            db.execute("ALTER TABLE posts ADD COLUMN IF NOT EXISTS event_time TEXT;")
-            db.execute("ALTER TABLE posts ADD COLUMN IF NOT EXISTS event_location TEXT;")
-            # --- Added for Login Brute Force Mitigation ---
-            db.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS failed_attempts INTEGER DEFAULT 0;")
-            db.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS locked_until REAL DEFAULT 0;")
-            db.commit()
-        else:
-            cursor = db.execute("PRAGMA table_info(posts);")
-            columns = [row["name"] for row in cursor.fetchall()]
-            missing_cols = {
-                "parent_id": "INTEGER",
-                "event_type": "TEXT",
-                "event_time": "TEXT",
-                "event_location": "TEXT"
-            }
-            for col_name, col_type in missing_cols.items():
-                if col_name not in columns:
-                    db.execute(f"ALTER TABLE posts ADD COLUMN {col_name} {col_type};")
-            
-            # --- Added for Login Brute Force Mitigation (SQLite) ---
-            user_cursor = db.execute("PRAGMA table_info(users);")
-            user_columns = [row["name"] for row in user_cursor.fetchall()]
-            if "failed_attempts" not in user_columns:
-                db.execute("ALTER TABLE users ADD COLUMN failed_attempts INTEGER DEFAULT 0;")
-            if "locked_until" not in user_columns:
-                db.execute("ALTER TABLE users ADD COLUMN locked_until REAL DEFAULT 0;")
-
-            db.commit()
-
-    except Exception as e:
-        print(f"Database initialization error: {e}")
-        if hasattr(db, 'rollback'):
-            db.rollback()
-        elif hasattr(db, 'conn'):
-            db.conn.rollback()
-
-    app._db_checked = True
-
-
-
+# After Request: Security Headers
 @app.after_request
 def set_security_headers(response):
     response.headers["X-Content-Type-Options"] = "nosniff"
@@ -589,6 +598,7 @@ def set_security_headers(response):
     response.headers["X-XSS-Protection"] = "1; mode=block"
     return response
 
+# Context Processor: Unread Notifications and Login Flag
 @app.context_processor
 def utility_processor():
     def get_unread_notifications():
@@ -608,25 +618,20 @@ def utility_processor():
         return False
     return dict(has_unread_notifications=get_unread_notifications())
 
+@app.context_processor
+def inject_login_flag():
+    # Pops the flag so it is only True on the very first page render after logging in
+    just_logged_in = session.pop("just_logged_in", False)
+    return dict(just_logged_in=just_logged_in)
+
+# teardown_appcontext: Close Database Connection
 @app.teardown_appcontext
 def close_db(exception: BaseException | None) -> None:
     db = g.pop("db", None)
     if db is not None:
         db.close()
 
-
-# User Session Management
-@app.before_request
-def load_current_user() -> None:
-    user_id = session.get("user_id")
-    if user_id is None:
-        g.user = None
-    else:
-        g.user = get_db().execute(
-            "SELECT * FROM users WHERE id = ?", (user_id,)
-        ).fetchone()
-
-
+# Login Required Decorator
 def login_required(view):
     def wrapped_view(*args, **kwargs):
         if g.get("user") is None:
@@ -637,7 +642,7 @@ def login_required(view):
     wrapped_view.__name__ = view.__name__
     return wrapped_view
 
-
+# Index Route: Display Posts and Featured Groups
 @app.route("/")
 def index():
     db = get_db()
@@ -679,6 +684,7 @@ def index():
     
     return render_template("index.html", posts=posts, selected_category=selected_category, featured_groups=featured_groups)
 
+# Email Verification Route
 @app.route("/verify/<token>")
 def verify_email(token):
     email = confirm_verification_token(token)
@@ -704,15 +710,14 @@ def verify_email(token):
     flash("Email verified successfully! You can now log in.", "success")
     return redirect(url_for("login"))
 
-
-
+# Logout Route
 @app.route("/logout")
 def logout():
     session.clear()
     flash("You have been logged out.", "info")
     return redirect(url_for("index"))
 
-
+# Create Post Route with Reply and Group Support
 @app.route("/create", methods=("GET", "POST"))
 def create_post():
     if g.get("user") is None:
@@ -821,8 +826,7 @@ def create_post():
 
     return render_template("create.html", parent_post=parent_post, group_id=group_id)
 
-from flask import jsonify
-
+# Like/Unlike Toggle Route
 @app.route("/like/<int:post_id>", methods=["POST"])
 @csrf.exempt
 def toggle_like(post_id):
@@ -861,7 +865,7 @@ def toggle_like(post_id):
     finally:
         cursor.close()
 
-
+# Profile Route: View Own or Other User's Profile
 @app.route("/profile")
 @app.route("/profile/<username>")
 def profile(username: str | None = None):
@@ -943,7 +947,7 @@ def profile(username: str | None = None):
         is_following=is_following
     )
 
-
+# Edit Profile Route
 @app.route("/profile/edit", methods=("GET", "POST"))
 def edit_profile():
     # Security check: Ensure user is logged in
@@ -1022,7 +1026,7 @@ def edit_profile():
     profile_user = db.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
     return render_template("edit_profile.html", profile_user=profile_user)
 
-
+# Follow/Unfollow Routes with Conflict Handling
 @app.route("/follow/<int:user_id>", methods=["POST"])
 def follow(user_id):
     db = get_db()
@@ -1061,7 +1065,6 @@ def follow(user_id):
 
     return redirect(request.referrer or url_for("index"))
 
-
 @app.route("/unfollow/<int:user_id>", methods=["POST"])
 def unfollow(user_id):
     db = get_db()
@@ -1091,6 +1094,7 @@ def unfollow(user_id):
 
     return redirect(request.referrer or url_for("index"))
 
+# Notifications Route
 @app.route("/notifications")
 def notifications():
     if g.get("user") is None:
@@ -1116,6 +1120,7 @@ def notifications():
 
     return render_template("notifications.html", notifications=notifs)
 
+# User Followers and Following Routes
 @app.route("/user/<username>/followers")
 def followers(username):
     db = get_db()
@@ -1135,7 +1140,6 @@ def followers(username):
     ).fetchall()
     
     return render_template("followers.html", followers=followers_list, profile_user=user)
-
 
 @app.route("/user/<username>/following")
 def following(username):
@@ -1157,6 +1161,7 @@ def following(username):
     
     return render_template("following.html", following=following_list, profile_user=user)
 
+# Post Detail Route with Replies and Like Counts
 @app.route("/post/<int:post_id>")
 def post_detail(post_id):
     db = get_db()
@@ -1198,6 +1203,7 @@ def post_detail(post_id):
 
     return render_template("post_detail.html", post=post, replies=replies)
 
+# Edit Post Route with Permission Checks
 @app.route("/post/<int:post_id>/edit", methods=("GET", "POST"))
 def edit_post(post_id):
     if g.get("user") is None:
@@ -1252,7 +1258,7 @@ def edit_post(post_id):
         
     return render_template("edit_post.html", post=post)
 
-
+# Delete Post Route with Permission Checks and Cleanup
 @app.route("/post/<int:post_id>/delete", methods=["POST"])
 def delete_post(post_id):
     if g.get("user") is None:
@@ -1284,6 +1290,8 @@ def delete_post(post_id):
     
     flash("Post deleted successfully.", "success")
     return redirect(url_for("index"))
+
+# Events Feed Route
 @app.route("/events")
 def events_feed():
     db = get_db()
@@ -1308,6 +1316,7 @@ def events_feed():
     
     return render_template("events.html", posts=posts)
 
+# Search Route: Search Posts, Users, and Groups
 @app.route("/search")
 def search():
     query = request.args.get("q", "").strip()
@@ -1364,6 +1373,7 @@ def search():
 
     return render_template("search.html", posts=posts, users=users, groups=groups, query=query)
 
+# Error Handlers
 @app.errorhandler(404)
 def page_not_found(e):
     return render_template('404.html'), 404
@@ -1376,12 +1386,11 @@ def handle_500_error(e):
     app.logger.error(f"Server Error: {e}")
     return render_template("500.html"), 500
 
-@app.context_processor
-def inject_login_flag():
-    # Pops the flag so it is only True on the very first page render after logging in
-    just_logged_in = session.pop("just_logged_in", False)
-    return dict(just_logged_in=just_logged_in)
+@app.errorhandler(429)
+def ratelimit_handler(e):
+    return render_template("ratelimit.html"), 429
 
+# API Endpoint for Posts with Like Counts and User Like Status
 @app.route('/api/posts')
 def api_posts():
     db = get_db()
@@ -1410,6 +1419,7 @@ def api_posts():
     posts_list = [dict(row) for row in posts]
     return jsonify(posts_list)
 
+# Groups Routes
 @app.route("/groups")
 def groups():
     db = get_db()
@@ -1421,6 +1431,7 @@ def groups():
     """).fetchall()
     return render_template("groups.html", groups=all_groups)
 
+## Create Group Route with Ownership Check
 @app.route('/group/create', methods=['GET', 'POST'])
 @login_required
 def create_group():
@@ -1450,6 +1461,7 @@ def create_group():
             
     return render_template('create_group.html')
 
+## Group Detail Route with Posts
 @app.route("/group/<int:group_id>")
 def group_detail(group_id):
     db = get_db()
@@ -1480,10 +1492,12 @@ def group_detail(group_id):
     
     return render_template("group_detail.html", group=group, posts=posts)
 
+# STEM Extras Route
 @app.route('/stem-extras')
 def stem_extras():
     return render_template('stem-extras.html')
 
+# Inline SVG Filter for Jinja2
 @app.template_filter('inline_svg')
 def inline_svg(filename, width=20, height=20, class_name=""):
     """Reads an SVG file from static/ and embeds its raw XML directly into HTML."""
@@ -1507,11 +1521,6 @@ def inline_svg(filename, width=20, height=20, class_name=""):
         return Markup(wrapper)
     except Exception as e:
         return Markup(f'<!-- Error loading {filename}: {e} -->')
-
-@app.errorhandler(429)
-def ratelimit_handler(e):
-    return render_template("ratelimit.html"), 429
-
 
 if __name__ == "__main__":
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
