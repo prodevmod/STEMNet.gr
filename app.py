@@ -391,8 +391,6 @@ def login():
 
     return render_template("login.html")
 
-@app.route("/register", methods=["GET", "POST"])
-def register():
     if request.method == "POST":
         # 1. Verify hCaptcha first to block bots before processing data
         token = request.form.get("h-captcha-response")
