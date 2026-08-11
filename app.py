@@ -270,8 +270,7 @@ app.config["SQLALCHEMY_DATABASE_URI"] = db_url
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 
-import requests
-os.environ.get("HCAPTCHA_SECRET_KEY")
+
 
 limiter = Limiter(
     app=app,
@@ -298,7 +297,7 @@ def register():
         result = response.json()
 
         # Block if not successful or if the bot score is below 0.5
-        if not result.get("success") or result.get("score", 0) < 0.5:
+        if not result.get("success") or result.get("score", 0) < 0.2:
             flash("Automated activity detected. Registration blocked.", "danger")
             return render_template("register.html")
 
@@ -426,7 +425,7 @@ def login():
         result = response.json()
 
         # Block if not successful or if the bot score is below 0.5
-        if not result.get("success") or result.get("score", 0) < 0.5:
+        if not result.get("success") or result.get("score", 0) < 0.2:
             flash("Automated activity detected. Login blocked.", "danger")
             return render_template("login.html")
 
