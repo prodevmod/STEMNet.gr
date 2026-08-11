@@ -1,3 +1,35 @@
+'''
+StemNet Greece - Flask Web Application
+This application is designed to provide a platform for STEM enthusiasts in Greece to connect, share, and collaborate. It includes features such as user registration,
+email verification, post creation, group management, and more.
+
+app.py structure (analytical overview):
+1. Imports and Environment Setup:
+    - Import necessary libraries and modules.
+    - Load environment variables from a .env file.
+2. Flask App Initialization:
+    - Create a Flask application instance.
+    - Configure session management and security settings.
+3. Database Configuration:
+    - Define database paths and connection settings for SQLite and PostgreSQL.
+    - Implement a wrapper to make PostgreSQL behave like SQLite for compatibility.
+4. Utility Functions:
+    - Functions for CSRF protection, email verification, and link sanitization.
+5. Before Request Handlers:
+    - Upgrade the database schema if necessary.
+6. User Session Management:
+    - Load the current user from the session before each request.
+7. Routes:
+    - /register: User registration with reCAPTCHA v3 and email verification.
+    - /login: User login with reCAPTCHA v3 and brute force mitigation.
+    - /logout: User logout.
+    - /create: Create a new post, including replies and group posts.
+    - /group/create: Create a new group (requires login).
+    - /group/<int:group_id>: View group details and posts.
+    - /stem-extras: Additional STEM resources page.
+
+'''
+
 from __future__ import annotations
 import time
 from flask_wtf.csrf import CSRFProtect
