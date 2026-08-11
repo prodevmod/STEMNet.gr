@@ -419,7 +419,6 @@ a.btn-primary {
 }
 
 .hero .btn-outline:hover {
-    background-color: transparent !important;
     border-color: var(--primary-color) !important;
     color: var(--primary-color) !important;
 }
