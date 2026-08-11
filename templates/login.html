@@ -16,7 +16,7 @@
     {% endwith %}
 
     <form method="POST" action="{{ url_for('login') }}">
-        <!-- CSRF Token required by Flask-WTF -->
+        <!-- CSRF Token -->
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
         <div class="form-group">
@@ -29,10 +29,13 @@
             <input type="password" id="password" name="password" required class="form-control">
         </div>
 
-        <!-- Custom Checkbox Wrapper (Add your custom CSS class here if needed, e.g., class="custom-checkbox-wrapper") -->
-        <div class="form-group remember-container" style="display: flex; align-items: center; gap: 0.75rem; margin: 0.75rem 0; flex-direction: row;">
-            <input type="checkbox" id="remember" name="remember" style="width: auto; margin: 0; cursor: pointer;">
-            <label for="remember" style="font-weight: normal; font-size: 0.9rem; margin: 0; cursor: pointer; display: inline-block;">Remember me</label>
+        <!-- Custom Checkbox Markup Structure -->
+        <div class="form-group">
+            <label class="checkbox-container">
+                <input type="checkbox" id="remember" name="remember" class="custom-checkbox-input">
+                <span class="checkmark"></span>
+                <span class="checkbox-text">Remember me</span>
+            </label>
         </div>
 
         <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">Login</button>
@@ -50,7 +53,6 @@
                 
                 let submitted = false;
                 
-                // Safety fallback: if reCAPTCHA takes more than 4 seconds, submit anyway
                 const safetyTimer = setTimeout(function() {
                     if (!submitted) {
                         submitted = true;
