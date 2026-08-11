@@ -394,6 +394,25 @@ def login():
 @app.route("/register", methods=["GET", "POST"])
 def register():
     if request.method == "POST":
+        # 1. Verify hCaptcha first to block bots before processing data
+        token = request.form.get("h-captcha-response")
+        if not token:
+            flash("Please complete the CAPTCHA verification.", "danger")
+            return render_template("register.html")
+
+        payload = {
+            "secret": os.environ.get("HCAPTCHA_SECRET_KEY"),
+            "response": token,
+            "remoteip": request.remote_addr
+        }
+        response = requests.post("https://api.hcaptcha.com/siteverify", data=payload)
+        result = response.json()
+
+        if not result.get("success"):
+            flash("CAPTCHA verification failed. Please try again.", "danger")
+            return render_template("register.html")
+
+        # 2. Capture Form Inputs
         username = request.form.get("username", "").strip()
         email = request.form.get("email", "").strip()  # Capture email
         password = request.form.get("password", "")
@@ -413,17 +432,22 @@ def register():
         custom_link_4 = request.form.get("custom_link_4", "").strip() or None
         custom_link_5 = request.form.get("custom_link_5", "").strip() or None
 
-        # Validation Checks
+        # 3. Validation Checks
         if not username or not email or not password or not confirm_password or not age_str or not grade or not interest:
             flash("Please fill out all required fields.", "danger")
+            return render_template("register.html")
         elif password != confirm_password:
             flash("Passwords do not match.", "danger")
+            return render_template("register.html")
         elif len(password) < 8:
             flash("Password must be at least 8 characters long.", "danger")
+            return render_template("register.html")
         elif not any(c.isdigit() for c in password):
             flash("Password must contain at least one number.", "danger")
+            return render_template("register.html")
         elif not any(not c.isalnum() for c in password):
             flash("Password must contain at least one special character.", "danger")
+            return render_template("register.html")
         else:
             try:
                 age = int(age_str)
@@ -490,6 +514,7 @@ def register():
                 return redirect(url_for("login"))
 
     return render_template("register.html")
+
 
 @app.before_request
 def upgrade_database():
