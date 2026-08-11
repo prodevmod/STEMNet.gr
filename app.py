@@ -421,6 +421,7 @@ def login():
             "response": token,
             "remoteip": request.remote_addr
         }
+        
         response = requests.post("https://www.google.com/recaptcha/api/siteverify", data=payload)
         result = response.json()
 
@@ -507,16 +508,6 @@ def login():
             flash("An unexpected database error occurred. Please try again.", "danger")
             return render_template("login.html")
 
-    response = requests.post("https://www.google.com/recaptcha/api/siteverify", data=payload)
-    result = response.json()
-
-    # --- ADD THIS LINE FOR DEBUGGING ---
-    print("GOOGLE RECAPTCHA DEBUG RESULT:", result)
-
-    if not result.get("success") or result.get("score", 0) < 0.5:
-        flash("Automated activity detected. Login blocked.", "danger")
-        return render_template("login.html")
-    
     return render_template("login.html")
 @app.before_request
 def upgrade_database():
