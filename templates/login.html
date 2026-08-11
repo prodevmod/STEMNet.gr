@@ -1,58 +1,57 @@
 {% extends "layout.html" %}
 
-{% block title %}Log In - STEMNet Greece{% endblock %}
+{% block title %}Login - STEMNet Greece{% endblock %}
 
 {% block content %}
-<div class="card" style="max-width: 440px; margin: 2rem auto;">
-    <h2 style="margin-bottom: 0.5rem;">Log In to STEMNet</h2>
-    <p style="color: #64748b; margin-bottom: 1.5rem; font-size: 0.9rem;">
-        Enter your credentials to access your robotics profile and post updates.
-    </p>
+<div class="card" style="max-width: 440px; margin: 3rem auto;">
+    <h2 style="text-align: center; margin-bottom: 1.5rem;">Login to STEMNet</h2>
+    
+    <!-- Flash messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }}" style="margin-bottom: 1rem;">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endfor %}
 
-    <form action="{{ url_for('login') }}" method="POST">
-        <!-- CSRF Security Token -->
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-        
+    <form method="POST" action="{{ url_for('login') }}">
         <div class="form-group">
             <label for="username_or_email">Username or Email</label>
-            <input type="text" id="username_or_email" name="username_or_email" class="form-control" required>
+            <input type="text" id="username_or_email" name="username_or_email" required class="form-control">
         </div>
 
         <div class="form-group">
             <label for="password">Password</label>
-            <input type="password" id="password" name="password" required autocomplete="current-password" placeholder="Your password">
+            <input type="password" id="password" name="password" required class="form-control">
         </div>
 
-        <div class="form-group checkbox-group">
-            <label for="remember" class="checkbox-label">
-                <input type="checkbox" id="remember" name="remember" value="1" class="custom-checkbox">
-                <span>Remember me</span>
-            </label>
+        <div style="display: flex; align-items: center; gap: 0.5rem; margin: 0.5rem 0;">
+            <input type="checkbox" id="remember" name="remember">
+            <label for="remember" style="font-weight: normal; font-size: 0.9rem;">Remember me</label>
         </div>
-        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 0.5rem;">Log In</button>
+
+        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">Login</button>
     </form>
-
-    <p style="text-align: center; margin-top: 1.25rem; font-size: 0.9rem; color: #64748b;">
-        Don't have an account yet? <a href="{{ url_for('register') }}" style="color: var(--primary-hover); font-weight: 600;">Register here</a>
-    </p>
 </div>
-<!-- Google reCAPTCHA v3 API -->
+
+<!-- Google reCAPTCHA v3 Invisible Script Integration -->
 <script src="https://www.google.com/recaptcha/api.js?render=YOUR_SITE_KEY"></script>
 <script>
     document.addEventListener("DOMContentLoaded", function() {
         const form = document.querySelector("form");
         if (form) {
             form.addEventListener("submit", function(e) {
-                e.preventDefault(); // Pause form submission momentarily
+                e.preventDefault(); // Stop form momentarily to fetch token
                 grecaptcha.ready(function() {
-                    grecaptcha.execute('YOUR_SITE_KEY', {action: 'submit'}).then(function(token) {
-                        // Append the token as a hidden input field
+                    grecaptcha.execute('YOUR_SITE_KEY', {action: 'login'}).then(function(token) {
+                        // Append token secretly to the form
                         let input = document.createElement('input');
                         input.type = 'hidden';
                         input.name = 'g-recaptcha-response';
                         input.value = token;
                         form.appendChild(input);
-                        form.submit(); // Resume normal form submission
+                        form.submit(); // Submit form with token attached
                     });
                 });
             });
