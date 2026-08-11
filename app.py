@@ -1,35 +1,3 @@
-'''
-StemNet Greece - Flask Web Application
-This application is designed to provide a platform for STEM enthusiasts in Greece to connect, share, and collaborate. It includes features such as user registration,
-email verification, post creation, group management, and more.
-
-app.py structure (analytical overview):
-1. Imports and Environment Setup:
-    - Import necessary libraries and modules.
-    - Load environment variables from a .env file.
-2. Flask App Initialization:
-    - Create a Flask application instance.
-    - Configure session management and security settings.
-3. Database Configuration:
-    - Define database paths and connection settings for SQLite and PostgreSQL.
-    - Implement a wrapper to make PostgreSQL behave like SQLite for compatibility.
-4. Utility Functions:
-    - Functions for CSRF protection, email verification, and link sanitization.
-5. Before Request Handlers:
-    - Upgrade the database schema if necessary.
-6. User Session Management:
-    - Load the current user from the session before each request.
-7. Routes:
-    - /register: User registration with reCAPTCHA v3 and email verification.
-    - /login: User login with reCAPTCHA v3 and brute force mitigation.
-    - /logout: User logout.
-    - /create: Create a new post, including replies and group posts.
-    - /group/create: Create a new group (requires login).
-    - /group/<int:group_id>: View group details and posts.
-    - /stem-extras: Additional STEM resources page.
-
-'''
-
 from __future__ import annotations
 import time
 from flask_wtf.csrf import CSRFProtect
@@ -63,15 +31,12 @@ from flask import (
 from werkzeug.security import check_password_hash, generate_password_hash
 from itsdangerous import URLSafeTimedSerializer
 from supabase import create_client, Client
-from flask import jsonify
 
 load_dotenv()
 
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
-
-
 
 # Path Configuration
 BASE_DIR = Path(__file__).resolve().parent
@@ -83,6 +48,7 @@ app = Flask(__name__)
 app.config["SESSION_PERMANENT"] = False
 app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=30)
 
+# Security Configuration
 if not app.debug:
     app.config.update(
         SESSION_COOKIE_SECURE=True,
@@ -92,6 +58,17 @@ if not app.debug:
 app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "fallback-dev-key-change-in-prod")
 csrf = CSRFProtect(app)  
 
+# Blocked Domains for Security
+BLOCKED_DOMAINS = {
+    # IP Grabbers / Trackers
+    "iplogger.org", "iplogger.com", "iplogger.ru", "2no.co", "yip.su", 
+    "grabify.link", "blasze.com", "cest.la", "spotlogger.com", "iplogger.co",
+    # Explicit Adult Content Domains
+    "pornhub.com", "xvideos.com", "xnxx.com", "stripchat.com", "cam4.com", 
+    "redtube.com", "youporngay.com", "hentaihaven.xxx"
+}
+
+# File Upload Configuration
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'mp4', 'webm'}
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
@@ -102,12 +79,14 @@ ALLOWED_PFP_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 def allowed_pfp_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_PFP_EXTENSIONS
 
+# Database Configuration
 db_url = os.environ.get("DATABASE_URL", "sqlite:///app.db")
 if db_url.startswith("postgres://"):
     db_url = db_url.replace("postgres://", "postgresql://", 1)
 app.config["SQLALCHEMY_DATABASE_URI"] = db_url
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
+# Rate Limiting Configuration
 limiter = Limiter(
     app=app,
     key_func=get_remote_address,
@@ -115,13 +94,16 @@ limiter = Limiter(
     storage_uri="memory://"
 )
 
+# Utility Functions for Email Verification
 def get_serializer():
     return URLSafeTimedSerializer(app.secret_key)
 
+# Email Verification Token Generation and Confirmation
 def generate_verification_token(email):
     serializer = get_serializer()
     return serializer.dumps(email, salt='email-verification-salt')
 
+# Confirm Verification Token with Expiration
 def confirm_verification_token(token, expiration=3600): # Expires in 1 hour (3600 seconds)
     serializer = get_serializer()
     try:
@@ -130,6 +112,7 @@ def confirm_verification_token(token, expiration=3600): # Expires in 1 hour (360
         return None
     return email
 
+# Send Verification Email using Resend API
 def send_verification_email(user_email, token):
     resend_api_key = os.environ.get("RESEND_API_KEY")
     verify_url = url_for('verify_email', token=token, _external=True)
@@ -176,15 +159,7 @@ def send_verification_email(user_email, token):
     except Exception as e:
         print(f"Error sending email: {e}")
 
-BLOCKED_DOMAINS = {
-    # IP Grabbers / Trackers
-    "iplogger.org", "iplogger.com", "iplogger.ru", "2no.co", "yip.su", 
-    "grabify.link", "blasze.com", "cest.la", "spotlogger.com", "iplogger.co",
-    # Explicit Adult Content Domains
-    "pornhub.com", "xvideos.com", "xnxx.com", "stripchat.com", "cam4.com", 
-    "redtube.com", "youporngay.com", "hentaihaven.xxx"
-}
-
+# Utility Function to Sanitize Profile Links
 def sanitize_profile_links(user):
     """Safely sanitizes links and ensures dict format for Jinja rendering."""
     if not user:
@@ -217,8 +192,11 @@ def sanitize_profile_links(user):
 
     return user_dict
 
+# Utility Function to Check Allowed File Extensions
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+# Database Wrappers for PostgreSQL Compatibility
 class PostgresCursorWrapper:
     """Wraps psycopg2 cursor to support .lastrowid seamlessly."""
     def __init__(self, cursor, lastrowid=None):
@@ -240,7 +218,7 @@ class PostgresCursorWrapper:
     def __getattr__(self, name):
         return getattr(self._cursor, name)
 
-
+# Database Wrapper to Make PostgreSQL Behave Like SQLite
 class PostgresWrapper:
     """
     Makes PostgreSQL behave like SQLite:
@@ -656,13 +634,6 @@ def inject_login_flag():
     just_logged_in = session.pop("just_logged_in", False)
     return dict(just_logged_in=just_logged_in)
 
-# teardown_appcontext: Close Database Connection
-@app.teardown_appcontext
-def close_db(exception: BaseException | None) -> None:
-    db = g.pop("db", None)
-    if db is not None:
-        db.close()
-
 # Login Required Decorator
 def login_required(view):
     def wrapped_view(*args, **kwargs):
@@ -866,33 +837,33 @@ def toggle_like(post_id):
         return jsonify({"error": "Unauthorized"}), 401
     
     db = get_db()
-    cursor = db.cursor()  # Must use cursor for psycopg2
+    cursor = db.cursor()
     user_id = g.user["id"]
     
     try:
         cursor.execute(
-            "SELECT 1 FROM likes WHERE user_id = %s AND post_id = %s",
+            "SELECT 1 FROM likes WHERE user_id = ? AND post_id = ?",
             (user_id, post_id)
         )
         existing_like = cursor.fetchone()
         
         if existing_like:
-            cursor.execute("DELETE FROM likes WHERE user_id = %s AND post_id = %s", (user_id, post_id))
+            cursor.execute("DELETE FROM likes WHERE user_id = ? AND post_id = ?", (user_id, post_id))
             liked = False
         else:
-            cursor.execute("INSERT INTO likes (user_id, post_id) VALUES (%s, %s)", (user_id, post_id))
+            cursor.execute("INSERT INTO likes (user_id, post_id) VALUES (?, ?)", (user_id, post_id))
             liked = True
         
         db.commit()
         
-        cursor.execute("SELECT COUNT(*) AS count FROM likes WHERE post_id = %s", (post_id,))
+        cursor.execute("SELECT COUNT(*) AS count FROM likes WHERE post_id = ?", (post_id,))
         count_row = cursor.fetchone()
         count = count_row["count"] if count_row else 0
         
         return jsonify({"liked": liked, "count": count})
     except Exception as e:
         db.rollback()
-        print(f"Error in toggle_like: {e}")  # Prints directly to app.log
+        print(f"Error in toggle_like: {e}")  
         return jsonify({"error": str(e)}), 500
     finally:
         cursor.close()
@@ -912,7 +883,7 @@ def profile(username: str | None = None):
         user_id = g.user["id"]
     else:
         target_user = db.execute(
-            "SELECT id FROM users WHERE username = %s", (username,)
+            "SELECT id FROM users WHERE username = ?", (username,)
         ).fetchone()
         
         if target_user is None:
@@ -922,7 +893,7 @@ def profile(username: str | None = None):
 
     # 2. Fetch raw user record
     raw_user = db.execute(
-        "SELECT * FROM users WHERE id = %s", (user_id,)
+        "SELECT * FROM users WHERE id = ?", (user_id,)
     ).fetchone()
 
     if not raw_user:
@@ -932,40 +903,40 @@ def profile(username: str | None = None):
     # 3. Sanitize profile links into a dict
     profile_user = sanitize_profile_links(raw_user)
 
-    # 4. Fetch user's posts (fixed ? to %s)
+    # 4. Fetch user's posts
     posts = db.execute(
         """
         SELECT posts.*, users.username,
                parent_posts.content AS parent_content,
                parent_users.username AS parent_username,
                (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id) AS like_count,
-               (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id AND likes.user_id = %s) AS user_liked
+               (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id AND likes.user_id = ?) AS user_liked
         FROM posts 
         JOIN users ON posts.user_id = users.id 
         LEFT JOIN posts AS parent_posts ON posts.parent_id = parent_posts.id 
         LEFT JOIN users AS parent_users ON parent_posts.user_id = parent_users.id 
-        WHERE posts.user_id = %s
+        WHERE posts.user_id = ?
         ORDER BY posts.created_at DESC
         """,
         (current_user_id, profile_user["id"])
     ).fetchall()
 
-    # 5. Fetch Follower and Following counts safely (fixed ? to %s)
+    # 5. Fetch Follower and Following counts safely
     followers_row = db.execute(
-        "SELECT COUNT(*) FROM follows WHERE following_id = %s", (profile_user["id"],)
+        "SELECT COUNT(*) FROM follows WHERE following_id = ?", (profile_user["id"],)
     ).fetchone()
     followers_count = next(iter(followers_row.values())) if isinstance(followers_row, dict) else followers_row[0]
     
     following_row = db.execute(
-        "SELECT COUNT(*) FROM follows WHERE follower_id = %s", (profile_user["id"],)
+        "SELECT COUNT(*) FROM follows WHERE follower_id = ?", (profile_user["id"],)
     ).fetchone()
     following_count = next(iter(following_row.values())) if isinstance(following_row, dict) else following_row[0]
 
-    # 6. Check if current user is following this profile user (fixed ? to %s)
+    # 6. Check if current user is following this profile user
     is_following = False
     if g.get("user") and g.user["id"] != profile_user["id"]:
         check_follow = db.execute(
-            "SELECT 1 FROM follows WHERE follower_id = %s AND following_id = %s",
+            "SELECT 1 FROM follows WHERE follower_id = ? AND following_id = ?",
             (g.user["id"], profile_user["id"])
         ).fetchone()
         is_following = check_follow is not None
@@ -988,7 +959,7 @@ def edit_profile():
         return redirect(url_for("login"))
 
     db = get_db()
-    user_id = g.user["id"]  # Securely grabbed from session, cannot be spoofed
+    user_id = g.user["id"] 
 
     if request.method == "POST":
         age_str = request.form.get("age", "").strip()
@@ -1021,7 +992,7 @@ def edit_profile():
 
             # Handle Profile Picture Upload
             file = request.files.get("profile_pic")
-            profile_pic_path = g.user["profile_pic"]  # Keep existing PFP if no new file uploaded
+            profile_pic_path = g.user["profile_pic"] 
             
             if file and file.filename != '':
                 if allowed_pfp_file(file.filename):
@@ -1035,7 +1006,6 @@ def edit_profile():
                     profile_user = db.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
                     return render_template("edit_profile.html", profile_user=profile_user)
 
-            # Secure parameterized update query restricted to current user's ID
             db.execute(
                 """
                 UPDATE users 
@@ -1054,7 +1024,6 @@ def edit_profile():
             flash("Profile updated successfully!", "success")
             return redirect(url_for("profile"))
 
-    # Fetch latest data for GET request
     profile_user = db.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
     return render_template("edit_profile.html", profile_user=profile_user)
 
@@ -1072,18 +1041,15 @@ def follow(user_id):
         return redirect(request.referrer or url_for("index"))
 
     try:
-        # A single execute command using ON CONFLICT to prevent duplicates
-        # No .fetchone() or .fetchall() needed!
         db.execute(
             """
             INSERT INTO follows (follower_id, following_id, created_at) 
-            VALUES (%s, %s, CURRENT_TIMESTAMP)
+            VALUES (?, ?, CURRENT_TIMESTAMP)
             ON CONFLICT (follower_id, following_id) DO NOTHING
             """,
             (current_user_id, user_id)
         )
         
-        # Safely commit using your wrapper
         if hasattr(db, 'commit'):
             db.commit()
         elif hasattr(db, 'connection'):
@@ -1106,13 +1072,11 @@ def unfollow(user_id):
         return redirect(url_for("login"))
 
     try:
-        # A simple delete command
         db.execute(
-            "DELETE FROM follows WHERE follower_id = %s AND following_id = %s",
+            "DELETE FROM follows WHERE follower_id = ? AND following_id = ?",
             (current_user_id, user_id)
         )
         
-        # Safely commit using your wrapper
         if hasattr(db, 'commit'):
             db.commit()
         elif hasattr(db, 'connection'):
@@ -1156,7 +1120,7 @@ def notifications():
 @app.route("/user/<username>/followers")
 def followers(username):
     db = get_db()
-    user = db.execute("SELECT * FROM users WHERE username = %s", (username,)).fetchone()
+    user = db.execute("SELECT * FROM users WHERE username = ?", (username,)).fetchone()
     if not user:
         flash("User not found.", "danger")
         return redirect(url_for("index"))
@@ -1166,7 +1130,7 @@ def followers(username):
         SELECT users.id, users.username, users.profile_pic 
         FROM follows 
         JOIN users ON follows.follower_id = users.id 
-        WHERE follows.following_id = %s
+        WHERE follows.following_id = ?
         """,
         (user["id"],)
     ).fetchall()
@@ -1176,7 +1140,7 @@ def followers(username):
 @app.route("/user/<username>/following")
 def following(username):
     db = get_db()
-    user = db.execute("SELECT * FROM users WHERE username = %s", (username,)).fetchone()
+    user = db.execute("SELECT * FROM users WHERE username = ?", (username,)).fetchone()
     if not user:
         flash("User not found.", "danger")
         return redirect(url_for("index"))
@@ -1186,7 +1150,7 @@ def following(username):
         SELECT users.id, users.username, users.profile_pic 
         FROM follows 
         JOIN users ON follows.following_id = users.id 
-        WHERE follows.follower_id = %s
+        WHERE follows.follower_id = ?
         """,
         (user["id"],)
     ).fetchall()
@@ -1484,7 +1448,7 @@ def create_group():
             flash('Both name and description are required.', 'error')
         else:
             cursor = db.cursor()
-            cursor.execute('INSERT INTO groups (user_id, name, description) VALUES (%s, %s, %s)',
+            cursor.execute('INSERT INTO groups (user_id, name, description) VALUES (?, ?, ?)',
                         [current_user_id, name, description])
             db.commit()
             group_id = cursor.lastrowid
