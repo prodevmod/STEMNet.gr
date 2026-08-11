@@ -361,8 +361,8 @@ a.btn-primary {
 /* Outline & Secondary Buttons */
 .btn-outline {
     background-color: transparent;
-    border: 2px solid var(--border-color);
-    color: var(--text-color) !important;
+    border: 2px solid  #000000;
+    color:  #000000 !important;
     font-weight: 500;
 }
 
