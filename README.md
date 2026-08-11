@@ -1,188 +1,113 @@
-# STEMNet Greece
+# STEMNET GREECE
+Be me:
+* 15yo
+* Just finished th cs50 course
+* Equiped with basic and primal Full-Stack knoledge
+* In a country that thru it s school curriculum doesn't promote STEM or advanced problem-solving and creative thinking for students (Greece)
 
-STEMNet Greece is a community-driven platform built for Greek high school robotics clubs, STEM students, and young makers. During robotics competitions and school projects, many students create innovative solutions but rarely have a place to share them outside their own teams. STEMNet was created to solve that problem by providing a dedicated platform where students can connect, collaborate, and learn from one another.
+STEMNet.gr or STEMNET GREECE or even STEMNET (Global) is a vision for every underpriviledged child in every such part of the word with a passion to STEM to come together and contribute
+whatever they can for others alike to learn from, through this medium. 
 
-Members can showcase projects, publish open-source code, share 3D-printing designs, discuss technical challenges, and build connections with students from schools across Greece. Whether someone wants help debugging a robotics project, sharing a CAD model, or presenting a finished build, STEMNet offers a centralized environment designed specifically for student collaboration.
+---
+<img width="1881" height="910" alt="image" src="https://github.com/user-attachments/assets/94f65073-1fbd-4c40-ad18-3f9f032a44ff" />
+
+## The vision
+
+* Every student can post about their own projects, ask for help, help others and talk even about their passion and find co-workers to build something incredible in a team.
+* Every student can start a group, essentialy a groupchat, about anything they'd like to discuss.
+* Every student can join any group they are interested in joining.
+* Every student can post about an STEM or STEAM event they have heard of, acompaned with basic info about when/where it takes place and who is eligible for it.
+* Every student can add affiliate links to their bio to network and connect with fellow aspirants.
+* Every student can acces the STEM EXTRAS page with open/free resources to actually start building and learning about their stem passion.
+
+---
+<img width="1881" height="1007" alt="image" src="https://github.com/user-attachments/assets/080da211-bc90-41f8-8e47-7fccfdb131ac" />
+
+## Basic structure
+This project is still an MVP so although it is functional and can probably handle a couple handred of users it is not using the most viable and efficient framework:
+
+### FRONTEND
+* HTML 5
+* CSS 3
+* JAVASCRIPT
+* Jinja
+
+### BACKEND
+* Python
+* Flask
+* PostgreSQL (for online use)
+* SQLite (for local testing)
+
+## app.py structure
+1. Imports and Environment Setup:
+    - Import necessary libraries and modules.
+    - Load environment variables from a .env file.
+2. Flask App Initialization:
+    - Create a Flask application instance.
+    - Configure session management and security settings.
+3. Database Configuration:
+    - Define database paths and connection settings for SQLite and PostgreSQL.
+    - Implement a wrapper to make PostgreSQL behave like SQLite for compatibility.
+4. Utility Functions:
+    - Functions for CSRF protection, email verification, and link sanitization.
+5. Before Request Handlers:
+    - Upgrade the database schema if necessary.
+6. User Session Management:
+    - Load the current user from the session before each request.
+7. Routes:
+    - /register: User registration with reCAPTCHA v3 and email verification.
+    - /login: User login with reCAPTCHA v3 and brute force mitigation.
+    - /logout: User logout.
+    - /create: Create a new post, including replies and group posts.
+    - /group/create: Create a new group (requires login).
+    - /group/<int:group_id>: View group details and posts.
+    - /stem-extras: Additional STEM resources page.
+
+---
+<img width="1874" height="1005" alt="image" src="https://github.com/user-attachments/assets/833eafe2-063b-4c2c-b9e8-a81f7badd8af" />
+
+## Installation
+
+1. Open your terminal or command prompt.
+2. Clone the repository directly to your PC:
+   ```bash
+   git clone https://github.com/prodevmod/STEMNet.gr
+   ```
+---
+
+## Usage
+
+This project is currently not intended for local Usage...
 
 ---
 
-## Features
+## Contributing
 
-### User Accounts & Authentication
+Pull requests are welcome. For major changes, please open an issue first
+to discuss what you would like to change.
 
-- Secure user registration and login
-- Session-based authentication
-- Protected routes
-- Secure logout functionality
+Please make sure to update tests as appropriate.
 
-### User Profiles
+## License
 
-Each member has a customizable profile featuring:
+Copyright (c) 2026 prodevmod. All rights reserved.
 
-- Profile picture
-- Personal biography
-- Registration date
-- GitHub profile link
-- LinkedIn profile link
-- Up to five custom external links
+TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION
 
-### Social Features
+1. Proprietary Rights
+This project, including all source code, design elements, layouts, logic, and documentation, is the exclusive intellectual property of the copyright holder (prodevmod). 
 
-- Follow and unfollow users
-- Live follower and following counts
-- Notifications for replies and new followers
+2. Permitted Actions (Pull Requests & Forking)
+Permission is granted to public users to view the source code and fork this repository strictly within the GitHub platform for the sole purpose of submitting contributions, bug fixes, or enhancements back to the original project via Pull Requests (PRs). 
 
-### Category-Based Feed
+3. Strict Prohibitions (No Recreation or Derivation)
+You are strictly prohibited from:
+- Recreating, cloning, copying, or duplicating the project, its core ideas, or its codebase to launch a separate product, service, website, or platform.
+- Creating derivative works based on this project.
+- Modifying and redistributing the source code outside of direct contributions to the original repository.
+- Using any part of this project for commercial purposes.
 
-Posts can be organized into:
+4. Title to Contributions
+By submitting a Pull Request, you agree to grant the copyright holder a perpetual, worldwide, non-exclusive, no-charge, royalty-free, irrevocable license to use, modify, and integrate your code contributions into the main project.
 
-- Robotics
-- 3D Modeling
-- Software
-- Electronics
-- Artificial Intelligence
-- Events
-- Other
-
-### Rich Posts
-
-Posts support:
-
-- Text descriptions
-- Category tags
-- Optional GitHub repository links
-- Image uploads
-- Video uploads
-
-### Media Support
-
-- Native image rendering
-- HTML5 video playback (`.mp4` & `.webm`)
-- Multiple-image project galleries with carousel navigation
-
-### Discussions
-
-- Threaded replies
-- Parent post previews
-- Organized technical discussions
-
-### Live Interactions
-
-- Instant like/unlike system
-- AJAX-powered updates using the Fetch API
-- Infinite scrolling feed
-- Automatic polling for newly published posts
-
-### User Achievements
-
-Achievement badges based on milestones such as:
-
-- First project
-- Like milestones
-- Robotics activity
-- CAD activity
-- AI activity
-
-### Search
-
-- Search users and posts
-
-### Themes
-
-- Dark and Light mode
-- Theme preference stored per user
-
-### Responsive Design
-
-- Mobile-friendly layouts
-- Flexbox-based interface
-- Responsive navigation
-- CSS custom properties
-
-### Security
-
-- CSRF protection
-- Password hashing
-- Secure session management
-- Protected authenticated endpoints
-- Proper HTTP 401 handling
-
----
-
-## Technologies
-
-### Backend
-
-- Python 3
-- Flask
-- Jinja2
-- SQLite (development)
-- PostgreSQL (production)
-
-### Frontend
-
-- HTML5
-- CSS3
-- JavaScript (ES6)
-
-### Services
-
-- Git
-- GitHub
-- Name.com (Domain & DNS)
-- Resend (Transactional Email API)
-- Nest (Application Hosting)
-
----
-
-## What I Learned
-
-Building STEMNet Greece became a complete full-stack software engineering project and provided experience in many areas of web development.
-
-Key concepts learned include:
-
-- Full-stack web development with Flask
-- Database design and relational modeling
-- Authentication and web security
-- Session management
-- Password hashing
-- CSRF protection
-- Jinja2 template engineering
-- AJAX using the Fetch API and async/await
-- Responsive UI/UX design
-- Git and GitHub workflows
-- API integration
-- Domain and DNS configuration
-- Production deployment
-
----
-
-## Project Goals
-
-STEMNet Greece aims to create a collaborative environment where students can:
-
-- Share robotics projects
-- Publish open-source code
-- Upload CAD models
-- Showcase engineering builds
-- Ask technical questions
-- Learn from other students
-- Build a public portfolio
-- Connect with robotics teams across Greece
-
-The long-term vision is to strengthen the Greek high school STEM community by making knowledge sharing simple, accessible, and collaborative.
-
----
-
-## Future Improvements
-
-Planned features include:
-
-- Direct messaging
-- Project bookmarking
-- Team pages for robotics clubs
-- Competition and event announcements
-- Improved search functionality
-- Better notification system
-- User portfolio pages
-- API for third-party integrations
+THIS SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY.
