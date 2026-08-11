@@ -517,6 +517,7 @@ def login():
         flash("Automated activity detected. Login blocked.", "danger")
         return render_template("login.html")
     
+    return render_template("login.html")
 @app.before_request
 def upgrade_database():
     if getattr(app, '_db_checked', False):
