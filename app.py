@@ -1514,6 +1514,10 @@ def inline_svg(filename, width=20, height=20, class_name=""):
     except Exception as e:
         return Markup(f'<!-- Error loading {filename}: {e} -->')
 
+@app.errorhandler(429)
+def ratelimit_handler(e):
+    return render_template("ratelimit.html"), 429
+
 
 if __name__ == "__main__":
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
