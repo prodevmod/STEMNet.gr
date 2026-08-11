@@ -29,12 +29,6 @@
                 <span>Remember me</span>
             </label>
         </div>
-<!-- Google reCAPTCHA Widget -->
-<div class="form-group" style="margin: 1.25rem 0; display: flex; justify-content: center;">
-    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
-    <div class="g-recaptcha" data-sitekey="6LeicoAtAAAAACBqdDakk7SQpcup5kv98Iz88lO4"></div>
-</div>
-
         <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 0.5rem;">Log In</button>
     </form>
 
@@ -42,4 +36,27 @@
         Don't have an account yet? <a href="{{ url_for('register') }}" style="color: var(--primary-hover); font-weight: 600;">Register here</a>
     </p>
 </div>
+<!-- Google reCAPTCHA v3 API -->
+<script src="https://www.google.com/recaptcha/api.js?render=YOUR_SITE_KEY"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const form = document.querySelector("form");
+        if (form) {
+            form.addEventListener("submit", function(e) {
+                e.preventDefault(); // Pause form submission momentarily
+                grecaptcha.ready(function() {
+                    grecaptcha.execute('YOUR_SITE_KEY', {action: 'submit'}).then(function(token) {
+                        // Append the token as a hidden input field
+                        let input = document.createElement('input');
+                        input.type = 'hidden';
+                        input.name = 'g-recaptcha-response';
+                        input.value = token;
+                        form.appendChild(input);
+                        form.submit(); // Resume normal form submission
+                    });
+                });
+            });
+        }
+    });
+</script>
 {% endblock %}

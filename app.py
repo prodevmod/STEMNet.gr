@@ -273,25 +273,33 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 import requests
 os.environ.get("HCAPTCHA_SECRET_KEY")
 
+limiter = Limiter(
+    app=app,
+    key_func=get_remote_address,
+    default_limits=["200 per day", "50 per hour"],
+    storage_uri="memory://"
+)
+
 @app.route("/register", methods=["GET", "POST"])
 def register():
     if request.method == "POST":
-        # 1. Verify Google reCAPTCHA token first
+        # 1. Verify Google reCAPTCHA v3 token and score
         token = request.form.get("g-recaptcha-response")
         if not token:
-            flash("Please complete the reCAPTCHER verification.", "danger")
+            flash("Security verification failed. Please try again.", "danger")
             return render_template("register.html")
 
         payload = {
-            "secret": os.environ.get("RECAPTCHA_SECRET_KEY"),  # Your Google reCAPTCHA Secret Key
+            "secret": os.environ.get("RECAPTCHA_SECRET_KEY"),
             "response": token,
             "remoteip": request.remote_addr
         }
         response = requests.post("https://www.google.com/recaptcha/api/siteverify", data=payload)
         result = response.json()
 
-        if not result.get("success"):
-            flash("reCAPTCHA verification failed. Please try again.", "danger")
+        # Block if not successful or if the bot score is below 0.5
+        if not result.get("success") or result.get("score", 0) < 0.5:
+            flash("Automated activity detected. Registration blocked.", "danger")
             return render_template("register.html")
 
         # 2. Capture Form Inputs
@@ -397,21 +405,15 @@ def register():
 
     return render_template("register.html")
 
-limiter = Limiter(
-    app=app,
-    key_func=get_remote_address,
-    default_limits=["200 per day", "50 per hour"],
-    storage_uri="memory://"
-)
 
 @app.route("/login", methods=["GET", "POST"])
-@limiter.limit("3 per minute")
+@limiter.limit("5 per minute")
 def login():
     if request.method == "POST":
-        # 1. Verify Google reCAPTCHA token first
+        # 1. Verify Google reCAPTCHA v3 token and score
         token = request.form.get("g-recaptcha-response")
         if not token:
-            flash("Please complete the reCAPTCHA verification.", "danger")
+            flash("Security verification failed. Please try again.", "danger")
             return render_template("login.html")
 
         payload = {
@@ -422,8 +424,9 @@ def login():
         response = requests.post("https://www.google.com/recaptcha/api/siteverify", data=payload)
         result = response.json()
 
-        if not result.get("success"):
-            flash("reCAPTCHA verification failed. Please try again.", "danger")
+        # Block if not successful or if the bot score is below 0.5
+        if not result.get("success") or result.get("score", 0) < 0.5:
+            flash("Automated activity detected. Login blocked.", "danger")
             return render_template("login.html")
 
         # 2. Extract Credentials
@@ -505,7 +508,7 @@ def login():
             return render_template("login.html")
 
     return render_template("login.html")
-
+ 
 @app.before_request
 def upgrade_database():
     if getattr(app, '_db_checked', False):

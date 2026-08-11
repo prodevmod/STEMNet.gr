@@ -110,14 +110,30 @@
             <input type="text" id="custom_link_5" name="custom_link_5" placeholder="Any link or handle">
         </div>
 
-
-<!-- Google reCAPTCHA Widget -->
-<div class="form-group" style="margin: 1.25rem 0; display: flex; justify-content: center;">
-    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
-    <div class="g-recaptcha" data-sitekey="6LeicoAtAAAAACBqdDakk7SQpcup5kv98Iz88lO4"></div>
-</div>
-
         <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 0.5rem;">Register Account</button>
     </form>
 </div>
+<!-- Google reCAPTCHA v3 API -->
+<script src="https://www.google.com/recaptcha/api.js?render=YOUR_SITE_KEY"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const form = document.querySelector("form");
+        if (form) {
+            form.addEventListener("submit", function(e) {
+                e.preventDefault(); // Pause form submission momentarily
+                grecaptcha.ready(function() {
+                    grecaptcha.execute('YOUR_SITE_KEY', {action: 'submit'}).then(function(token) {
+                        // Append the token as a hidden input field
+                        let input = document.createElement('input');
+                        input.type = 'hidden';
+                        input.name = 'g-recaptcha-response';
+                        input.value = token;
+                        form.appendChild(input);
+                        form.submit(); // Resume normal form submission
+                    });
+                });
+            });
+        }
+    });
+</script>
 {% endblock %}
