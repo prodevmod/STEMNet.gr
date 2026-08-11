@@ -8,7 +8,8 @@ from dotenv import load_dotenv
 import re
 from datetime import timedelta
 from markupsafe import Markup
-
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 import psycopg2
 import psycopg2.extras
 
@@ -269,8 +270,45 @@ app.config["SQLALCHEMY_DATABASE_URI"] = db_url
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 
+import requests
+os.environ.get("HCAPTCHA_SECRET_KEY")
+
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    if request.method == "POST":
+        # 1. Grab the hCaptcha response token sent from the form
+        token = request.form.get("h-captcha-response")
+        
+        if not token:
+            flash("Please complete the CAPTCHA verification.", "danger")
+            return render_template("register.html")
+
+        # 2. Verify the token with hCaptcha's servers
+        payload = {
+            "secret": os.environ.get("HCAPTCHA_SECRET_KEY"),
+            "response": token,
+            "remoteip": request.remote_addr
+        }
+        
+        response = requests.post("https://api.hcaptcha.com/siteverify", data=payload)
+        result = response.json()
+
+        if not result.get("success"):
+            flash("CAPTCHA verification failed. Please try again.", "danger")
+            return render_template("register.html")
+
+        # 3. Proceed with standard registration logic if CAPTCHA passes
+        username = request.form.get("username", "").strip()
+        # ... rest of your registration code ...
+
+limiter = Limiter(
+    app=app,
+    key_func=get_remote_address,
+    default_limits=["200 per day", "50 per hour"]
+)
 
 @app.route("/login", methods=["GET", "POST"])
+@limiter.limit("3 per minute")
 def login():
     if request.method == "POST":
         identifier = request.form.get("username_or_email", "").strip()

@@ -10,7 +10,8 @@
     </p>
 
     <form action="{{ url_for('register') }}" method="POST">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        
         <!-- Account Credentials -->
         <div class="form-group">
             <label for="username">Username *</label>
@@ -19,7 +20,6 @@
 
         <div class="form-group">
             <label for="email">Email Address *</label>
-            <!-- Removed class="form-control" here so it perfectly matches the username field -->
             <input type="email" id="email" name="email" required autocomplete="off" placeholder="example@email.com">
         </div>
 
@@ -108,6 +108,12 @@
         <div class="form-group">
             <label for="custom_link_5">Other Custom Link</label>
             <input type="text" id="custom_link_5" name="custom_link_5" placeholder="Any link or handle">
+        </div>
+
+        <!-- hCaptcha Protection Widget -->
+        <div class="form-group" style="margin: 1.25rem 0; display: flex; justify-content: center;">
+            <script src="https://js.hcaptcha.com/1/api.js" async defer></script>
+            <div class="h-captcha" data-sitekey="YOUR_SITE_KEY"></div>
         </div>
 
         <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 0.5rem;">Register Account</button>
