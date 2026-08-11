@@ -276,143 +276,27 @@ os.environ.get("HCAPTCHA_SECRET_KEY")
 @app.route("/register", methods=["GET", "POST"])
 def register():
     if request.method == "POST":
-        # 1. Grab the hCaptcha response token sent from the form
-        token = request.form.get("h-captcha-response")
-        
+        # 1. Verify Google reCAPTCHA token first
+        token = request.form.get("g-recaptcha-response")
         if not token:
-            flash("Please complete the CAPTCHA verification.", "danger")
-            return render_template("register.html")
-
-        # 2. Verify the token with hCaptcha's servers
-        payload = {
-            "secret": os.environ.get("HCAPTCHA_SECRET_KEY"),
-            "response": token,
-            "remoteip": request.remote_addr
-        }
-        
-        response = requests.post("https://api.hcaptcha.com/siteverify", data=payload)
-        result = response.json()
-
-        if not result.get("success"):
-            flash("CAPTCHA verification failed. Please try again.", "danger")
-            return render_template("register.html")
-
-        # 3. Proceed with standard registration logic if CAPTCHA passes
-        username = request.form.get("username", "").strip()
-        # ... rest of your registration code ...
-
-limiter = Limiter(
-    app=app,
-    key_func=get_remote_address,
-    default_limits=["200 per day", "50 per hour"],
-    storage_uri="memory://"
-)
-
-@app.route("/login", methods=["GET", "POST"])
-@limiter.limit("3 per minute")
-def login():
-    if request.method == "POST":
-        identifier = request.form.get("username_or_email", "").strip()
-        password = request.form.get("password", "")
-        remember = request.form.get("remember")
-
-        if not identifier or not password:
-            flash("Please enter both your username/email and password.", "danger")
-            return render_template("login.html")
-
-        db = get_db()
-        
-        try:
-            user = db.execute(
-                "SELECT * FROM users WHERE username = ? OR email = ?", 
-                (identifier, identifier)
-            ).fetchone()
-
-            if user is None:
-                flash("Invalid username/email or password.", "danger")
-                return render_template("login.html")
-
-            # Convert user row to a standard dict so .get() works on both SQLite and PostgreSQL
-            user_dict = dict(user)
-
-            # 1. Check if the account is currently locked out
-            current_time = time.time()
-            locked_until = user_dict.get("locked_until", 0) or 0
-            if locked_until > current_time:
-                remaining_mins = max(1, int((locked_until - current_time) / 60))
-                flash(f"Too many failed login attempts. Account is temporarily locked. Please try again in {remaining_mins} minute(s).", "danger")
-                return render_template("login.html")
-
-            # 2. Verify Password
-            if not check_password_hash(user_dict["password_hash"], password):
-                failed_attempts = user_dict.get("failed_attempts", 0) + 1
-                new_locked_until = 0
-                
-                # Lock account for 5 minutes (300 seconds) after 5 failed attempts
-                if failed_attempts >= 5:
-                    new_locked_until = current_time + 300
-                    flash("Too many failed login attempts. Your account has been locked for 5 minutes.", "danger")
-                else:
-                    flash(f"Invalid username/email or password. Attempt {failed_attempts}/5.", "danger")
-                
-                db.execute(
-                    "UPDATE users SET failed_attempts = ?, locked_until = ? WHERE id = ?",
-                    (failed_attempts, new_locked_until, user_dict["id"])
-                )
-                db.commit()
-                return render_template("login.html")
-
-            elif user_dict["is_verified"] == 0:
-                flash("Please verify your email address before logging in. Check your inbox.", "warning")
-                return render_template("login.html")
-            else:
-                # 3. Successful Login: Reset failed attempts and lockout timers
-                db.execute(
-                    "UPDATE users SET failed_attempts = 0, locked_until = 0 WHERE id = ?",
-                    (user_dict["id"],)
-                )
-                db.commit()
-
-                session.clear()
-                session.permanent = True if remember else False
-                session["user_id"] = user_dict["id"]
-                session["just_logged_in"] = True
-                flash("Logged in successfully!", "success")
-                return redirect(url_for("index"))
-                
-        except (sqlite3.Error, psycopg2.Error) as e:
-            print(f"Login DB Error: {e}")
-            if hasattr(db, 'rollback'):
-                db.rollback()
-            elif hasattr(db, 'conn'):
-                db.conn.rollback()
-            flash("An unexpected database error occurred. Please try again.", "danger")
-            return render_template("login.html")
-
-    return render_template("login.html")
-
-    if request.method == "POST":
-        # 1. Verify hCaptcha first to block bots before processing data
-        token = request.form.get("h-captcha-response")
-        if not token:
-            flash("Please complete the CAPTCHA verification.", "danger")
+            flash("Please complete the reCAPTCHER verification.", "danger")
             return render_template("register.html")
 
         payload = {
-            "secret": os.environ.get("HCAPTCHA_SECRET_KEY"),
+            "secret": os.environ.get("RECAPTCHA_SECRET_KEY"),  # Your Google reCAPTCHA Secret Key
             "response": token,
             "remoteip": request.remote_addr
         }
-        response = requests.post("https://api.hcaptcha.com/siteverify", data=payload)
+        response = requests.post("https://www.google.com/recaptcha/api/siteverify", data=payload)
         result = response.json()
 
         if not result.get("success"):
-            flash("CAPTCHA verification failed. Please try again.", "danger")
+            flash("reCAPTCHA verification failed. Please try again.", "danger")
             return render_template("register.html")
 
         # 2. Capture Form Inputs
         username = request.form.get("username", "").strip()
-        email = request.form.get("email", "").strip()  # Capture email
+        email = request.form.get("email", "").strip()
         password = request.form.get("password", "")
         confirm_password = request.form.get("confirm_password", "")
         age_str = request.form.get("age", "").strip()
@@ -458,7 +342,7 @@ def login():
 
             db = get_db()
             
-            # Pre-check for existing email or username to give the specific error message
+            # Pre-check for existing email or username
             existing_user = db.execute(
                 "SELECT username, email FROM users WHERE username = ? OR email = ?",
                 (username, email)
@@ -499,12 +383,12 @@ def login():
                 db.commit()
 
                 # Generate token and send verification email
-                token = generate_verification_token(email)
-                send_verification_email(email, token)
+                token_email = generate_verification_token(email)
+                send_verification_email(email, token_email)
 
             except (sqlite3.IntegrityError, psycopg2.Error) as e:
                 print(f"Registration DB Error: {e}")
-                db.rollback()  # Resets the aborted PostgreSQL transaction state
+                db.rollback()
                 flash("Registration failed. That username or email may already be in use.", "danger")
                 return render_template("register.html")
             else:
@@ -513,6 +397,114 @@ def login():
 
     return render_template("register.html")
 
+limiter = Limiter(
+    app=app,
+    key_func=get_remote_address,
+    default_limits=["200 per day", "50 per hour"],
+    storage_uri="memory://"
+)
+
+@app.route("/login", methods=["GET", "POST"])
+@limiter.limit("3 per minute")
+def login():
+    if request.method == "POST":
+        # 1. Verify Google reCAPTCHA token first
+        token = request.form.get("g-recaptcha-response")
+        if not token:
+            flash("Please complete the reCAPTCHA verification.", "danger")
+            return render_template("login.html")
+
+        payload = {
+            "secret": os.environ.get("RECAPTCHA_SECRET_KEY"),
+            "response": token,
+            "remoteip": request.remote_addr
+        }
+        response = requests.post("https://www.google.com/recaptcha/api/siteverify", data=payload)
+        result = response.json()
+
+        if not result.get("success"):
+            flash("reCAPTCHA verification failed. Please try again.", "danger")
+            return render_template("login.html")
+
+        # 2. Extract Credentials
+        identifier = request.form.get("username_or_email", "").strip()
+        password = request.form.get("password", "")
+        remember = request.form.get("remember")
+
+        if not identifier or not password:
+            flash("Please enter both your username/email and password.", "danger")
+            return render_template("login.html")
+
+        db = get_db()
+        
+        try:
+            user = db.execute(
+                "SELECT * FROM users WHERE username = ? OR email = ?", 
+                (identifier, identifier)
+            ).fetchone()
+
+            if user is None:
+                flash("Invalid username/email or password.", "danger")
+                return render_template("login.html")
+
+            # Convert user row to a standard dict so .get() works on both SQLite and PostgreSQL
+            user_dict = dict(user)
+
+            # 3. Check if the account is currently locked out
+            current_time = time.time()
+            locked_until = user_dict.get("locked_until", 0) or 0
+            if locked_until > current_time:
+                remaining_mins = max(1, int((locked_until - current_time) / 60))
+                flash(f"Too many failed login attempts. Account is temporarily locked. Please try again in {remaining_mins} minute(s).", "danger")
+                return render_template("login.html")
+
+            # 4. Verify Password
+            if not check_password_hash(user_dict["password_hash"], password):
+                failed_attempts = user_dict.get("failed_attempts", 0) + 1
+                new_locked_until = 0
+                
+                # Lock account for 5 minutes (300 seconds) after 5 failed attempts
+                if failed_attempts >= 5:
+                    new_locked_until = current_time + 300
+                    flash("Too many failed login attempts. Your account has been locked for 5 minutes.", "danger")
+                else:
+                    flash(f"Invalid username/email or password. Attempt {failed_attempts}/5.", "danger")
+                
+                db.execute(
+                    "UPDATE users SET failed_attempts = ?, locked_until = ? WHERE id = ?",
+                    (failed_attempts, new_locked_until, user_dict["id"])
+                )
+                db.commit()
+                return render_template("login.html")
+
+            elif user_dict["is_verified"] == 0:
+                flash("Please verify your email address before logging in. Check your inbox.", "warning")
+                return render_template("login.html")
+            else:
+                # 5. Successful Login: Reset failed attempts and lockout timers
+                db.execute(
+                    "UPDATE users SET failed_attempts = 0, locked_until = 0 WHERE id = ?",
+                    (user_dict["id"],)
+                )
+                db.commit()
+
+                session.clear()
+                session.permanent = True if remember else False
+                session["user_id"] = user_dict["id"]
+                session["just_logged_in"] = True
+                flash("Logged in successfully!", "success")
+                return redirect(url_for("index"))
+                
+        except (sqlite3.Error, psycopg2.Error) as e:
+            print(f"Login DB Error: {e}")
+            if hasattr(db, 'rollback'):
+                db.rollback()
+            elif hasattr(db, 'conn'):
+                db.conn.rollback()
+            flash("An unexpected database error occurred. Please try again.", "danger")
+            return render_template("login.html")
+
+    return render_template("login.html")
 
 @app.before_request
 def upgrade_database():
