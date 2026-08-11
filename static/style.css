@@ -372,17 +372,6 @@ a.btn-primary {
     transform: translate(-1px, -1px);
 }
 
-/* Dark mode adjustments for outline buttons: White text in dark mode, black text in light mode */
-[data-theme="dark"] .btn-outline {
-    color: #ffffff !important;
-    border-color: #475569;
-}
-
-[data-theme="dark"] .btn-outline:hover {
-    background-color: rgba(255, 255, 255, 0.1);
-    color: #ffffff !important;
-}
-
 .btn-github {
     display: inline-flex;
     align-items: center;
@@ -424,8 +413,8 @@ a.btn-primary {
 }
 
 .hero .btn-outline {
-    border-color: #ffffff;
-    color: #ffffff !important;
+    border-color:  #000000;
+    color:  #000000 !important;
 }
 
 .hero .btn-outline:hover {
