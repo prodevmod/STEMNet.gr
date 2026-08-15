@@ -230,9 +230,6 @@ class PostgresCursorWrapper:
     def fetchall(self):
         return self._cursor.fetchall()
 
-    def fetchmany(self, size=None):
-        return self._cursor.fetchmany(size) if size else self._cursor.fetchmany()
-
     def __iter__(self):
         return iter(self._cursor)
 
@@ -241,17 +238,13 @@ class PostgresCursorWrapper:
 
 
 class PostgresWrapper:
-    """Makes PostgreSQL connection behave like SQLite, supporting both .cursor() and connection-level .execute()."""
+    """Makes PostgreSQL connection behave like SQLite by returning a wrapped cursor."""
     def __init__(self, conn):
         self.conn = conn
 
     def cursor(self):
+        # Must return the wrapper so cursor.execute() gets the translation logic
         return PostgresCursorWrapper(self.conn.cursor())
-
-    def execute(self, query, params=()):
-        """Allows db.execute(...) shorthand directly on the connection, just like sqlite3."""
-        cursor = self.cursor()
-        return cursor.execute(query, params)
 
     def commit(self):
         self.conn.commit()
@@ -262,6 +255,24 @@ class PostgresWrapper:
     def close(self):
         self.conn.close()
 
+def get_db():
+    if "db" not in g:
+        db_url = os.environ.get("DATABASE_URL")
+        
+        if db_url:
+            if db_url.startswith("postgres://"):
+                db_url = db_url.replace("postgres://", "postgresql://", 1)
+            
+            connection = psycopg2.connect(db_url, cursor_factory=psycopg2.extras.RealDictCursor)
+            g.db = PostgresWrapper(connection)
+        else:
+            connection = sqlite3.connect(DATABASE)
+            connection.row_factory = sqlite3.Row
+            # ONLY run PRAGMA on SQLite
+            connection.execute("PRAGMA foreign_keys = ON;")
+            g.db = connection
+            
+    return g.db
 
 @app.teardown_appcontext
 def close_db(exception):
