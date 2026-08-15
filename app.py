@@ -862,8 +862,8 @@ def toggle_like(post_id):
         cursor.execute("SELECT COUNT(*) AS count FROM likes WHERE post_id = ?", (post_id,))
         count_row = cursor.fetchone()
         
-        # Change count_row["count"] to count_row[0]
-        count = count_row[0] if count_row else 0
+        # Use dictionary key lookup for RealDictCursor compatibility
+        count = count_row["count"] if count_row else 0
         
         return jsonify({"liked": liked, "count": count})
     except Exception as e:
