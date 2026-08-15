@@ -230,6 +230,9 @@ class PostgresCursorWrapper:
     def fetchall(self):
         return self._cursor.fetchall()
 
+    def fetchmany(self, size=None):
+        return self._cursor.fetchmany(size) if size else self._cursor.fetchmany()
+
     def __iter__(self):
         return iter(self._cursor)
 
@@ -238,13 +241,17 @@ class PostgresCursorWrapper:
 
 
 class PostgresWrapper:
-    """Makes PostgreSQL connection behave like SQLite by returning a wrapped cursor."""
+    """Makes PostgreSQL connection behave like SQLite, supporting both .cursor() and connection-level .execute()."""
     def __init__(self, conn):
         self.conn = conn
 
     def cursor(self):
-        # Must return the wrapper so cursor.execute() gets the translation logic
         return PostgresCursorWrapper(self.conn.cursor())
+
+    def execute(self, query, params=()):
+        """Allows db.execute(...) shorthand directly on the connection, just like sqlite3."""
+        cursor = self.cursor()
+        return cursor.execute(query, params)
 
     def commit(self):
         self.conn.commit()
