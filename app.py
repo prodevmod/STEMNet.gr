@@ -198,10 +198,30 @@ def allowed_file(filename):
 
 # Database Wrappers for PostgreSQL Compatibility
 class PostgresCursorWrapper:
-    """Wraps psycopg2 cursor to support .lastrowid seamlessly."""
-    def __init__(self, cursor, lastrowid=None):
+    """Wraps psycopg2 cursor to support placeholder translation, .lastrowid, and standard cursor methods."""
+    def __init__(self, cursor):
         self._cursor = cursor
-        self.lastrowid = lastrowid
+        self.lastrowid = None
+
+    def execute(self, query, params=()):
+        # 1. Translate SQLite '?' placeholders to PostgreSQL '%s'
+        postgres_query = query.replace("?", "%s")
+        
+        is_insert = postgres_query.strip().upper().startswith("INSERT")
+        has_returning = "RETURNING" in postgres_query.upper()
+        
+        if is_insert and not has_returning:
+            postgres_query = postgres_query.rstrip().rstrip(";") + " RETURNING id;"
+            self._cursor.execute(postgres_query, params)
+            result = self._cursor.fetchone()
+            if result:
+                # Handle RealDictCursor or tuple/list results safely
+                if isinstance(result, dict):
+                    self.lastrowid = result.get("id") or list(result.values())[0]
+                else:
+                    self.lastrowid = result[0]
+        else:
+            self._cursor.execute(postgres_query, params)
 
     def fetchone(self):
         return self._cursor.fetchone()
@@ -218,34 +238,23 @@ class PostgresCursorWrapper:
     def __getattr__(self, name):
         return getattr(self._cursor, name)
 
-# Database Wrapper to Make PostgreSQL Behave Like SQLite
+
 class PostgresWrapper:
-    """
-    Makes PostgreSQL behave like SQLite:
-    1. Replaces '?' placeholders with '%s'.
-    2. Automatically appends 'RETURNING id' to INSERT statements so cursor.lastrowid works.
-    """
+    """Makes PostgreSQL connection behave like SQLite."""
     def __init__(self, conn):
         self.conn = conn
 
-    def execute(self, query, params=()):
-        cursor = self.conn.cursor()
-        postgres_query = query.replace("?", "%s")
-        
-        is_insert = postgres_query.strip().upper().startswith("INSERT")
-        has_returning = "RETURNING" in postgres_query.upper()
-        
-        lastrowid = None
-        if is_insert and not has_returning:
-            postgres_query = postgres_query.rstrip().rstrip(";") + " RETURNING id;"
-            cursor.execute(postgres_query, params)
-            result = cursor.fetchone()
-            if result:
-                lastrowid = result["id"] if isinstance(result, dict) and "id" in result else result[0]
-        else:
-            cursor.execute(postgres_query, params)
+    def cursor(self):
+        return PostgresCursorWrapper(self.conn.cursor())
 
-        return PostgresCursorWrapper(cursor, lastrowid=lastrowid)
+    def commit(self):
+        self.conn.commit()
+
+    def rollback(self):
+        self.conn.rollback()
+
+    def close(self):
+        self.conn.close()
 
     def cursor(self):
         return self.conn.cursor()
@@ -855,8 +864,14 @@ def toggle_like(post_id):
             liked = True
         
         db.commit()
-        
+                
         cursor.execute("SELECT COUNT(*) AS count FROM likes WHERE post_id = ?", (post_id,))
+        count_row = cursor.fetchone()
+        
+        # Change count_row["count"] to count_row[0]
+        count = count_row[0] if count_row else 0
+        
+        return jsonify({"liked": liked, "count": count})
         count_row = cursor.fetchone()
         count = count_row["count"] if count_row else 0
         
@@ -867,7 +882,7 @@ def toggle_like(post_id):
         return jsonify({"error": str(e)}), 500
     finally:
         cursor.close()
-
+ 
 # Profile Route: View Own or Other User's Profile
 @app.route("/profile")
 @app.route("/profile/<username>")
