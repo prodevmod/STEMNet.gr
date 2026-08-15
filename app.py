@@ -198,10 +198,31 @@ def allowed_file(filename):
 
 # Database Wrappers for PostgreSQL Compatibility
 class PostgresCursorWrapper:
-    """Wraps psycopg2 cursor to support .lastrowid seamlessly."""
-    def __init__(self, cursor, lastrowid=None):
+    """Wraps the psycopg2 cursor to translate '?' placeholders to '%s' and support lastrowid."""
+    def __init__(self, cursor):
         self._cursor = cursor
-        self.lastrowid = lastrowid
+        self.lastrowid = None
+
+    def execute(self, query, params=()):
+        # Translate SQLite '?' placeholders to PostgreSQL '%s'
+        postgres_query = query.replace("?", "%s")
+        
+        is_insert = postgres_query.strip().upper().startswith("INSERT")
+        has_returning = "RETURNING" in postgres_query.upper()
+        
+        if is_insert and not has_returning:
+            postgres_query = postgres_query.rstrip().rstrip(";") + " RETURNING id;"
+            self._cursor.execute(postgres_query, params)
+            result = self._cursor.fetchone()
+            if result:
+                if isinstance(result, dict):
+                    self.lastrowid = result.get("id") or list(result.values())[0]
+                else:
+                    self.lastrowid = result[0]
+        else:
+            self._cursor.execute(postgres_query, params)
+            
+        return self
 
     def fetchone(self):
         return self._cursor.fetchone()
@@ -209,46 +230,21 @@ class PostgresCursorWrapper:
     def fetchall(self):
         return self._cursor.fetchall()
 
-    def fetchmany(self, size=None):
-        return self._cursor.fetchmany(size) if size else self._cursor.fetchmany()
-
     def __iter__(self):
         return iter(self._cursor)
 
     def __getattr__(self, name):
         return getattr(self._cursor, name)
 
-# Database Wrapper to Make PostgreSQL Behave Like SQLite
+
 class PostgresWrapper:
-    """
-    Makes PostgreSQL behave like SQLite:
-    1. Replaces '?' placeholders with '%s'.
-    2. Automatically appends 'RETURNING id' to INSERT statements so cursor.lastrowid works.
-    """
+    """Makes PostgreSQL connection behave like SQLite by returning a wrapped cursor."""
     def __init__(self, conn):
         self.conn = conn
 
-    def execute(self, query, params=()):
-        cursor = self.conn.cursor()
-        postgres_query = query.replace("?", "%s")
-        
-        is_insert = postgres_query.strip().upper().startswith("INSERT")
-        has_returning = "RETURNING" in postgres_query.upper()
-        
-        lastrowid = None
-        if is_insert and not has_returning:
-            postgres_query = postgres_query.rstrip().rstrip(";") + " RETURNING id;"
-            cursor.execute(postgres_query, params)
-            result = cursor.fetchone()
-            if result:
-                lastrowid = result["id"] if isinstance(result, dict) and "id" in result else result[0]
-        else:
-            cursor.execute(postgres_query, params)
-
-        return PostgresCursorWrapper(cursor, lastrowid=lastrowid)
-
     def cursor(self):
-        return self.conn.cursor()
+        # Must return the wrapper so cursor.execute() gets the translation logic
+        return PostgresCursorWrapper(self.conn.cursor())
 
     def commit(self):
         self.conn.commit()
