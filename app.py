@@ -8,6 +8,8 @@ from dotenv import load_dotenv
 import re
 from datetime import timedelta
 from markupsafe import Markup
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 import psycopg2
 import psycopg2.extras
 
@@ -83,6 +85,14 @@ if db_url.startswith("postgres://"):
     db_url = db_url.replace("postgres://", "postgresql://", 1)
 app.config["SQLALCHEMY_DATABASE_URI"] = db_url
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
+# Rate Limiting Configuration
+limiter = Limiter(
+    app=app,
+    key_func=get_remote_address,
+    default_limits=["200 per day", "50 per hour"],
+    storage_uri="memory://"
+)
 
 # Utility Functions for Email Verification
 def get_serializer():
@@ -489,6 +499,7 @@ def register():
 
 # Login Route with reCAPTCHA v3 and Brute Force Mitigation
 @app.route("/login", methods=["GET", "POST"])
+@limiter.limit("20 per minute")
 def login():
     if request.method == "POST":
         # 1. Verify Google reCAPTCHA v3 token and score
