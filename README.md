@@ -1,3 +1,6 @@
+## For STARDANCERS:
+Guys when reviewing my project please make an account if you dont want to share your real info atleast use a fake email generator and login from the inbox cause rly all the dedication i ve put into this project is in that page after logging in
+
 # STEMNET GREECE
 Be me:
 * 15yo
