@@ -74,15 +74,41 @@ export default function Events({ currentUser, theme, toggleTheme }) {
 
     const toggleLike = async (e, postId) => {
         e.preventDefault();
+        if (!currentUser) {
+            alert('Please log in to like posts.');
+            return;
+        }
+
+        // Find the current post to determine its state before the update
+        const postToUpdate = posts.find(p => p.id === postId);
+        if (!postToUpdate) return;
+        
+        const isCurrentlyLiked = Boolean(postToUpdate.user_liked);
+        const newLikedState = !isCurrentlyLiked;
+        
+        // 1. Optimistic UI Update (Instant visual feedback)
+        setPosts(prevPosts => prevPosts.map(post => {
+            if (post.id === postId) {
+                return {
+                    ...post,
+                    like_count: newLikedState ? post.like_count + 1 : Math.max(0, post.like_count - 1),
+                    user_liked: newLikedState ? 1 : 0
+                };
+            }
+            return post;
+        }));
+
+        // 2. Network Request
         try {
             const response = await fetch(`/api/posts/${postId}/like`, { method: 'POST', credentials: 'include' });
-            if (response.status === 401) {
-                alert('Please log in to like posts.');
-                return;
+            
+            if (!response.ok) {
+                throw new Error('Failed to toggle like');
             }
-            if (!response.ok) return;
+            
             const data = await response.json();
             
+            // 3. Sync with the exact truth from the server
             setPosts(prevPosts => prevPosts.map(post => {
                 if (post.id === postId) {
                     return {
@@ -95,6 +121,17 @@ export default function Events({ currentUser, theme, toggleTheme }) {
             }));
         } catch (err) {
             console.error('Fetch error:', err);
+            // 4. Revert optimistic update on failure
+            setPosts(prevPosts => prevPosts.map(post => {
+                if (post.id === postId) {
+                    return {
+                        ...post,
+                        like_count: isCurrentlyLiked ? post.like_count + 1 : Math.max(0, post.like_count - 1),
+                        user_liked: isCurrentlyLiked ? 1 : 0
+                    };
+                }
+                return post;
+            }));
         }
     };
 
@@ -200,11 +237,11 @@ export default function Events({ currentUser, theme, toggleTheme }) {
                                 >
                                     <SafeImage
                                         id={`like-icon-${post.id}`}
-                                        src={post.user_liked > 0 ? likedIcon : likeIcon}
-                                        alt={post.user_liked > 0 ? 'Liked' : 'Like'}
+                                        src={post.user_liked ? likedIcon : likeIcon}
+                                        alt={post.user_liked ? 'Liked' : 'Like'}
                                         width="16"
                                         height="16"
-                                        className={post.user_liked > 0 ? 'like-pop' : ''}
+                                        className={post.user_liked ? 'like-pop' : ''}
                                     />
                                     <span>{post.like_count > 0 ? post.like_count : 'Like'}</span>
                                 </button>
