@@ -1,0 +1,110 @@
+import { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import Home from './pages/Home';
+import Register from './pages/Register';
+import Login from './pages/Login';
+import NotFound from './pages/NotFound';
+import ServerError from './pages/ServerError';
+import Search from './pages/Search';
+import Profile from './pages/Profile';
+import Followers from './pages/Followers';
+import Following from './pages/Following';
+import EditPost from './pages/EditPost';
+import PostDetail from './pages/PostDetail';
+import Notifications from './pages/Notifications';
+import CreatePost from './pages/CreatePost';
+import Events from './pages/Events';
+import Groups from './pages/Groups';
+import GroupPosts from './pages/GroupPosts';
+import Education from './pages/Education';
+import CreateGroup from './pages/CreateGroup';
+import './style.css'; 
+
+function App() {
+  const [currentUser, setCurrentUser] = useState(null);
+  const [authChecked, setAuthChecked] = useState(false);
+  const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
+  const [hasUnreadNotifications, setHasUnreadNotifications] = useState(false);
+
+  const toggleTheme = () => {
+    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
+  };
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
+  // Global auth check runs ONCE when the app loads
+  useEffect(() => {
+    fetch('/api/auth/me', { credentials: 'include' })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        setCurrentUser(data?.user || null);
+        setAuthChecked(true);
+      })
+      .catch(() => {
+        setCurrentUser(null);
+        setAuthChecked(true);
+      });
+  }, []);
+
+  // Poll for unread notifications if user is logged in
+  useEffect(() => {
+    if (!currentUser) {
+      setHasUnreadNotifications(false);
+      return;
+    }
+    const checkUnread = async () => {
+      try {
+        const res = await fetch('/api/notifications', { credentials: 'include' });
+        if (res.ok) {
+          const data = await res.json();
+          const unread = data.some((n) => !n.is_read);
+          setHasUnreadNotifications(unread);
+        }
+      } catch (err) {
+        console.error('Failed to check notifications:', err);
+      }
+    };
+    checkUnread();
+    const interval = setInterval(checkUnread, 30000);
+    return () => clearInterval(interval);
+  }, [currentUser]);
+
+  if (!authChecked) {
+    return <div style={{ textAlign: 'center', marginTop: '20rem' }}>Loading STEMNet...</div>;
+  }
+
+  return (
+    <Router>
+      <div className="main-layout">
+        <Routes>
+          <Route path="/" element={<Home currentUser={currentUser} setCurrentUser={setCurrentUser} theme={theme} toggleTheme={toggleTheme} hasUnreadNotifications={hasUnreadNotifications} />} />
+          <Route path="/register" element={<Register theme={theme} toggleTheme={toggleTheme} />} />
+          <Route path="/login" element={<Login setCurrentUser={setCurrentUser} theme={theme} toggleTheme={toggleTheme} />} />
+          <Route path="/search" element={<Search currentUser={currentUser} setCurrentUser={setCurrentUser} theme={theme} toggleTheme={toggleTheme} hasUnreadNotifications={hasUnreadNotifications} />} />
+          <Route path="/notifications" element={<Notifications currentUser={currentUser} setCurrentUser={setCurrentUser} theme={theme} toggleTheme={toggleTheme} hasUnreadNotifications={hasUnreadNotifications} />} />
+          <Route path="/profile/:username" element={<Profile currentUser={currentUser} setCurrentUser={setCurrentUser} theme={theme} toggleTheme={toggleTheme} hasUnreadNotifications={hasUnreadNotifications} />} />
+          <Route path="/followers/:username" element={<Followers currentUser={currentUser} setCurrentUser={setCurrentUser} theme={theme} toggleTheme={toggleTheme} hasUnreadNotifications={hasUnreadNotifications} />} />
+          <Route path="/following/:username" element={<Following currentUser={currentUser} setCurrentUser={setCurrentUser} theme={theme} toggleTheme={toggleTheme} hasUnreadNotifications={hasUnreadNotifications} />} />
+          
+          <Route path="/groups" element={<Groups currentUser={currentUser} setCurrentUser={setCurrentUser} theme={theme} toggleTheme={toggleTheme} hasUnreadNotifications={hasUnreadNotifications} />} />
+          <Route path="/groups/:groupId" element={<GroupPosts currentUser={currentUser} setCurrentUser={setCurrentUser} theme={theme} toggleTheme={toggleTheme} hasUnreadNotifications={hasUnreadNotifications} />} />
+          <Route path="/education" element={<Education currentUser={currentUser} setCurrentUser={setCurrentUser} theme={theme} toggleTheme={toggleTheme} hasUnreadNotifications={hasUnreadNotifications} />} />
+
+          <Route path="/create-post" element={<CreatePost currentUser={currentUser} setCurrentUser={setCurrentUser} theme={theme} toggleTheme={toggleTheme} hasUnreadNotifications={hasUnreadNotifications} />} />
+          <Route path="/post/edit/:postId" element={<EditPost currentUser={currentUser} setCurrentUser={setCurrentUser} theme={theme} toggleTheme={toggleTheme} hasUnreadNotifications={hasUnreadNotifications} />} />    
+          <Route path="/post/:id" element={<PostDetail currentUser={currentUser} theme={theme} toggleTheme={toggleTheme} />} />
+
+          <Route path="/create-group" element={<CreateGroup currentUser={currentUser} setCurrentUser={setCurrentUser} theme={theme} toggleTheme={toggleTheme} hasUnreadNotifications={hasUnreadNotifications} />} />
+          <Route path="/500" element={<ServerError />} />
+          <Route path="/events" element={<Events currentUser={currentUser} setCurrentUser={setCurrentUser} theme={theme} toggleTheme={toggleTheme} hasUnreadNotifications={hasUnreadNotifications} />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </div>
+    </Router>
+  );
+}
+
+export default App;
