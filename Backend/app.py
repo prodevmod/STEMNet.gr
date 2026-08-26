@@ -995,14 +995,31 @@ def api_mark_notifications_read():
 @app.route("/api/events", methods=["GET"])
 def get_events():
     db = get_db()
-    events = db.execute(
-        """SELECT posts.*, users.username, 
-           (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id) as like_count
-           FROM posts 
-           JOIN users ON posts.user_id = users.id 
-           WHERE posts.category = 'Events'
-           ORDER BY posts.event_time ASC"""
-    ).fetchall()
+    user_id = session.get("user_id")
+    
+    if user_id:
+        # If user is logged in, check if they liked each post
+        events = db.execute(
+            """SELECT posts.*, users.username, 
+               (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id) as like_count,
+               EXISTS(SELECT 1 FROM likes WHERE likes.post_id = posts.id AND likes.user_id = ?) as user_liked
+               FROM posts 
+               JOIN users ON posts.user_id = users.id 
+               WHERE posts.category = 'Events'
+               ORDER BY posts.event_time ASC""",
+            (user_id,)
+        ).fetchall()
+    else:
+        # If no user is logged in, user_liked is always 0 (false)
+        events = db.execute(
+            """SELECT posts.*, users.username, 
+               (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id) as like_count,
+               0 as user_liked
+               FROM posts 
+               JOIN users ON posts.user_id = users.id 
+               WHERE posts.category = 'Events'
+               ORDER BY posts.event_time ASC"""
+        ).fetchall()
     
     return jsonify([dict(row) for row in events]), 200
 

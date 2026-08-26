@@ -5,14 +5,15 @@ import likedIcon from '../assets/liked.svg';
 import likeIcon from '../assets/like.svg';
 import commentIcon from '../assets/comment.svg';
 
-// Custom Image Component: Handles missing images safely
-const SafeImage = ({ src, alt, className, width, height, onClick, style }) => {
+// Custom Image Component: Handles missing images safely and accepts all props (like id)
+const SafeImage = ({ src, alt, className, width, height, onClick, style, id }) => {
   const [error, setError] = useState(false);
   const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
 
   if (error || !src) {
     return (
       <span 
+        id={id}
         className={className} 
         onClick={onClick}
         style={{ 
@@ -32,6 +33,7 @@ const SafeImage = ({ src, alt, className, width, height, onClick, style }) => {
 
   return (
     <img 
+      id={id}
       src={src} 
       alt={alt} 
       className={className} 
@@ -79,19 +81,21 @@ export default function Events({ currentUser, theme, toggleTheme }) {
             return;
         }
 
-        // Find the current post to determine its state before the update
         const postToUpdate = posts.find(p => p.id === postId);
         if (!postToUpdate) return;
         
         const isCurrentlyLiked = Boolean(postToUpdate.user_liked);
         const newLikedState = !isCurrentlyLiked;
         
-        // 1. Optimistic UI Update (Instant visual feedback)
+        // Safely parse the count as a Number to prevent "1" + 1 = "11" string glitches
+        const currentLikeCount = Number(postToUpdate.like_count) || 0;
+        
+        // 1. Optimistic UI Update
         setPosts(prevPosts => prevPosts.map(post => {
             if (post.id === postId) {
                 return {
                     ...post,
-                    like_count: newLikedState ? post.like_count + 1 : Math.max(0, post.like_count - 1),
+                    like_count: newLikedState ? currentLikeCount + 1 : Math.max(0, currentLikeCount - 1),
                     user_liked: newLikedState ? 1 : 0
                 };
             }
@@ -108,12 +112,12 @@ export default function Events({ currentUser, theme, toggleTheme }) {
             
             const data = await response.json();
             
-            // 3. Sync with the exact truth from the server
+            // 3. Sync with exact truth
             setPosts(prevPosts => prevPosts.map(post => {
                 if (post.id === postId) {
                     return {
                         ...post,
-                        like_count: data.count,
+                        like_count: Number(data.count),
                         user_liked: data.liked ? 1 : 0
                     };
                 }
@@ -126,7 +130,7 @@ export default function Events({ currentUser, theme, toggleTheme }) {
                 if (post.id === postId) {
                     return {
                         ...post,
-                        like_count: isCurrentlyLiked ? post.like_count + 1 : Math.max(0, post.like_count - 1),
+                        like_count: isCurrentlyLiked ? currentLikeCount + 1 : Math.max(0, currentLikeCount - 1),
                         user_liked: isCurrentlyLiked ? 1 : 0
                     };
                 }
@@ -243,7 +247,7 @@ export default function Events({ currentUser, theme, toggleTheme }) {
                                         height="16"
                                         className={post.user_liked ? 'like-pop' : ''}
                                     />
-                                    <span>{post.like_count > 0 ? post.like_count : 'Like'}</span>
+                                    <span>{Number(post.like_count) > 0 ? post.like_count : 'Like'}</span>
                                 </button>
 
                                 <button
