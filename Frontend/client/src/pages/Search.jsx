@@ -230,68 +230,28 @@ export default function Search({ currentUser }) {
                             {results.posts.length > 0 && (
                                 <div id="posts-container">
                                     <h3 style={{ marginBottom: '0.75rem', fontSize: '1.1rem' }}>Posts</h3>
-                                    {results.posts.map((post) => {
-                                        const userLiked = Number(post.user_liked) > 0;
-                                        const totalLikes = Number(post.like_count) || 0;
-
-                                        return (
-                                            <div key={post.id} className="post-card card" style={{ marginBottom: '1rem', padding: '1.25rem' }}>
-                                                <div className="post-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                    <Link to={`/profile/${post.username}`} className="username">
-                                                        @{post.username}
+                                    {results.posts.map((post) => (
+                                        <div key={post.id} className="post-card card" style={{ marginBottom: '1rem', padding: '1.25rem' }}>
+                                            <div className="post-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                <Link to={`/profile/${post.username}`} className="username">
+                                                    @{post.username}
+                                                </Link>
+                                                <small className="timestamp">
+                                                    <Link to={`/post/${post.id}`} style={{ textDecoration: 'none', color: 'gray' }}>
+                                                        {post.created_at ? new Date(post.created_at).toLocaleDateString() : ''} ↗
                                                     </Link>
-                                                    <small className="timestamp">
-                                                        <Link to={`/post/${post.id}`} style={{ textDecoration: 'none', color: 'gray' }}>
-                                                            {post.created_at ? new Date(post.created_at).toLocaleDateString() : ''} ↗
-                                                        </Link>
-                                                    </small>
-                                                </div>
-
-                                                {post.category && (
-                                                    <div style={{ marginTop: '8px', marginBottom: '4px' }}>
-                                                        <span style={{ display: 'inline-block', backgroundColor: 'var(--bg-color)', border: '1px solid var(--border-color)', padding: '2px 8px', borderRadius: 'var(--radius)', fontSize: '0.8em', fontWeight: 500 }}>
-                                                            Category: {post.category}
-                                                        </span>
-                                                    </div>
-                                                )}
-
-                                                <p style={{ margin: '0.75rem 0', whiteSpace: 'pre-line' }}>{post.content}</p>
-
-                                                <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center', borderTop: '1px solid var(--border-color)', paddingTop: '0.75rem', marginTop: '0.5rem' }}>
-                                                    <button
-                                                        type="button"
-                                                        onClick={(e) => toggleLike(e, post.id)}
-                                                        className="post-action-btn"
-                                                        style={{ 
-                                                            background: 'none', 
-                                                            border: 'none', 
-                                                            display: 'flex', 
-                                                            alignItems: 'center', 
-                                                            gap: '0.35rem', 
-                                                            cursor: 'pointer', 
-                                                            fontWeight: userLiked ? 'bold' : 500, 
-                                                            color: 'inherit' 
-                                                        }}
-                                                    >
-                                                        <SafeImage
-                                                            id={`like-icon-${post.id}`}
-                                                            src={userLiked ? likedIcon : likeIcon}
-                                                            alt={userLiked ? 'Liked' : 'Like'}
-                                                            width="18"
-                                                            height="18"
-                                                            style={{ filter: 'var(--icon-filter)' }}
-                                                        />
-                                                        <span>{totalLikes > 0 ? totalLikes : 'Like'}</span>
-                                                    </button>
-
-                                                    <Link to={`/post/${post.id}`} className="post-action-btn" style={{ background: 'none', border: 'none', display: 'flex', alignItems: 'center', gap: '0.35rem', cursor: 'pointer', color: 'inherit', textDecoration: 'none' }}>
-                                                        <SafeImage src={commentIcon} alt="Reply" width="20" height="20" />
-                                                        <span>View Thread</span>
-                                                    </Link>
-                                                </div>
+                                                </small>
                                             </div>
-                                        );
-                                    })}
+
+                                            {post.category && (
+                                                <div style={{ marginTop: '8px', marginBottom: '4px' }}>
+                                                    <span style={{ display: 'inline-block', backgroundColor: 'var(--bg-color)', border: '1px solid var(--border-color)', padding: '2px 8px', borderRadius: 'var(--radius)', fontSize: '0.8em', fontWeight: 500 }}>
+                                                        Category: {post.category}
+                                                    </span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
                                 </div>
                             )}
                         </div>
