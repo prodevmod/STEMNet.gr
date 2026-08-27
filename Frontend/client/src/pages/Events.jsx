@@ -5,7 +5,6 @@ import likedIcon from '../assets/liked.svg';
 import likeIcon from '../assets/like.svg';
 import commentIcon from '../assets/comment.svg';
 
-// Custom Image Component: Handles missing images safely and accepts all props (like id)
 const SafeImage = ({ src, alt, className, width, height, onClick, style, id }) => {
   const [error, setError] = useState(false);
   const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
@@ -87,22 +86,20 @@ export default function Events({ currentUser, theme, toggleTheme }) {
         const isCurrentlyLiked = Boolean(postToUpdate.user_liked);
         const newLikedState = !isCurrentlyLiked;
         
-        // Safely parse the count as a Number to prevent "1" + 1 = "11" string glitches
         const currentLikeCount = Number(postToUpdate.like_count) || 0;
+        const optimisticCount = newLikedState ? currentLikeCount + 1 : Math.max(0, currentLikeCount - 1);
         
-        // 1. Optimistic UI Update
         setPosts(prevPosts => prevPosts.map(post => {
             if (post.id === postId) {
                 return {
                     ...post,
-                    like_count: newLikedState ? currentLikeCount + 1 : Math.max(0, currentLikeCount - 1),
+                    like_count: optimisticCount,
                     user_liked: newLikedState ? 1 : 0
                 };
             }
             return post;
         }));
 
-        // 2. Network Request
         try {
             const response = await fetch(`/api/posts/${postId}/like`, { method: 'POST', credentials: 'include' });
             
@@ -112,20 +109,21 @@ export default function Events({ currentUser, theme, toggleTheme }) {
             
             const data = await response.json();
             
-            // 3. Sync with exact truth
+            const serverCount = data.count !== undefined ? data.count : (data.like_count !== undefined ? data.like_count : optimisticCount);
+            const serverLiked = data.liked !== undefined ? data.liked : (data.user_liked !== undefined ? data.user_liked : newLikedState);
+
             setPosts(prevPosts => prevPosts.map(post => {
                 if (post.id === postId) {
                     return {
                         ...post,
-                        like_count: Number(data.count),
-                        user_liked: data.liked ? 1 : 0
+                        like_count: Number(serverCount),
+                        user_liked: serverLiked ? 1 : 0
                     };
                 }
                 return post;
             }));
         } catch (err) {
             console.error('Fetch error:', err);
-            // 4. Revert optimistic update on failure
             setPosts(prevPosts => prevPosts.map(post => {
                 if (post.id === postId) {
                     return {
@@ -247,7 +245,7 @@ export default function Events({ currentUser, theme, toggleTheme }) {
                                         height="16"
                                         className={post.user_liked ? 'like-pop' : ''}
                                     />
-                                    <span>{Number(post.like_count) > 0 ? post.like_count : 'Like'}</span>
+                                    <span>{Number(post.like_count) > 0 ? Number(post.like_count) : 'Like'}</span>
                                 </button>
 
                                 <button

@@ -94,6 +94,7 @@ limiter = Limiter(
     default_limits=["200 per day", "50 per hour"],
     storage_uri="memory://"
 )
+app.config["RATELIMIT_ENABLED"] = False
 
 # Utility Functions for Email Verification
 def get_serializer():
@@ -791,13 +792,28 @@ def api_edit_post(post_id):
         db.rollback()
         return jsonify({"error": str(e)}), 500
  
- # 1. Fetch single post data (Used when opening the edit form or viewing a single post)
-
 @app.route("/api/posts/<int:post_id>", methods=["GET"])
 def api_get_single_post(post_id):
     db = get_db()
     current_user_id = g.user["id"] if g.get("user") else 0
-    
+
+    try:
+        db.execute(
+            """
+            DELETE FROM posts 
+            WHERE event_time IS NOT NULL 
+              AND event_time != '' 
+              AND (
+                  datetime(event_time) < datetime('now')
+                  OR date(event_time) < date('now')
+              )
+            """
+        )
+        db.commit()
+    except Exception as e:
+        db.rollback()
+
+
     post = db.execute(
         """
         SELECT posts.*, users.username, users.profile_pic,
@@ -811,11 +827,30 @@ def api_get_single_post(post_id):
     ).fetchone()
     
     if not post:
-        return jsonify({"error": "Post not found"}), 404
+        return jsonify({"error": "Event not found or has expired."}), 404
         
-    return jsonify(dict(post)), 200
+    post_dict = dict(post)
+    
+    comments_cursor = db.execute(
+        """
+        SELECT posts.*, users.username, users.profile_pic,
+               (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id) AS like_count,
+               (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id AND likes.user_id = ?) AS user_liked
+        FROM posts 
+        JOIN users ON posts.user_id = users.id 
+        WHERE posts.parent_id = ? OR posts.reply_to = ?
+        ORDER BY posts.created_at ASC
+        """,
+        (current_user_id, post_id, str(post_id))
+    ).fetchall()
+    
+    comments = [dict(row) for row in comments_cursor]
+    
+    return jsonify({
+        "post": post_dict,
+        "comments": comments
+    }), 200
 
-# 2. Save/Update the edited post (Handles updates from the edit form)
 @app.route("/api/posts/<int:post_id>", methods=["PUT", "POST"])
 def api_update_post(post_id):
     if not g.get("user"):
@@ -844,8 +879,6 @@ def api_update_post(post_id):
     except Exception as e:
         db.rollback()
         return jsonify({"error": str(e)}), 500
-
-
 
 @app.route("/api/posts/<int:post_id>/delete", methods=["POST", "DELETE"])
 @login_required
@@ -1087,6 +1120,24 @@ def ratelimit_handler(e):
 @app.errorhandler(500)
 def server_error(e):
     return jsonify({"error": "Internal Server Error"}), 500
+
+def cleanup_expired_events(db):
+    """Deletes all posts with an event date/time prior to the current moment."""
+    try:
+        db.execute(
+            """
+            DELETE FROM posts 
+            WHERE event_time IS NOT NULL 
+              AND event_time != '' 
+              AND (
+                  datetime(event_time) < datetime('now')
+                  OR date(event_time) < date('now')
+              )
+            """
+        )
+        db.commit()
+    except Exception as e:
+        db.rollback()
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)

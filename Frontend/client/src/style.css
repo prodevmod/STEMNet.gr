@@ -807,11 +807,7 @@ a.btn-primary {
     filter: none !important;
 }
 
-/* ==========================================
-   Dark Mode Icon Visibility Fix
-   ========================================== */
-
-/* Force like, comment, and social icons to pure white in dark mode */
+/* Force icons to pure white in dark mode */
 [data-theme="dark"] img[src*="comment.svg"],
 [data-theme="dark"] img[src*="like.svg"],
 [data-theme="dark"] img[src*="liked.svg"],
@@ -819,7 +815,8 @@ a.btn-primary {
 [data-theme="dark"] img[src*="linkedin"],
 [data-theme="dark"] img[src*="link.svg"],
 [data-theme="dark"] .post-actions img,
-[data-theme="dark"] .card-actions img {
+[data-theme="dark"] .card-actions img,
+[data-theme="dark"] .subreply-action-btn img {
     filter: brightness(0) invert(1) !important;
 }
 
@@ -997,4 +994,32 @@ a.btn-primary {
   color: #ffffff !important;
   border-color: #ffffff;
   background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Force all elements inside primary buttons on event pages to render pure black text */
+.comments-section .btn-primary,
+.comments-section .btn-primary *,
+button.btn-primary,
+button.btn-primary span {
+    color: #000000 !important;
+}
+/* Force reply SVG icons to display solid black */
+button.btn-primary img,
+.comments-section button img {
+    filter: brightness(0) !important;
+    -webkit-filter: brightness(0) !important;
+}
+/* Automatically handle SVG icon theme colors */
+.theme-icon {
+  filter: brightness(0);
+}
+
+/* Dark theme */
+[data-theme="dark"] .inline-svg {
+  color: #ffffff;
+}
+
+/* Light theme (default) */
+.inline-svg {
+  color: #000000;
 }

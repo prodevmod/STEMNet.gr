@@ -11,6 +11,7 @@ import Followers from './pages/Followers';
 import Following from './pages/Following';
 import EditPost from './pages/EditPost';
 import PostDetail from './pages/PostDetail';
+import EventDetails from './pages/EventDetails';
 import Notifications from './pages/Notifications';
 import CreatePost from './pages/CreatePost';
 import Events from './pages/Events';
@@ -95,7 +96,8 @@ function App() {
 
           <Route path="/create-post" element={<CreatePost currentUser={currentUser} setCurrentUser={setCurrentUser} theme={theme} toggleTheme={toggleTheme} hasUnreadNotifications={hasUnreadNotifications} />} />
           <Route path="/post/edit/:postId" element={<EditPost currentUser={currentUser} setCurrentUser={setCurrentUser} theme={theme} toggleTheme={toggleTheme} hasUnreadNotifications={hasUnreadNotifications} />} />    
-          <Route path="/post/:id" element={<PostDetail currentUser={currentUser} theme={theme} toggleTheme={toggleTheme} />} />
+          <Route path="/post/:id" element={<PostDetail currentUser={currentUser} setCurrentUser={setCurrentUser} theme={theme} toggleTheme={toggleTheme} hasUnreadNotifications={hasUnreadNotifications} />} />
+          <Route path="/posts/:postId" element={<EventDetails currentUser={currentUser} setCurrentUser={setCurrentUser} theme={theme} toggleTheme={toggleTheme} hasUnreadNotifications={hasUnreadNotifications} />} />
 
           <Route path="/create-group" element={<CreateGroup currentUser={currentUser} setCurrentUser={setCurrentUser} theme={theme} toggleTheme={toggleTheme} hasUnreadNotifications={hasUnreadNotifications} />} />
           <Route path="/500" element={<ServerError />} />
