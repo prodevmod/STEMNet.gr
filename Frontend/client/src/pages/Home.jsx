@@ -358,7 +358,7 @@ export default function Home({ currentUser, setCurrentUser, theme, toggleTheme }
                                                 display: 'flex',
                                                 alignItems: 'center',
                                                 gap: '0.4rem',
-                                                color: userLiked ? '#ef4444' : 'inherit',
+                                                color: userLiked ? '#000000' : 'inherit',
                                                 fontSize: 'inherit',
                                                 fontWeight: userLiked ? 'bold' : 'normal'
                                             }}

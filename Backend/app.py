@@ -517,14 +517,19 @@ def search():
         search_term = f"%{query}%"
         db = get_db()
         
+        # Get current user id from session if logged in
+        current_user_id = session.get('user_id', 0)
+        
         posts = db.execute('''
-            SELECT posts.*, users.username, users.profile_pic
+            SELECT posts.*, users.username, users.profile_pic,
+                   (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id) as like_count,
+                   (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id AND likes.user_id = ?) as user_liked
             FROM posts
             JOIN users ON posts.user_id = users.id
             WHERE posts.content LIKE ? OR posts.category LIKE ?
             ORDER BY posts.created_at DESC
             LIMIT 10
-        ''', (search_term, search_term)).fetchall()
+        ''', (current_user_id, search_term, search_term)).fetchall()
         
         groups = db.execute('''
             SELECT groups.*, users.username AS owner_username
