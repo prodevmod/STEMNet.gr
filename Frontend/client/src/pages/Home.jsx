@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 
-// Dynamically resolve local assets
 const globAssets = import.meta.glob('../assets/*', { eager: true, import: 'default' });
 
 const getAssetUrl = (filename) => {
@@ -222,6 +221,23 @@ export default function Home({ currentUser, setCurrentUser, theme, toggleTheme }
             <Navbar currentUser={currentUser} setCurrentUser={setCurrentUser} theme={theme} toggleTheme={toggleTheme} />
 
             <main style={{ maxWidth: '800px', margin: '0 auto', padding: '1.5rem 1rem' }}>
+                {!currentUser && (
+                    <div className="card" style={{ 
+                        marginBottom: '1.5rem', 
+                        padding: '1.5rem', 
+                        backgroundColor: 'var(--card-bg)', 
+                        border: '1px solid var(--border-color)', 
+                        borderRadius: '8px' 
+                    }}>
+                        <h2 style={{ fontSize: '1.25rem', marginBottom: '0.75rem', color: 'var(--text-color)' }}>
+                            Welcome to STEMNet Greece
+                        </h2>
+                        <p style={{ margin: 0, color: 'var(--text-color)', lineHeight: '1.5', fontSize: '0.95rem' }}>
+                            STEMNet is an open platform centered around Greek high school robotics clubs and STEM students. Connect with other teams, share your open-source code, showcase your 3D printing files, and ask technical troubleshooting questions. I truly believe that this simple medium can make a difference in Greek students' networking and personal growth.
+                        </p>
+                    </div>
+                )}
+
                 {loading && (
                     <div className="card" style={{ textAlign: 'center', padding: '2.5rem' }}>
                         Loading feed...
@@ -250,7 +266,6 @@ export default function Home({ currentUser, setCurrentUser, theme, toggleTheme }
                             
                             const authorName = post.username || 'user';
                             const authorPic = resolveImageUrl(post.profile_pic);
-                            const displayCommentCount = Number(post.comment_count) || 0;
                             const isReplying = activeCommentPostId === post.id;
 
                             return (
@@ -258,9 +273,8 @@ export default function Home({ currentUser, setCurrentUser, theme, toggleTheme }
                                     padding: '1.25rem', 
                                     backgroundColor: 'var(--card-bg)', 
                                     border: '1px solid var(--border-color)', 
-                                    borderRadius: '8px'
+                                    borderRadius: '8px' 
                                 }}>
-                                    {/* POST HEADER */}
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                                             <Link to={`/profile/${authorName}`} style={{ display: 'inline-flex' }}>
@@ -282,7 +296,6 @@ export default function Home({ currentUser, setCurrentUser, theme, toggleTheme }
                                         </div>
                                     </div>
 
-                                    {/* QUOTED PARENT POST (If this post is a reply) */}
                                     {post.parent_content && (
                                         <div style={{ 
                                             border: '1px solid var(--border-color)', 
@@ -301,14 +314,12 @@ export default function Home({ currentUser, setCurrentUser, theme, toggleTheme }
                                         </div>
                                     )}
 
-                                    {/* POST CONTENT */}
                                     {post.content && (
                                         <p style={{ margin: '0 0 0.75rem 0', whiteSpace: 'pre-line', wordBreak: 'break-word' }}>
                                             {renderTextWithLinks(post.content)}
                                         </p>
                                     )}
 
-                                    {/* ATTACHED IMAGE */}
                                     {postImage && (
                                         <div style={{ 
                                             marginBottom: '0.75rem', 
@@ -337,7 +348,6 @@ export default function Home({ currentUser, setCurrentUser, theme, toggleTheme }
                                         </div>
                                     )}
 
-                                    {/* POST ACTIONS */}
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', fontSize: '0.85rem', borderTop: '1px solid var(--border-color)', paddingTop: '0.75rem', marginTop: '0.5rem' }}>
                                         <button
                                             onClick={() => handleLikePost(post.id)}
@@ -365,7 +375,6 @@ export default function Home({ currentUser, setCurrentUser, theme, toggleTheme }
                                             <span>{totalLikes}</span>
                                         </button>
 
-                                        {/* TOGGLE REPLY BOX */}
                                         <button
                                             onClick={() => setActiveCommentPostId(isReplying ? null : post.id)}
                                             style={{
@@ -393,7 +402,6 @@ export default function Home({ currentUser, setCurrentUser, theme, toggleTheme }
                                         </button>
                                     </div>
 
-                                    {/* REPLY INPUT & BUTTONS (ONLY VISIBLE WHEN REPLY ICON IS CLICKED) */}
                                     {isReplying && (
                                         <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px dashed var(--border-color)' }}>
                                             <form onSubmit={(e) => handleAddComment(post.id, post, e)} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
