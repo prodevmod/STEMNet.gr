@@ -1,18 +1,31 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
+import { useGoogleReCaptcha } from 'react-google-recaptcha-v3'; // 1. Import the hook
 
 export default function Login({ setCurrentUser, theme, toggleTheme }) {
     const [identifier, setIdentifier] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const navigate = useNavigate();
+    
+    // 2. Initialize the reCAPTCHA hook
+    const { executeRecaptcha } = useGoogleReCaptcha();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
 
+        // 3. Ensure the script has loaded
+        if (!executeRecaptcha) {
+            setError('reCAPTCHA has not loaded yet. Please try again.');
+            return;
+        }
+
         try {
+            // 4. Execute the recaptcha silently with the action name 'login'
+            const captchaToken = await executeRecaptcha('login');
+
             const res = await fetch('/api/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -21,7 +34,8 @@ export default function Login({ setCurrentUser, theme, toggleTheme }) {
                     username: identifier,
                     email: identifier,
                     identifier: identifier,
-                    password: password 
+                    password: password,
+                    "g-recaptcha-response": captchaToken // 5. Append token to payload
                 }),
             });
 
@@ -35,6 +49,14 @@ export default function Login({ setCurrentUser, theme, toggleTheme }) {
         } catch (err) {
             setError('An error occurred during login.');
         }
+    };
+
+    // Theme-aware helper text style
+    const helperTextStyle = {
+        textAlign: 'center', 
+        marginTop: '1.5rem', 
+        fontSize: '0.85rem', 
+        color: theme === 'dark' ? '#94a3b8' : '#64748b'
     };
 
     return (
@@ -77,8 +99,8 @@ export default function Login({ setCurrentUser, theme, toggleTheme }) {
                         </button>
                     </form>
 
-                    <p style={{ textAlign: 'center', marginTop: '1.5rem', fontSize: '0.85rem', color: '#64748b' }}>
-                        Don&apos;t have an account? <Link to="/register" style={{ fontWeight: 600 }}>Sign up</Link>
+                    <p style={helperTextStyle}>
+                        Don&apos;t have an account? <Link to="/register" style={{ fontWeight: 600, color: 'var(--primary-color)' }}>Sign up</Link>
                     </p>
                 </div>
             </main>

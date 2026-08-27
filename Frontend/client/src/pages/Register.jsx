@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
+import { useGoogleReCaptcha } from 'react-google-recaptcha-v3'; // 1. Import the hook
 
 export default function Register() {
     const [formData, setFormData] = useState({
@@ -27,6 +28,9 @@ export default function Register() {
     
     const navigate = useNavigate();
 
+    // 2. Initialize the reCAPTCHA hook
+    const { executeRecaptcha } = useGoogleReCaptcha();
+
     useEffect(() => {
         document.documentElement.setAttribute('data-theme', theme);
         localStorage.setItem('theme', theme);
@@ -47,7 +51,8 @@ export default function Register() {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
-    const handleSubmit = (e) => {
+    // 3. Update handleSubmit to be async and use the hook
+    const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
 
@@ -56,19 +61,22 @@ export default function Register() {
             return;
         }
 
-        setLoading(true);
-        const recaptchaKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
+        // Ensure the script has loaded
+        if (!executeRecaptcha) {
+            setError('reCAPTCHA has not loaded yet. Please try again.');
+            return;
+        }
 
-        if (window.grecaptcha && recaptchaKey) {
-            window.grecaptcha.ready(() => {
-                window.grecaptcha.execute(recaptchaKey, { action: 'submit' }).then((token) => {
-                    sendRegistrationRequest({ ...formData, 'g-recaptcha-response': token });
-                }).catch(() => {
-                    sendRegistrationRequest(formData);
-                });
-            });
-        } else {
-            sendRegistrationRequest(formData);
+        setLoading(true);
+
+        try {
+            // Execute the recaptcha silently with the action name 'register'
+            const token = await executeRecaptcha('register');
+            await sendRegistrationRequest({ ...formData, 'g-recaptcha-response': token });
+        } catch (err) {
+            console.error('reCAPTCHA execution error:', err);
+            setError('Failed to verify reCAPTCHA. Please try again.');
+            setLoading(false);
         }
     };
 
