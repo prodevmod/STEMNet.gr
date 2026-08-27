@@ -1,6 +1,3 @@
-/* ==========================================
-   1. STEMNet Global Variables & Theme Root
-   ========================================== */
 :root {
     --bg-color: #f4f4f5;        
     --text-color: #2b2b2b;       
@@ -51,7 +48,7 @@
     background-color: var(--border-color);
 }
 
-/* Theme Configurations */
+
 :root, [data-theme="light"] {
     --bg-color: #f8fafc;
     --text-color: #000000;
@@ -66,9 +63,7 @@
     --card-bg: #121212;
 }
 
-/* ==========================================
-   2. Base Reset & Layout
-   ========================================== */
+
 *, *::before, *::after {
     box-sizing: border-box;
     margin: 0;
@@ -114,9 +109,7 @@ img, video, canvas, svg {
     height: auto;
 }
 
-/* ==========================================
-   3. Header & Navigation Bar
-   ========================================== */
+
 header {
     background-color: #0f172a;
     color: #ffffff;
@@ -224,7 +217,7 @@ nav a:hover {
     }
 }
 
-/* Navbar Special Buttons */
+
 .nav-links a.nav-login-btn {
     color: #ffffff !important;
     background-color: #001f3f !important;
@@ -247,9 +240,7 @@ header nav a.nav-logout-link:hover {
     color: #ccff00 !important;
 }
 
-/* ==========================================
-   4. Flash Messages
-   ========================================== */
+
 .flash-container {
     margin-bottom: 1.5rem;
 }
@@ -266,9 +257,7 @@ header nav a.nav-logout-link:hover {
 .flash.danger { background-color: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
 .flash.success { background-color: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
 
-/* ==========================================
-   5. Cards, Feeds & Vault Components
-   ========================================== */
+
 .card, article, .post-card {
     background: var(--card-bg) !important;
     border: 1px solid var(--border-color) !important;
@@ -431,9 +420,7 @@ header nav a.nav-logout-link:hover {
     border: 1px solid var(--primary-color, #ccff00) !important;
 }
 
-/* ==========================================
-   6. Forms, Inputs & Search Bars
-   ========================================== */
+
 form {
     display: flex;
     flex-direction: column;
@@ -487,7 +474,7 @@ textarea {
     min-height: 120px;
 }
 
-/* Search Bars Layout */
+
 .search-form-bar, .search-horizontal-form {
     display: flex !important;
     flex-direction: row !important;
@@ -562,7 +549,7 @@ textarea {
     transform: scale(1);
 }
 
-/* Hide hCaptcha token textareas safely */
+
 textarea[name="h-captcha-response"],
 input[name="h-captcha-response"],
 #h-captcha-response {
@@ -576,9 +563,7 @@ input[name="h-captcha-response"],
     border: none !important;
 }
 
-/* ==========================================
-   7. Buttons
-   ========================================== */
+
 .btn {
     display: inline-flex;
     align-items: center;
@@ -653,9 +638,7 @@ a.btn-primary {
     isolation: isolate;
 }
 
-/* ==========================================
-   8. Hero Sections & Category Filter Bar
-   ========================================== */
+
 .hero {
     background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
     color: #ffffff;
@@ -681,7 +664,7 @@ a.btn-primary {
     gap: 1rem;
 }
 
-/* Light Hero Variant */
+
 [data-theme="light"] .hero.light-hero-gradient,
 :not([data-theme="dark"]) .hero.light-hero-gradient {
     background: #ffffff !important;
@@ -697,7 +680,7 @@ a.btn-primary {
     color: #000000 !important;
 }
 
-/* Category Filter Bar */
+
 .category-filter-bar {
     display: flex;
     gap: 10px;
@@ -738,9 +721,7 @@ a.btn-primary {
     box-shadow: 3px 3px 0px #000000 !important;
 }
 
-/* ==========================================
-   9. Dark Mode Text & Icon Overrides
-   ========================================== */
+
 [data-theme="dark"] body,
 [data-theme="dark"] p,
 [data-theme="dark"] span,
@@ -779,7 +760,7 @@ a.btn-primary {
     color: #000000 !important;
 }
 
-/* SVG and Image Stability */
+
 .btn img, button img, a img, .profile-link img {
     flex-shrink: 0 !important;
     display: block !important;
@@ -807,7 +788,7 @@ a.btn-primary {
     filter: none !important;
 }
 
-/* Force icons to pure white in dark mode */
+
 [data-theme="dark"] img[src*="comment.svg"],
 [data-theme="dark"] img[src*="like.svg"],
 [data-theme="dark"] img[src*="liked.svg"],
@@ -820,9 +801,9 @@ a.btn-primary {
     filter: brightness(0) invert(1) !important;
 }
 
-/* Ensure the liked state (often red/accent colored) stays visible or properly shaded */
+
 [data-theme="dark"] img[src*="liked.svg"] {
-    filter: none !important; /* Remove inversion if your 'liked' icon has its own built-in color like red/pink */
+    filter: none !important; 
 }
 [data-theme="dark"] button img,
 [data-theme="dark"] .action-btn img {
@@ -834,11 +815,7 @@ a.btn-primary {
     filter: none !important;
 }
 
-/* ==========================================
-   STEMNet Light Mode White Text Fixes
-   ========================================== */
 
-/* Keep brand text white in light mode (since headers are dark navy/black) */
 [data-theme="light"] header nav .brand,
 [data-theme="light"] header nav .nav-brand span,
 :not([data-theme="dark"]) header nav .brand,
@@ -846,14 +823,15 @@ a.btn-primary {
     color: #ffffff !important;
 }
 
-/* Keep specific navigation or header text elements white in light mode */
+
 [data-theme="light"] header p,
 [data-theme="light"] header span,
 :not([data-theme="dark"]) header p,
 :not([data-theme="dark"]) header span {
     color: #ffffff !important;
 }
-/* Theme Toggle Button */
+
+
 .theme-toggle-btn {
     background: transparent !important;
     border: none !important;
@@ -875,9 +853,7 @@ a.btn-primary {
     height: 22px;
 }
 
-/* ==========================================
-   10. Animations & Scrollbars
-   ========================================== */
+
 @keyframes heartPop {
     0% { transform: scale(1); }
     40% { transform: scale(1.4) rotate(-10deg); }
@@ -918,7 +894,8 @@ a.btn-primary {
     max-width: 100% !important;
     object-fit: contain !important;
 }
-/* Button and icon hover animations */
+
+
 .post-action-btn {
   background: none;
   border: none;
@@ -978,13 +955,13 @@ a.btn-primary {
     color: #000000 !important;
 }
 
-/* Force white text utility (Dark Theme Only) */
+
 [data-theme="dark"] .force-white,
 [data-theme="dark"] .force-white-text {
   color: #ffffff !important;
 }
 
-/* Ensure outline buttons keep white text on hover (Dark Theme Only) */
+
 [data-theme="dark"] .btn-outline.force-white {
   color: #ffffff !important;
   border-color: rgba(255, 255, 255, 0.3);
@@ -996,30 +973,32 @@ a.btn-primary {
   background-color: rgba(255, 255, 255, 0.1);
 }
 
-/* Force all elements inside primary buttons on event pages to render pure black text */
+
 .comments-section .btn-primary,
 .comments-section .btn-primary *,
 button.btn-primary,
 button.btn-primary span {
     color: #000000 !important;
 }
-/* Force reply SVG icons to display solid black */
+
+
 button.btn-primary img,
 .comments-section button img {
     filter: brightness(0) !important;
     -webkit-filter: brightness(0) !important;
 }
-/* Automatically handle SVG icon theme colors */
+
+
 .theme-icon {
   filter: brightness(0);
 }
 
-/* Dark theme */
+
 [data-theme="dark"] .inline-svg {
   color: #ffffff;
 }
 
-/* Light theme (default) */
+
 .inline-svg {
   color: #000000;
 }

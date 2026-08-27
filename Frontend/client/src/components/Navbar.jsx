@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
-// Import brand logo PNG
+
 import logoPng from '../assets/logo.png';
 
 export default function Navbar({ currentUser, setCurrentUser, theme, toggleTheme, hasUnreadNotifications }) {
@@ -24,10 +24,9 @@ export default function Navbar({ currentUser, setCurrentUser, theme, toggleTheme
         }
     };
 
-    // Permanent light green theme color
+
     const lightGreen = '#ccff00';
 
-    // Inline SVG Icons locked to lightGreen via inline style properties
     const StemIcon = () => (
         <svg width="22" height="22" viewBox="0 0 24 24" style={{ stroke: lightGreen, fill: 'none' }} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="12" cy="12" r="3"></circle>
@@ -177,8 +176,7 @@ export default function Navbar({ currentUser, setCurrentUser, theme, toggleTheme
                         </>
                     )}
                 </div>
-
-                {/* Mobile Dropdown Toggle Button */}
+                {/* Mobile Dropdown Menu Toggle */}
                 <div className="nav-dropdown-toggle-container">
                     <button 
                         onClick={() => setDropdownOpen(!dropdownOpen)} 

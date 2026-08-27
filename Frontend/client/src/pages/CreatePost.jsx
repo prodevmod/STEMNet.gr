@@ -19,7 +19,6 @@ export default function CreatePost({ currentUser, theme, toggleTheme }) {
     const [eventLocation, setEventLocation] = useState('');
     const [submitting, setSubmitting] = useState(false);
 
-    // Fetch parent post details if this is a reply
     useEffect(() => {
         if (parentPostId) {
             fetch(`/api/posts/${parentPostId}`, { credentials: 'include' })
@@ -53,7 +52,6 @@ export default function CreatePost({ currentUser, theme, toggleTheme }) {
         }
 
         try {
-            // ⚠️ FIXED: Updated endpoint to match Flask route "/api/posts/create"
             const response = await fetch('/api/posts/create', {
                 method: 'POST',
                 body: formData,

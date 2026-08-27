@@ -15,7 +15,6 @@ const commentIcon = getAssetUrl('comment.svg');
 const unlikedIcon = getAssetUrl('like.svg');
 const likedIcon = getAssetUrl('liked.svg') || unlikedIcon;
 
-// URL resolver for media files
 const resolveImageUrl = (url) => {
     if (!url || typeof url !== 'string') return '';
     const trimmed = url.trim();
@@ -26,7 +25,6 @@ const resolveImageUrl = (url) => {
     return trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
 };
 
-// Directly checks `media_path` from your database schema, falling back to alternatives
 const getPostImage = (item) => {
     if (!item) return '';
     const raw = item.media_path || 
@@ -42,7 +40,6 @@ const getPostImage = (item) => {
     return resolveImageUrl(raw);
 };
 
-// Converts standard text URLs into clickable <a> tags
 const renderTextWithLinks = (text) => {
     if (!text) return null;
     const urlRegex = /(https?:\/\/[^\s]+)/g;
@@ -109,7 +106,7 @@ export default function Home({ currentUser, setCurrentUser, theme, toggleTheme }
     const [posts, setPosts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
-
+    
     const [activeCommentPostId, setActiveCommentPostId] = useState(null);
     const [commentInputs, setCommentInputs] = useState({});
 
@@ -166,7 +163,7 @@ export default function Home({ currentUser, setCurrentUser, theme, toggleTheme }
         }
     };
 
-    const handleAddComment = async (postId, e) => {
+    const handleAddComment = async (postId, parentPost, e) => {
         e.preventDefault();
         if (!currentUser) return navigate('/login');
 
@@ -182,24 +179,42 @@ export default function Home({ currentUser, setCurrentUser, theme, toggleTheme }
             });
 
             if (res.ok) {
-                const newCommentData = await res.json();
-                setPosts((prevPosts) =>
-                    prevPosts.map((post) => {
-                        if (post.id === postId) {
-                            const currentComments = post.comments || [];
-                            return {
-                                ...post,
-                                comments: [...currentComments, newCommentData.comment || newCommentData],
-                            };
-                        }
-                        return post;
-                    })
-                );
+                const data = await res.json();
+                const rawComment = data.comment || data;
+                
+                const newReplyPost = {
+                    ...rawComment,
+                    id: rawComment.id || Date.now(),
+                    content: rawComment.content || text,
+                    username: rawComment.username || currentUser?.username || 'user',
+                    profile_pic: rawComment.profile_pic || currentUser?.profile_pic || '',
+                    created_at: new Date().toISOString(),
+                    like_count: 0,
+                    comment_count: 0,
+                    parent_username: parentPost.username,
+                    parent_content: parentPost.content
+                };
+                
+                setPosts((prevPosts) => {
+                    const updatedPosts = prevPosts.map(p => 
+                        p.id === postId 
+                            ? { ...p, comment_count: (Number(p.comment_count) || 0) + 1 } 
+                            : p
+                    );
+                    return [newReplyPost, ...updatedPosts];
+                });
+
                 setCommentInputs((prev) => ({ ...prev, [postId]: '' }));
+                setActiveCommentPostId(null);
             }
         } catch (err) {
             console.error('Error submitting comment:', err);
         }
+    };
+
+    const handleCancelReply = (postId) => {
+        setActiveCommentPostId(null);
+        setCommentInputs((prev) => ({ ...prev, [postId]: '' }));
     };
 
     return (
@@ -231,11 +246,12 @@ export default function Home({ currentUser, setCurrentUser, theme, toggleTheme }
                             const postImage = getPostImage(post);
                             const userLiked = Boolean(post.user_liked);
                             const totalLikes = Number(post.like_count) || 0;
-                            const isCommentsOpen = activeCommentPostId === post.id;
                             const postDate = post.created_at ? new Date(post.created_at).toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric' }) : 'Recently';
-                            const commentsList = post.comments || [];
+                            
                             const authorName = post.username || 'user';
                             const authorPic = resolveImageUrl(post.profile_pic);
+                            const displayCommentCount = Number(post.comment_count) || 0;
+                            const isReplying = activeCommentPostId === post.id;
 
                             return (
                                 <div key={post.id} className="card" style={{ 
@@ -266,18 +282,22 @@ export default function Home({ currentUser, setCurrentUser, theme, toggleTheme }
                                         </div>
                                     </div>
 
-                                    {/* PARENT POST REFERENCE (IF REPLIED) */}
+                                    {/* QUOTED PARENT POST (If this post is a reply) */}
                                     {post.parent_content && (
                                         <div style={{ 
-                                            padding: '0.5rem 0.75rem', 
-                                            borderLeft: '3px solid var(--primary-color)', 
-                                            backgroundColor: 'var(--border-color)', 
-                                            marginBottom: '0.75rem', 
-                                            borderRadius: '0 4px 4px 0',
-                                            fontSize: '0.85rem'
+                                            border: '1px solid var(--border-color)', 
+                                            borderRadius: '8px', 
+                                            padding: '0.75rem', 
+                                            marginTop: '0.5rem',
+                                            marginBottom: '1rem',
+                                            backgroundColor: 'rgba(0,0,0,0.02)'
                                         }}>
-                                            <span style={{ fontWeight: 'bold' }}>Replying to @{post.parent_username}: </span>
-                                            <span>{renderTextWithLinks(post.parent_content)}</span>
+                                            <div style={{ fontSize: '0.85rem', color: theme === 'dark' ? '#ccff00' : '#000000', marginBottom: '0.4rem', fontWeight: 'bold' }}>
+                                                @{post.parent_username}
+                                            </div>
+                                            <div style={{ fontSize: '0.9rem', whiteSpace: 'pre-line', wordBreak: 'break-word', color: 'var(--text-color)' }}>
+                                                {renderTextWithLinks(post.parent_content)}
+                                            </div>
                                         </div>
                                     )}
 
@@ -288,7 +308,7 @@ export default function Home({ currentUser, setCurrentUser, theme, toggleTheme }
                                         </p>
                                     )}
 
-                                    {/* ATTACHED IMAGE (NATURAL ASPECT RATIO) */}
+                                    {/* ATTACHED IMAGE */}
                                     {postImage && (
                                         <div style={{ 
                                             marginBottom: '0.75rem', 
@@ -319,7 +339,6 @@ export default function Home({ currentUser, setCurrentUser, theme, toggleTheme }
 
                                     {/* POST ACTIONS */}
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', fontSize: '0.85rem', borderTop: '1px solid var(--border-color)', paddingTop: '0.75rem', marginTop: '0.5rem' }}>
-                                        {/* LIKE BUTTON */}
                                         <button
                                             onClick={() => handleLikePost(post.id)}
                                             style={{
@@ -346,9 +365,9 @@ export default function Home({ currentUser, setCurrentUser, theme, toggleTheme }
                                             <span>{totalLikes}</span>
                                         </button>
 
-                                        {/* REPLY BUTTON */}
+                                        {/* TOGGLE REPLY BOX */}
                                         <button
-                                            onClick={() => setActiveCommentPostId(isCommentsOpen ? null : post.id)}
+                                            onClick={() => setActiveCommentPostId(isReplying ? null : post.id)}
                                             style={{
                                                 background: 'none',
                                                 border: 'none',
@@ -356,8 +375,9 @@ export default function Home({ currentUser, setCurrentUser, theme, toggleTheme }
                                                 display: 'flex',
                                                 alignItems: 'center',
                                                 gap: '0.4rem',
-                                                color: 'inherit',
-                                                fontSize: 'inherit'
+                                                color: isReplying ? 'var(--primary-color)' : 'inherit',
+                                                fontSize: 'inherit',
+                                                fontWeight: isReplying ? 'bold' : 'normal'
                                             }}
                                         >
                                             <img
@@ -366,80 +386,58 @@ export default function Home({ currentUser, setCurrentUser, theme, toggleTheme }
                                                 style={{
                                                     width: '18px',
                                                     height: '18px',
-                                                    filter: 'var(--icon-filter)'
+                                                    filter: isReplying ? 'none' : 'var(--icon-filter)'
                                                 }}
                                             />
-                                            <span>{commentsList.length}</span>
+                                            <span>Reply</span>
                                         </button>
                                     </div>
 
-                                    {/* COMMENTS ACCORDION */}
-                                    {isCommentsOpen && (
+                                    {/* REPLY INPUT & BUTTONS (ONLY VISIBLE WHEN REPLY ICON IS CLICKED) */}
+                                    {isReplying && (
                                         <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px dashed var(--border-color)' }}>
-                                            {commentsList.length > 0 && (
-                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1rem' }}>
-                                                    {commentsList.map((c, cIdx) => {
-                                                        const commentImage = getPostImage(c);
-                                                        return (
-                                                            <div key={c.id || cIdx} style={{ fontSize: '0.85rem', background: 'var(--border-color)', padding: '0.75rem', borderRadius: '6px' }}>
-                                                                <div style={{ marginBottom: commentImage ? '0.5rem' : '0' }}>
-                                                                    <strong>@{c.username || c.user?.username}: </strong>
-                                                                    <span style={{ whiteSpace: 'pre-line', wordBreak: 'break-word' }}>
-                                                                        {renderTextWithLinks(c.content || c.text)}
-                                                                    </span>
-                                                                </div>
-                                                                
-                                                                {commentImage && (
-                                                                    <div style={{ 
-                                                                        marginTop: '0.5rem',
-                                                                        width: '100%', 
-                                                                        display: 'flex', 
-                                                                        justifyContent: 'flex-start',
-                                                                        backgroundColor: 'rgba(0,0,0,0.02)',
-                                                                        borderRadius: '6px',
-                                                                        overflow: 'hidden'
-                                                                    }}>
-                                                                        <img
-                                                                            src={commentImage}
-                                                                            alt="Comment attachment"
-                                                                            style={{
-                                                                                maxWidth: '100%',
-                                                                                height: 'auto',
-                                                                                maxHeight: '300px',
-                                                                                objectFit: 'contain',
-                                                                                borderRadius: '6px'
-                                                                            }}
-                                                                            onError={(e) => {
-                                                                                e.currentTarget.parentElement.style.display = 'none';
-                                                                            }}
-                                                                        />
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        );
-                                                    })}
-                                                </div>
-                                            )}
-
-                                            <form onSubmit={(e) => handleAddComment(post.id, e)} style={{ display: 'flex', gap: '0.5rem' }}>
+                                            <form onSubmit={(e) => handleAddComment(post.id, post, e)} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                                                 <input
                                                     type="text"
                                                     placeholder="Write a reply..."
                                                     value={commentInputs[post.id] || ''}
                                                     onChange={(e) => setCommentInputs({ ...commentInputs, [post.id]: e.target.value })}
                                                     style={{
-                                                        flex: 1,
-                                                        padding: '0.4rem 0.6rem',
-                                                        fontSize: '0.85rem',
+                                                        width: '100%',
+                                                        padding: '0.6rem 0.8rem',
+                                                        fontSize: '0.9rem',
                                                         borderRadius: 'var(--radius)',
                                                         border: '1px solid var(--border-color)',
                                                         background: 'var(--card-bg)',
                                                         color: 'inherit'
                                                     }}
+                                                    autoFocus
                                                 />
-                                                <button type="submit" className="btn btn-primary" style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem' }}>
-                                                    Reply
-                                                </button>
+                                                <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                                                    <button 
+                                                        type="button" 
+                                                        onClick={() => handleCancelReply(post.id)}
+                                                        style={{ 
+                                                            padding: '0.4rem 0.8rem', 
+                                                            fontSize: '0.85rem',
+                                                            background: 'transparent',
+                                                            color: 'var(--text-color)',
+                                                            border: '1px solid var(--border-color)',
+                                                            borderRadius: 'var(--radius)',
+                                                            cursor: 'pointer'
+                                                        }}>
+                                                        Cancel
+                                                    </button>
+                                                    <button 
+                                                        type="submit" 
+                                                        className="btn btn-primary" 
+                                                        style={{ 
+                                                            padding: '0.4rem 1.2rem', 
+                                                            fontSize: '0.85rem' 
+                                                        }}>
+                                                        Reply
+                                                    </button>
+                                                </div>
                                             </form>
                                         </div>
                                     )}

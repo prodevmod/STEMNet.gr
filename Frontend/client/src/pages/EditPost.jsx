@@ -2,6 +2,22 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 
+const resolveImageUrl = (url) => {
+    if (!url || typeof url !== 'string') return '';
+    const trimmed = url.trim();
+    if (!trimmed) return '';
+    if (/^(https?:\/\/|data:|blob:)/i.test(trimmed)) {
+        return trimmed;
+    }
+    return trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+};
+
+const getPostImage = (item) => {
+    if (!item) return '';
+    const raw = item.media_path || item.image_url || item.image || item.media_url;
+    return resolveImageUrl(raw);
+};
+
 function EditPost({ currentUser, theme, toggleTheme }) {
   const { postId } = useParams();
   const navigate = useNavigate();
@@ -13,6 +29,9 @@ function EditPost({ currentUser, theme, toggleTheme }) {
   const [eventType, setEventType] = useState('Competition');
   const [eventTime, setEventTime] = useState('');
   const [eventLocation, setEventLocation] = useState('');
+  
+  const [existingImage, setExistingImage] = useState('');
+  const [newImageFile, setNewImageFile] = useState(null);
 
   useEffect(() => {
     fetch(`/api/posts/${postId}`, { credentials: 'include' })
@@ -21,12 +40,18 @@ function EditPost({ currentUser, theme, toggleTheme }) {
         return res.json();
       })
       .then((data) => {
-        setContent(data.content || '');
-        setCategory(data.category || 'Robotics');
-        setGithubLink(data.github_link || '');
-        setEventType(data.event_type || 'Competition');
-        setEventTime(data.event_time || '');
-        setEventLocation(data.event_location || '');
+        console.log('Fetched post response:', data);
+
+        const postData = data.post || data;
+
+        setContent(postData.content || '');
+        setCategory(postData.category || 'Robotics');
+        setGithubLink(postData.github_link || '');
+        setEventType(postData.event_type || 'Competition');
+        setEventTime(postData.event_time || '');
+        setEventLocation(postData.event_location || '');
+        setExistingImage(getPostImage(postData));
+        
         setLoading(false);
       })
       .catch((err) => {
@@ -38,32 +63,58 @@ function EditPost({ currentUser, theme, toggleTheme }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const payload = {
-      content,
-      category,
-      github_link: category === 'Events' ? '' : githubLink,
-      event_type: category === 'Events' ? eventType : '',
-      event_time: category === 'Events' ? eventTime : '',
-      event_location: category === 'Events' ? eventLocation : '',
-    };
+    const formData = new FormData();
+    formData.append('content', content);
+    formData.append('category', category);
+    
+    if (category === 'Events') {
+      formData.append('event_type', eventType);
+      formData.append('event_time', eventTime);
+      formData.append('event_location', eventLocation);
+    } else {
+      formData.append('github_link', githubLink);
+    }
+
+    if (newImageFile) {
+      formData.append('image', newImageFile);
+    }
 
     try {
       const res = await fetch(`/api/posts/${postId}/edit`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: formData,
         credentials: 'include',
       });
 
       if (res.ok) {
-        navigate('/');
+        navigate(`/post/${postId}`);
       } else {
-        const data = await res.json();
-        alert(data.error || 'Failed to update post.');
+        const errorData = await res.json();
+        alert(errorData.error || 'Failed to update post.');
       }
     } catch (err) {
       console.error('Error updating post:', err);
     }
+  };
+
+  // Theme-aware styles for buttons and containers
+  const cancelBtnStyle = {
+    background: theme === 'dark' ? '#262626' : '#e2e8f0',
+    color: theme === 'dark' ? '#f3f4f6' : '#1e293b',
+    border: '1px solid var(--border-color, #333333)',
+    cursor: 'pointer',
+    padding: '0.75rem 1rem',
+    borderRadius: 'var(--radius)',
+    fontWeight: 600,
+    textAlign: 'center',
+  };
+
+  const imagePreviewBoxStyle = {
+    marginBottom: '1rem',
+    padding: '0.5rem',
+    background: theme === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)',
+    borderRadius: '8px',
+    border: '1px solid var(--border-color, #333333)',
   };
 
   if (loading) {
@@ -169,11 +220,42 @@ function EditPost({ currentUser, theme, toggleTheme }) {
               />
             </div>
 
+            {/* Image Preview & Upload Area */}
+            <div className="form-group" style={{ marginTop: '1rem' }}>
+              <label>Post Image</label>
+              
+              {existingImage && !newImageFile && (
+                <div style={imagePreviewBoxStyle}>
+                  <p style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '0.5rem' }}>Current Image:</p>
+                  <img 
+                    src={existingImage} 
+                    alt="Current post attachment" 
+                    style={{ maxWidth: '100%', maxHeight: '250px', objectFit: 'contain', borderRadius: '4px' }} 
+                  />
+                </div>
+              )}
+
+              <input 
+                type="file" 
+                accept="image/*"
+                onChange={(e) => setNewImageFile(e.target.files[0])}
+                style={{ width: '100%', padding: '0.5rem', border: '1px solid var(--border-color)', borderRadius: 'var(--radius)', background: 'var(--bg-color)' }}
+              />
+              <p style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '0.4rem' }}>
+                Upload a new image to replace the current one, or leave blank to keep it.
+              </p>
+            </div>
+
             <div style={{ display: 'flex', gap: '1rem', margin: '1.5rem 0 0 0' }}>
               <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>Update Post</button>
-              <Link to={`/`} className="btn btn-outline" style={{ background: '#e2e8f0', color: '#1e293b', textDecoration: 'none', padding: '0.75rem 1rem', borderRadius: 'var(--radius)', fontWeight: 600, textAlign: 'center' }}>
+              <button 
+                type="button" 
+                onClick={() => navigate(-1)} 
+                className="btn btn-outline" 
+                style={cancelBtnStyle}
+              >
                 Cancel
-              </Link>
+              </button>
             </div>
           </form>
         </div>

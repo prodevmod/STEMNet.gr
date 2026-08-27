@@ -80,7 +80,6 @@ export default function GroupPosts({ currentUser, theme, toggleTheme }) {
       return;
     }
 
-    // Optimistically update the UI instantly so user doesn't wait for refresh or lag
     setPosts((prevPosts) =>
       prevPosts.map((post) => {
         if (post.id === postId) {
@@ -103,13 +102,11 @@ export default function GroupPosts({ currentUser, theme, toggleTheme }) {
         return;
       }
       if (!response.ok) {
-        // Revert if server request fails
         fetchGroupAndPosts();
         return;
       }
       const data = await response.json();
 
-      // Sync with exact server response data if available
       const serverCount = data.count !== undefined ? data.count : (data.likes_count !== undefined ? data.likes_count : null);
       const serverLiked = data.liked !== undefined ? data.liked : (data.user_liked !== undefined ? data.user_liked : null);
 
@@ -124,7 +121,7 @@ export default function GroupPosts({ currentUser, theme, toggleTheme }) {
       }
     } catch (err) {
       console.error('Like error:', err);
-      fetchGroupAndPosts(); // Revert on error
+      fetchGroupAndPosts(); 
     }
   };
 
@@ -180,7 +177,6 @@ export default function GroupPosts({ currentUser, theme, toggleTheme }) {
       <Navbar currentUser={currentUser} theme={theme} toggleTheme={toggleTheme} />
 
       <main className="app-main-container" style={{ maxWidth: '800px', margin: '2rem auto', padding: '0 1rem' }}>
-            {/* Group Header Card */}
             {group && (
             <div className="card" style={{ padding: '1.5rem', background: 'var(--card-bg, #fff)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius)', marginBottom: '1.5rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '1rem' }}>
@@ -191,7 +187,6 @@ export default function GroupPosts({ currentUser, theme, toggleTheme }) {
                     </p>
                 </div>
                 <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
-                    {/* Forced White text and border configuration */}
                     <Link 
                     to="/groups" 
                     className="btn btn-outline" 

@@ -35,7 +35,6 @@ const renderTextWithLinks = (text) => {
 };
 
 export default function PostThread({ currentUser, setCurrentUser, theme, toggleTheme }) {
-    // Handle both :postId or :id naming conventions from App.jsx safely
     const params = useParams();
     const postId = params.postId || params.id;
     
@@ -94,7 +93,44 @@ export default function PostThread({ currentUser, setCurrentUser, theme, toggleT
         }
     };
 
-    if (loading) return <div style={{ textAlign: 'center', padding: '3rem' }}>Loading thread...</div>;
+    const handleDeletePost = async () => {
+        if (!window.confirm("Are you sure you want to delete this post?")) return;
+        
+        try {
+            const res = await fetch(`/api/posts/${postId}/delete`, {
+                method: 'DELETE', 
+                credentials: 'include'
+            });
+            
+            if (res.ok) {
+                navigate('/'); 
+            } else {
+                console.error('Failed to delete post');
+                alert('Failed to delete the post. Please try again.');
+            }
+        } catch (err) {
+            console.error('Error deleting post:', err);
+            alert('An error occurred while deleting the post.');
+        }
+    };
+
+    // Theme-aware styles
+    const inputStyle = {
+        flex: 1,
+        padding: '0.5rem 0.75rem',
+        borderRadius: 'var(--radius)',
+        border: '1px solid var(--border-color, #333333)',
+        background: theme === 'dark' ? '#121212' : '#ffffff',
+        color: theme === 'dark' ? '#f3f4f6' : '#1e293b',
+    };
+
+    const helperTextStyle = {
+        color: theme === 'dark' ? '#94a3b8' : '#64748b',
+        fontSize: '0.9rem',
+    };
+
+    if (loading) return <div style={{ textAlign: 'center', padding: '3rem', color: theme === 'dark' ? '#f3f4f6' : '#1e293b' }}>Loading thread...</div>;
+    
     if (error || !threadData) {
         return (
             <>
@@ -109,31 +145,32 @@ export default function PostThread({ currentUser, setCurrentUser, theme, toggleT
 
     const { post, parent, replies } = threadData;
     const postImage = getPostImage(post);
+    const isOwner = currentUser && currentUser.username === post.username;
 
     return (
         <>
             <Navbar currentUser={currentUser} setCurrentUser={setCurrentUser} theme={theme} toggleTheme={toggleTheme} />
             <main style={{ maxWidth: '800px', margin: '0 auto', padding: '1.5rem 1rem' }}>
-            <button 
-                onClick={() => navigate(-1)} 
-                style={{ 
-                    background: 'none', 
-                    border: 'none', 
-                    color: theme === 'dark' ? '#ccff00' : '#000000',
-                    cursor: 'pointer', 
-                    marginBottom: '1.25rem', 
-                    fontSize: '0.95rem',
-                    fontWeight: '500',
-                    padding: '0'
-                }}
-            >
-                ← Back
-            </button>
+                <button 
+                    onClick={() => navigate(-1)} 
+                    style={{ 
+                        background: 'none', 
+                        border: 'none', 
+                        color: theme === 'dark' ? '#ccff00' : '#000000',
+                        cursor: 'pointer', 
+                        marginBottom: '1.25rem', 
+                        fontSize: '0.95rem',
+                        fontWeight: '500',
+                        padding: '0'
+                    }}
+                >
+                    ← Back
+                </button>
 
                 {parent && (
                     <div className="card" style={{ padding: '1rem', opacity: 0.8, marginBottom: '0.75rem', borderLeft: '3px solid var(--primary-color)' }}>
                         <Link to={`/profile/${parent.username}`} style={{ fontWeight: 'bold', color: 'var(--primary-color)', textDecoration: 'none' }}>@{parent.username}</Link>
-                        <p style={{ margin: '0.5rem 0 0' }}>{renderTextWithLinks(parent.content)}</p>
+                        <p style={{ margin: '0.5rem 0 0', color: theme === 'dark' ? '#f3f4f6' : '#1e293b' }}>{renderTextWithLinks(parent.content)}</p>
                     </div>
                 )}
 
@@ -143,11 +180,45 @@ export default function PostThread({ currentUser, setCurrentUser, theme, toggleT
                             @{post.username}
                         </Link>
                     </div>
-                    {post.content && <p style={{ whiteSpace: 'pre-line', wordBreak: 'break-word' }}>{renderTextWithLinks(post.content)}</p>}
+                    {post.content && <p style={{ whiteSpace: 'pre-line', wordBreak: 'break-word', color: theme === 'dark' ? '#f3f4f6' : '#1e293b' }}>{renderTextWithLinks(post.content)}</p>}
                     
                     {postImage && (
-                        <div style={{ marginTop: '0.75rem', display: 'flex', justifyContent: 'center', borderRadius: '8px', overflow: 'hidden', background: 'rgba(0,0,0,0.02)' }}>
+                        <div style={{ marginTop: '0.75rem', display: 'flex', justifyContent: 'center', borderRadius: '8px', overflow: 'hidden', background: theme === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)' }}>
                             <img src={postImage} alt="Attachment" style={{ maxWidth: '100%', height: 'auto', maxHeight: '600px', objectFit: 'contain' }} />
+                        </div>
+                    )}
+
+                    {/* Edit & Delete Buttons for Post Owner */}
+                    {isOwner && (
+                        <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid var(--border-color)' }}>
+                            <button 
+                                onClick={() => navigate(`/post/edit/${postId}`)}
+                                style={{ 
+                                    padding: '0.4rem 1rem', 
+                                    backgroundColor: 'transparent', 
+                                    color: theme === 'dark' ? '#ccff00' : '#000000',
+                                    border: '1px solid ' + (theme === 'dark' ? '#ccff00' : '#000000'),
+                                    borderRadius: '4px',
+                                    cursor: 'pointer',
+                                    fontWeight: '500'
+                                }}
+                            >
+                                Edit
+                            </button>
+                            <button 
+                                onClick={handleDeletePost}
+                                style={{ 
+                                    padding: '0.4rem 1rem', 
+                                    backgroundColor: '#ef4444', 
+                                    color: '#ffffff', 
+                                    border: 'none',
+                                    borderRadius: '4px',
+                                    cursor: 'pointer',
+                                    fontWeight: '500'
+                                }}
+                            >
+                                Delete
+                            </button>
                         </div>
                     )}
                 </div>
@@ -158,12 +229,12 @@ export default function PostThread({ currentUser, setCurrentUser, theme, toggleT
                         placeholder="Post your reply..."
                         value={replyContent}
                         onChange={(e) => setReplyContent(e.target.value)}
-                        style={{ flex: 1, padding: '0.5rem 0.75rem', borderRadius: 'var(--radius)', border: '1px solid var(--border-color)', background: 'var(--card-bg)', color: 'inherit' }}
+                        style={inputStyle}
                     />
                     <button type="submit" className="btn btn-primary">Reply</button>
                 </form>
 
-                <h3>Replies</h3>
+                <h3 style={{ color: theme === 'dark' ? '#f3f4f6' : '#1e293b' }}>Replies</h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '1rem' }}>
                     {replies && replies.length > 0 ? (
                         replies.map((reply) => {
@@ -173,7 +244,7 @@ export default function PostThread({ currentUser, setCurrentUser, theme, toggleT
                                     <Link to={`/profile/${reply.username}`} style={{ fontWeight: 'bold', color: 'var(--primary-color)', textDecoration: 'none', fontSize: '0.85rem' }}>
                                         @{reply.username}
                                     </Link>
-                                    <p style={{ margin: '0.4rem 0', whiteSpace: 'pre-line', wordBreak: 'break-word', fontSize: '0.9rem' }}>
+                                    <p style={{ margin: '0.4rem 0', whiteSpace: 'pre-line', wordBreak: 'break-word', fontSize: '0.9rem', color: theme === 'dark' ? '#f3f4f6' : '#1e293b' }}>
                                         {renderTextWithLinks(reply.content)}
                                     </p>
                                     {replyImage && (
@@ -185,7 +256,7 @@ export default function PostThread({ currentUser, setCurrentUser, theme, toggleT
                             );
                         })
                     ) : (
-                        <p style={{ color: '#64748b', fontSize: '0.9rem' }}>No replies yet. Be the first to reply!</p>
+                        <p style={helperTextStyle}>No replies yet. Be the first to reply!</p>
                     )}
                 </div>
             </main>

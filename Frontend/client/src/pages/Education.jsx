@@ -1,33 +1,35 @@
 import { Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 
-// SVG Icons for section headers
-const LaptopIcon = () => (
-  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--accent-color, #ccff00)' }}>
-    <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
-    <line x1="2" y1="20" x2="22" y2="20"></line>
-  </svg>
-);
-
-const AchievementIcon = () => (
-  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--accent-color, #ccff00)' }}>
-    <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path>
-    <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path>
-    <path d="M4 22h16"></path>
-    <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"></path>
-    <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"></path>
-    <path d="M18 2H6v7a6 6 0 0 0 12 0V2z"></path>
-  </svg>
-);
-
-const AcademicIcon = () => (
-  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--accent-color, #ccff00)' }}>
-    <path d="M22 10v6M2 10l10-5 10 5-10 5z"></path>
-    <path d="M6 12v5c3 3 9 3 12 0v-5"></path>
-  </svg>
-);
-
 export default function Education({ currentUser, theme, toggleTheme }) {
+  // SVG Icons for section headers with dynamic theme-aware coloring
+  const iconColor = theme === 'dark' ? '#ccff00' : '#15803d';
+
+  const LaptopIcon = () => (
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: iconColor }}>
+      <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+      <line x1="2" y1="20" x2="22" y2="20"></line>
+    </svg>
+  );
+
+  const AchievementIcon = () => (
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: iconColor }}>
+      <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path>
+      <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path>
+      <path d="M4 22h16"></path>
+      <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"></path>
+      <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"></path>
+      <path d="M18 2H6v7a6 6 0 0 0 12 0V2z"></path>
+    </svg>
+  );
+
+  const AcademicIcon = () => (
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: iconColor }}>
+      <path d="M22 10v6M2 10l10-5 10 5-10 5z"></path>
+      <path d="M6 12v5c3 3 9 3 12 0v-5"></path>
+    </svg>
+  );
+
   const cardStyle = {
     background: 'var(--card-bg, #ffffff)',
     border: '1px solid var(--border-color, #333333)',
@@ -35,7 +37,7 @@ export default function Education({ currentUser, theme, toggleTheme }) {
     padding: '1.25rem',
     display: 'flex',
     flexDirection: 'column',
-    justify: 'space-between',
+    justifyContent: 'space-between',
     textDecoration: 'none',
     transition: 'transform 0.15s ease, box-shadow 0.15s ease',
   };
@@ -48,7 +50,7 @@ export default function Education({ currentUser, theme, toggleTheme }) {
   };
 
   const badgeStyle = {
-    backgroundColor: 'rgba(204, 255, 0, 0.15)',
+    backgroundColor: theme === 'dark' ? 'rgba(204, 255, 0, 0.15)' : 'rgba(21, 128, 61, 0.1)',
     color: theme === 'dark' ? '#ccff00' : '#15803d',
     padding: '0.2rem 0.6rem',
     borderRadius: '12px',
@@ -546,162 +548,13 @@ export default function Education({ currentUser, theme, toggleTheme }) {
             <div>
               <strong style={{ color: 'var(--text-primary)', fontSize: '1rem', display: 'block', marginBottom: '0.5rem' }}>Int'l Computer Science Competition</strong>
               <p style={{ color: '#64748b', fontSize: '0.9rem', margin: 0, lineHeight: '1.4' }}>
-                Global contest testing computational thinking, logic, programming speed, and creative problem solving.
+                Global computer science problem-solving competition for high school students.
               </p>
             </div>
-            <span style={linkGreenStyle}>View Qualifications ↗</span>
-          </a>
-
-          <a href="https://www.firstinspires.org" target="_blank" rel="noopener noreferrer" style={cardStyle} className="vault-card">
-            <div>
-              <strong style={{ color: 'var(--text-primary)', fontSize: '1rem', display: 'block', marginBottom: '0.5rem' }}>FIRST Robotics Competition</strong>
-              <p style={{ color: '#64748b', fontSize: '0.9rem', margin: 0, lineHeight: '1.4' }}>
-                Leading global youth robotics initiative combining hardware engineering, CAD, and team competition.
-              </p>
-            </div>
-            <span style={linkGreenStyle}>Explore FIRST ↗</span>
-          </a>
-
-          <a href="https://isef.net" target="_blank" rel="noopener noreferrer" style={cardStyle} className="vault-card">
-            <div>
-              <strong style={{ color: 'var(--text-primary)', fontSize: '1rem', display: 'block', marginBottom: '0.5rem' }}>Regeneron ISEF</strong>
-              <p style={{ color: '#64748b', fontSize: '0.9rem', margin: 0, lineHeight: '1.4' }}>
-                The premier international science research competition for high school innovators and young scientists.
-              </p>
-            </div>
-            <span style={linkGreenStyle}>Discover ISEF ↗</span>
+            <span style={linkGreenStyle}>Learn More ↗</span>
           </a>
 
         </div>
-
-        {/* 6. SPACE, SCIENCE & GLOBAL RESEARCH */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.25rem' }}>
-          <LaptopIcon />
-          <h2 style={{ margin: 0, color: 'var(--text-primary)' }}>Space, Science & Global Research</h2>
-        </div>
-        <div style={gridStyle}>
-          
-          <a href="https://stemgateway.nasa.gov/s/course-offering/a0BSJ0000049icD/open-science-essentials" target="_blank" rel="noopener noreferrer" style={cardStyle} className="vault-card">
-            <div>
-              <strong style={{ color: 'var(--text-primary)', fontSize: '1rem', display: 'block', marginBottom: '0.5rem' }}>NASA Open Science Essentials</strong>
-              <p style={{ color: '#64748b', fontSize: '0.9rem', margin: 0, lineHeight: '1.4' }}>
-                Official NASA training course covering accessible scientific research methodologies and open-source space data.
-              </p>
-            </div>
-            <span style={linkGreenStyle}>Enroll Free ↗</span>
-          </a>
-
-          <a href="https://www.esa.int/Education" target="_blank" rel="noopener noreferrer" style={cardStyle} className="vault-card">
-            <div>
-              <strong style={{ color: 'var(--text-primary)', fontSize: '1rem', display: 'block', marginBottom: '0.5rem' }}>ESA Education (European Space Agency)</strong>
-              <p style={{ color: '#64748b', fontSize: '0.9rem', margin: 0, lineHeight: '1.4' }}>
-                Space-themed educational projects, classroom resources, student satellite missions, and robotics challenges across Europe.
-              </p>
-            </div>
-            <span style={linkGreenStyle}>Explore ESA Education ↗</span>
-          </a>
-
-          <a href="https://home.cern/youth-education" target="_blank" rel="noopener noreferrer" style={cardStyle} className="vault-card">
-            <div>
-              <strong style={{ color: 'var(--text-primary)', fontSize: '1rem', display: 'block', marginBottom: '0.5rem' }}>CERN Education & Students</strong>
-              <p style={{ color: '#64748b', fontSize: '0.9rem', margin: 0, lineHeight: '1.4' }}>
-                Particle physics resources, student lab visits, teacher programmes, and open educational resources from the world's leading lab.
-              </p>
-            </div>
-            <span style={linkGreenStyle}>Explore CERN Labs ↗</span>
-          </a>
-
-          <a href="https://www.zooniverse.org/projects" target="_blank" rel="noopener noreferrer" style={cardStyle} className="vault-card">
-            <div>
-              <strong style={{ color: 'var(--text-primary)', fontSize: '1rem', display: 'block', marginBottom: '0.5rem' }}>Zooniverse Projects</strong>
-              <p style={{ color: '#64748b', fontSize: '0.9rem', margin: 0, lineHeight: '1.4' }}>
-                Assist university researchers worldwide by analyzing astrophysics images, biological data, and climate logs.
-              </p>
-            </div>
-            <span style={linkGreenStyle}>Browse Projects ↗</span>
-          </a>
-
-          <a href="https://scistarter.org" target="_blank" rel="noopener noreferrer" style={cardStyle} className="vault-card">
-            <div>
-              <strong style={{ color: 'var(--text-primary)', fontSize: '1rem', display: 'block', marginBottom: '0.5rem' }}>SciStarter</strong>
-              <p style={{ color: '#64748b', fontSize: '0.9rem', margin: 0, lineHeight: '1.4' }}>
-                A searchable database connecting students to thousands of active citizen science research projects.
-              </p>
-            </div>
-            <span style={linkGreenStyle}>Find Projects ↗</span>
-          </a>
-
-          <a href="https://bwsi.mit.edu/about/mit-additional-resources/" target="_blank" rel="noopener noreferrer" style={cardStyle} className="vault-card">
-            <div>
-              <strong style={{ color: 'var(--text-primary)', fontSize: '1rem', display: 'block', marginBottom: '0.5rem' }}>MIT Beaver Works (BWSI)</strong>
-              <p style={{ color: '#64748b', fontSize: '0.9rem', margin: 0, lineHeight: '1.4' }}>
-                Free open courseware from MIT on autonomous cognitive mini-racecars, cybersecurity, and satellite engineering.
-              </p>
-            </div>
-            <span style={linkGreenStyle}>Access MIT Material ↗</span>
-          </a>
-
-        </div>
-
-        {/* 7. VIDEO LEARNING & TECH CREATORS */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.25rem' }}>
-          <LaptopIcon />
-          <h2 style={{ margin: 0, color: 'var(--text-primary)' }}>Video Learning & Tech Creators</h2>
-        </div>
-        <div style={gridStyle}>
-          
-          <a href="https://www.youtube.com/@veritasium" target="_blank" rel="noopener noreferrer" style={cardStyle} className="vault-card">
-            <div>
-              <strong style={{ color: 'var(--text-primary)', fontSize: '1rem', display: 'block', marginBottom: '0.5rem' }}>Veritasium</strong>
-              <p style={{ color: '#64748b', fontSize: '0.9rem', margin: 0, lineHeight: '1.4' }}>
-                In-depth science, technology, and engineering video essays exploring the fundamental workings of the universe.
-              </p>
-            </div>
-            <span style={linkGreenStyle}>Watch Videos ↗</span>
-          </a>
-
-          <a href="https://www.youtube.com/@HackClubHQ" target="_blank" rel="noopener noreferrer" style={cardStyle} className="vault-card">
-            <div>
-              <strong style={{ color: 'var(--text-primary)', fontSize: '1rem', display: 'block', marginBottom: '0.5rem' }}>Hack Club HQ</strong>
-              <p style={{ color: '#64748b', fontSize: '0.9rem', margin: 0, lineHeight: '1.4' }}>
-                Showcases student builds, live coding sessions, and event highlights from the global Hack Club community.
-              </p>
-            </div>
-            <span style={linkGreenStyle}>Watch Videos ↗</span>
-          </a>
-
-          <a href="https://www.youtube.com/@Fireship" target="_blank" rel="noopener noreferrer" style={cardStyle} className="vault-card">
-            <div>
-              <strong style={{ color: 'var(--text-primary)', fontSize: '1rem', display: 'block', marginBottom: '0.5rem' }}>Fireship</strong>
-              <p style={{ color: '#64748b', fontSize: '0.9rem', margin: 0, lineHeight: '1.4' }}>
-                Fast-paced, high-energy summaries of programming languages, frameworks, and modern tech trends.
-              </p>
-            </div>
-            <span style={linkGreenStyle}>Watch Videos ↗</span>
-          </a>
-
-          <a href="https://www.youtube.com/@Robonyx" target="_blank" rel="noopener noreferrer" style={cardStyle} className="vault-card">
-            <div>
-              <strong style={{ color: 'var(--text-primary)', fontSize: '1rem', display: 'block', marginBottom: '0.5rem' }}>Robonyx</strong>
-              <p style={{ color: '#64748b', fontSize: '0.9rem', margin: 0, lineHeight: '1.4' }}>
-                Practical tutorials, project builds, and insights into robotics and embedded systems engineering.
-              </p>
-            </div>
-            <span style={linkGreenStyle}>Watch Videos ↗</span>
-          </a>
-
-          <a href="https://www.youtube.com/@BroCodez" target="_blank" rel="noopener noreferrer" style={cardStyle} className="vault-card">
-            <div>
-              <strong style={{ color: 'var(--text-primary)', fontSize: '1rem', display: 'block', marginBottom: '0.5rem' }}>Bro Code</strong>
-              <p style={{ color: '#64748b', fontSize: '0.9rem', margin: 0, lineHeight: '1.4' }}>
-                Comprehensive, beginner-friendly programming tutorials covering Python, Java, C++, and more.
-              </p>
-            </div>
-            <span style={linkGreenStyle}>Watch Videos ↗</span>
-          </a>
-
-        </div>
-
       </main>
     </div>
   );

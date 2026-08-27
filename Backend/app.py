@@ -279,8 +279,6 @@ def load_current_user():
         g.user = None
     else:
         g.user = get_db().execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
-
-# API Decorators
 def login_required(view):
     @wraps(view)
     def wrapped_view(*args, **kwargs):
@@ -288,10 +286,6 @@ def login_required(view):
             return jsonify({"error": "Unauthorized. Please log in."}), 401
         return view(*args, **kwargs)
     return wrapped_view
-
-# ==========================================
-# React Backend Endpoints (JSON API)
-# ==========================================
 
 @app.route("/api/auth/me", methods=["GET"])
 def get_current_user():
@@ -756,35 +750,64 @@ def api_edit_post(post_id):
     if post["user_id"] != user_id:
         return jsonify({"error": "You do not have permission to edit this post."}), 403
         
-    content = request.form.get("content", "").strip() or request.json.get("content", "").strip()
-    category = request.form.get("category", "").strip() or request.json.get("category", "").strip()
+    # Extract form fields (FormData sends data via request.form)
+    content = request.form.get("content", "").strip() or request.json.get("content", "").strip() if request.is_json else request.form.get("content", "").strip()
+    category = request.form.get("category", "").strip() or (request.json.get("category", "").strip() if request.is_json else request.form.get("category", "").strip())
     
     github_link = None
     event_type = None
     event_time = None
     event_location = None
     
-    if category == "Events":
-        event_type = request.form.get("event_type", "").strip() or request.json.get("event_type", "").strip()
-        event_time = request.form.get("event_time", "").strip() or request.json.get("event_time", "").strip()
-        event_location = request.form.get("event_location", "").strip() or request.json.get("event_location", "").strip()
+    # Handle category-specific fields safely for both Form data and JSON fallback
+    if request.is_json:
+        get_val = lambda key: request.json.get(key, "").strip()
     else:
-        github_link = request.form.get("github_link", "").strip() or request.json.get("github_link", "").strip() or None
+        get_val = lambda key: request.form.get(key, "").strip()
+
+    category = request.form.get("category") or (request.json.get("category") if request.is_json else "")
+    category = category.strip()
+
+    if category == "Events":
+        event_type = get_val("event_type")
+        event_time = get_val("event_time")
+        event_location = get_val("event_location")
+    else:
+        github_link = get_val("github_link") or None
         if category == "Other":
-            custom_category = request.form.get("custom_category", "").strip() or request.json.get("custom_category", "").strip()
+            custom_category = get_val("custom_category")
             category = custom_category if custom_category else "Other"
             
     if not content:
         return jsonify({"error": "Post content cannot be empty."}), 400
         
+    # --- IMAGE HANDLING ---
+    # Start by keeping the existing image path from the database row
+    media_path = post["media_path"] # Change to post["image_url"] if your column is named differently
+    
+    # Check if a new file was uploaded in request.files
+    if "image" in request.files:
+        file = request.files["image"]
+        if file and file.filename != "" and allowed_file(file.filename):
+            filename = secure_filename(file.filename)
+            # Ensure unique filenames if necessary, or save directly:
+            upload_folder = app.config.get("UPLOAD_FOLDER", "static/uploads")
+            os.makedirs(upload_folder, exist_ok=True)
+            
+            file_path = os.path.join(upload_folder, filename)
+            file.save(file_path)
+            
+            # Save the relative path to be stored in the database
+            media_path = f"uploads/{filename}"
+
     try:
         db.execute(
             """
             UPDATE posts 
-            SET content = ?, category = ?, github_link = ?, event_type = ?, event_time = ?, event_location = ?
+            SET content = ?, category = ?, github_link = ?, event_type = ?, event_time = ?, event_location = ?, media_path = ?
             WHERE id = ?
             """,
-            (content, category, github_link, event_type, event_time, event_location, post_id)
+            (content, category, github_link, event_type, event_time, event_location, media_path, post_id)
         )
         db.commit()
         return jsonify({"success": True, "message": "Post updated successfully!"}), 200
@@ -879,6 +902,38 @@ def api_update_post(post_id):
     except Exception as e:
         db.rollback()
         return jsonify({"error": str(e)}), 500
+ 
+@app.route("/api/posts/<int:post_id>/comments", methods=["PUT","POST"])
+def api_update_comment(post_id):
+    if not g.get("user"):
+        return jsonify({"error": "Unauthorized"}), 401
+        
+    db = get_db()
+    user_id = g.user["id"]
+    
+    post = db.execute("SELECT * FROM posts WHERE id = ?", (post_id,)).fetchone()
+    if not post:
+        return jsonify({"error": "Post not found"}), 404
+        
+    if post["user_id"] != user_id:
+        return jsonify({"error": "Permission denied"}), 403
+        
+    data = request.get_json(silent=True)
+    if not data or "content" not in data:
+        return jsonify({"error": "Invalid request: JSON body with 'content' is required"}), 400
+        
+    new_content = data.get("content").strip()
+    if not new_content:
+        return jsonify({"error": "Content cannot be empty"}), 400
+        
+    try:
+        db.execute("UPDATE posts SET content = ? WHERE id = ?", (new_content, post_id))
+        db.commit()
+        return jsonify({"success": True, "message": "Post updated successfully"}), 200
+    except Exception as e:
+        db.rollback()
+        # TODO: app.logger.error(f"Database error: {str(e)}")
+        return jsonify({"error": "An internal server error occurred"}), 500
 
 @app.route("/api/posts/<int:post_id>/delete", methods=["POST", "DELETE"])
 @login_required
@@ -1031,7 +1086,7 @@ def get_events():
     user_id = session.get("user_id")
     
     if user_id:
-        # If user is logged in, check if they liked each post
+
         events = db.execute(
             """SELECT posts.*, users.username, 
                (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id) as like_count,
@@ -1043,7 +1098,7 @@ def get_events():
             (user_id,)
         ).fetchall()
     else:
-        # If no user is logged in, user_liked is always 0 (false)
+
         events = db.execute(
             """SELECT posts.*, users.username, 
                (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id) as like_count,
@@ -1121,23 +1176,6 @@ def ratelimit_handler(e):
 def server_error(e):
     return jsonify({"error": "Internal Server Error"}), 500
 
-def cleanup_expired_events(db):
-    """Deletes all posts with an event date/time prior to the current moment."""
-    try:
-        db.execute(
-            """
-            DELETE FROM posts 
-            WHERE event_time IS NOT NULL 
-              AND event_time != '' 
-              AND (
-                  datetime(event_time) < datetime('now')
-                  OR date(event_time) < date('now')
-              )
-            """
-        )
-        db.commit()
-    except Exception as e:
-        db.rollback()
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)

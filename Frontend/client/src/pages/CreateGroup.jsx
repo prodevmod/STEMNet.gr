@@ -54,8 +54,6 @@ export default function CreateGroup({ currentUser, theme, toggleTheme }) {
           
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
             <h2 style={{ margin: 0, color: 'var(--text-primary)' }}>Create a Community Group</h2>
-            
-            {/* Cancel Button Forced White */}
             <Link 
               to="/groups" 
               className="btn btn-outline" 

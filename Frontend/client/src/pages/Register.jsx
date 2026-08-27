@@ -27,7 +27,6 @@ export default function Register() {
     
     const navigate = useNavigate();
 
-    // Theme persistence
     useEffect(() => {
         document.documentElement.setAttribute('data-theme', theme);
         localStorage.setItem('theme', theme);
@@ -37,7 +36,6 @@ export default function Register() {
         setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
     };
 
-    // Check auth status for navbar
     useEffect(() => {
         fetch('/api/auth/me', { credentials: 'include' })
             .then((res) => (res.ok ? res.json() : null))

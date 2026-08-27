@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 
-// Dynamically resolve assets to prevent Vite build/transform errors if file names vary
 const globAssets = import.meta.glob('../assets/*', { eager: true, import: 'default' });
 
 const getAssetUrl = (filename) => {
@@ -162,7 +161,7 @@ export default function Profile({ currentUser, setCurrentUser, theme, toggleThem
     const handleLikePost = async (postId) => {
         if (!currentUser) return navigate('/login');
 
-        // Optimistic UI update
+
         setPosts((prevPosts) =>
             prevPosts.map((post) => {
                 if (post.id === postId) {
@@ -208,7 +207,6 @@ export default function Profile({ currentUser, setCurrentUser, theme, toggleThem
                     break;
                 }
             } catch (err) {
-                // Continue to next endpoint fallback
             }
         }
 
@@ -650,7 +648,7 @@ export default function Profile({ currentUser, setCurrentUser, theme, toggleThem
                                                             filter: 'var(--icon-filter)'
                                                         }}
                                                     />
-                                                    <span>{commentsList.length}</span>
+                                                    <span>Reply</span>
                                                 </button>
 
                                                 <Link to={`/post/${post.id}`} style={{ textDecoration: 'none', color: '#64748b', marginLeft: 'auto' }}>
