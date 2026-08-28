@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
-import logoPng from '../assets/logo.png';
+import logoPng from '/logo.png';
 
 export default function NotFound() {
     const [currentUser, setCurrentUser] = useState(null);
