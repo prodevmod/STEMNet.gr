@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
-import { useGoogleReCaptcha } from 'react-google-recaptcha-v3'; // 1. Import the hook
+import { useGoogleReCaptcha } from 'react-google-recaptcha-v3';
 
 export default function Login({ setCurrentUser, theme, toggleTheme }) {
     const [identifier, setIdentifier] = useState('');
@@ -9,23 +9,22 @@ export default function Login({ setCurrentUser, theme, toggleTheme }) {
     const [error, setError] = useState('');
     const navigate = useNavigate();
     
-    // 2. Initialize the reCAPTCHA hook
     const { executeRecaptcha } = useGoogleReCaptcha();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
 
-        // 3. Ensure the script has loaded
-        if (!executeRecaptcha) {
-            setError('reCAPTCHA has not loaded yet. Please try again.');
-            return;
+        let captchaToken = null;
+        try {
+            if (executeRecaptcha) {
+                captchaToken = await executeRecaptcha('login');
+            }
+        } catch (recaptchaErr) {
+            console.error("reCAPTCHA execution failed:", recaptchaErr);
         }
 
         try {
-            // 4. Execute the recaptcha silently with the action name 'login'
-            const captchaToken = await executeRecaptcha('login');
-
             const res = await fetch('/api/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -35,7 +34,7 @@ export default function Login({ setCurrentUser, theme, toggleTheme }) {
                     email: identifier,
                     identifier: identifier,
                     password: password,
-                    "g-recaptcha-response": captchaToken // 5. Append token to payload
+                    "g-recaptcha-response": captchaToken 
                 }),
             });
 
@@ -47,11 +46,11 @@ export default function Login({ setCurrentUser, theme, toggleTheme }) {
                 setError(data.error || 'Invalid credentials');
             }
         } catch (err) {
+            console.error("Login fetch error:", err);
             setError('An error occurred during login.');
         }
     };
 
-    // Theme-aware helper text style
     const helperTextStyle = {
         textAlign: 'center', 
         marginTop: '1.5rem', 
