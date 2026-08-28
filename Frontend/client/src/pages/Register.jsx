@@ -1,7 +1,16 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
-import { useGoogleReCaptcha } from 'react-google-recaptcha-v3'; // 1. Import the hook
+import { useGoogleReCaptcha } from 'react-google-recaptcha-v3'; 
+const recaptchaResponse = req.body['g-recaptcha-response'];
+const secretKey = process.env.RECAPTCHA_SECRET_KEY;
+
+const THRESHOLD = 0.3;
+
+const verifyUrl = `https://www.google.com/recaptcha/api/siteverify?secret=${secretKey}&response=${recaptchaResponse}`;
+
+const googleRes = await fetch(verifyUrl, { method: 'POST' });
+const googleData = await googleRes.json();
 
 export default function Register() {
     const [formData, setFormData] = useState({
@@ -27,8 +36,6 @@ export default function Register() {
     const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
     
     const navigate = useNavigate();
-
-    // 2. Initialize the reCAPTCHA hook
     const { executeRecaptcha } = useGoogleReCaptcha();
 
     useEffect(() => {
@@ -61,7 +68,6 @@ export default function Register() {
             return;
         }
 
-        // Ensure the script has loaded
         if (!executeRecaptcha) {
             setError('reCAPTCHA has not loaded yet. Please try again.');
             return;
@@ -70,7 +76,6 @@ export default function Register() {
         setLoading(true);
 
         try {
-            // Execute the recaptcha silently with the action name 'register'
             const token = await executeRecaptcha('register');
             await sendRegistrationRequest({ ...formData, 'g-recaptcha-response': token });
         } catch (err) {

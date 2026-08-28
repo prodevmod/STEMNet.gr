@@ -290,7 +290,7 @@ def login_required(view):
 def get_current_user():
     if g.get("user"):
         user_dict = sanitize_profile_links(g.user)
-        user_dict.pop("password_hash", None) # Do not send hash to frontend
+        user_dict.pop("password_hash", None)
         return jsonify({"user": user_dict}), 200
     return jsonify({"user": None}), 200
 
@@ -299,11 +299,24 @@ def register():
     data = request.get_json(silent=True) or request.form
     
     token = data.get("g-recaptcha-response")
-    if token:
-        payload = {"secret": os.environ.get("RECAPTCHA_SECRET_KEY"), "response": token, "remoteip": request.remote_addr}
-        result = requests.post("https://www.google.com/recaptcha/api/siteverify", data=payload).json()
-        if not result.get("success") or result.get("score", 0) < 0.2:
+    if not token:
+        return jsonify({"error": "reCAPTCHA token is missing."}), 400
+
+    payload = {
+        "secret": os.environ.get("RECAPTCHA_SECRET_KEY"), 
+        "response": token, 
+        "remoteip": request.remote_addr
+    }
+    
+    try:
+        google_res = requests.post("https://www.google.com/recaptcha/api/siteverify", data=payload, timeout=5)
+        result = google_res.json()
+
+        if not result.get("success") or result.get("score", 0) < 0.3:
             return jsonify({"error": "Automated activity detected."}), 400
+    except requests.exceptions.RequestException as e:
+        print(f"reCAPTCHA network error: {e}")
+        return jsonify({"error": "Failed to connect to verification server."}), 500
 
     username = data.get("username", "").strip()
     email = data.get("email", "").strip()
@@ -322,7 +335,8 @@ def register():
         
     try:
         age = int(age_str)
-        if age < 10 or age > 100: return jsonify({"error": "Please enter a realistic age."}), 400
+        if age < 10 or age > 100: 
+            return jsonify({"error": "Please enter a realistic age."}), 400
     except ValueError:
         return jsonify({"error": "Age must be a valid number."}), 400
 
@@ -330,8 +344,10 @@ def register():
     existing_user = db.execute("SELECT username, email FROM users WHERE username = ? OR email = ?", (username, email)).fetchone()
 
     if existing_user:
-        if existing_user["email"] == email: return jsonify({"error": "Email already registered."}), 400
-        elif existing_user["username"] == username: return jsonify({"error": "Username taken."}), 400
+        if existing_user["email"] == email: 
+            return jsonify({"error": "Email already registered."}), 400
+        elif existing_user["username"] == username: 
+            return jsonify({"error": "Username taken."}), 400
 
     try:
         db.execute(
@@ -363,7 +379,10 @@ def login():
         return jsonify({"error": "Missing credentials"}), 400
 
     db = get_db()
-    user = db.execute("SELECT * FROM users WHERE username = ? OR email = ?", (identifier, identifier)).fetchone()
+    user = db.execute(
+        "SELECT * FROM users WHERE username = ? OR email = ?", 
+        (identifier, identifier)
+    ).fetchone()
 
     if user is None:
         return jsonify({"error": "Invalid credentials"}), 401
@@ -377,14 +396,20 @@ def login():
     if not check_password_hash(user_dict["password_hash"], password):
         failed_attempts = user_dict.get("failed_attempts", 0) + 1
         new_locked_until = current_time + 300 if failed_attempts >= 5 else 0
-        db.execute("UPDATE users SET failed_attempts = ?, locked_until = ? WHERE id = ?", (failed_attempts, new_locked_until, user_dict["id"]))
+        db.execute(
+            "UPDATE users SET failed_attempts = ?, locked_until = ? WHERE id = ?", 
+            (failed_attempts, new_locked_until, user_dict["id"])
+        )
         db.commit()
         return jsonify({"error": "Invalid credentials"}), 401
 
     if user_dict.get("is_verified") == 0:
         return jsonify({"error": "Email not verified.", "needs_verification": True}), 403
 
-    db.execute("UPDATE users SET failed_attempts = 0, locked_until = 0 WHERE id = ?", (user_dict["id"],))
+    db.execute(
+        "UPDATE users SET failed_attempts = 0, locked_until = 0 WHERE id = ?", 
+        (user_dict["id"],)
+    )
     db.commit()
 
     session.clear()
@@ -393,6 +418,7 @@ def login():
     
     user_dict.pop("password_hash", None)
     return jsonify({"success": True, "user": sanitize_profile_links(user_dict)}), 200
+
 
 @app.route("/api/logout", methods=["POST"])
 def logout():
