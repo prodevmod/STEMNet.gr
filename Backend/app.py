@@ -312,7 +312,7 @@ def register():
         google_res = requests.post("https://www.google.com/recaptcha/api/siteverify", data=payload, timeout=5)
         result = google_res.json()
 
-        if not result.get("success") or result.get("score", 0) < 0.3:
+        if not result.get("success") or result.get("score", 0) < 0.2:
             return jsonify({"error": "Automated activity detected."}), 400
     except requests.exceptions.RequestException as e:
         print(f"reCAPTCHA network error: {e}")
