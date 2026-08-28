@@ -2,15 +2,6 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import { useGoogleReCaptcha } from 'react-google-recaptcha-v3'; 
-const recaptchaResponse = req.body['g-recaptcha-response'];
-const secretKey = process.env.RECAPTCHA_SECRET_KEY;
-
-const THRESHOLD = 0.3;
-
-const verifyUrl = `https://www.google.com/recaptcha/api/siteverify?secret=${secretKey}&response=${recaptchaResponse}`;
-
-const googleRes = await fetch(verifyUrl, { method: 'POST' });
-const googleData = await googleRes.json();
 
 export default function Register() {
     const [formData, setFormData] = useState({
@@ -58,7 +49,6 @@ export default function Register() {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
-    // 3. Update handleSubmit to be async and use the hook
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
