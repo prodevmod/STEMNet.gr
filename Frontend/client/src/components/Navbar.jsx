@@ -7,12 +7,10 @@ export default function Navbar({ currentUser, setCurrentUser, theme, toggleTheme
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const dropdownRef = useRef(null);
 
-    // Auto-close mobile menu on route navigation
     useEffect(() => {
         setDropdownOpen(false);
     }, [location]);
 
-    // Close mobile menu when clicking outside, pressing Escape, or scrolling
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -27,7 +25,6 @@ export default function Navbar({ currentUser, setCurrentUser, theme, toggleTheme
         };
 
         const handleScroll = (event) => {
-            // Prevent closing if the user is scrolling inside the dropdown menu itself
             if (dropdownRef.current && dropdownRef.current.contains(event.target)) {
                 return;
             }
@@ -136,6 +133,8 @@ export default function Navbar({ currentUser, setCurrentUser, theme, toggleTheme
                             top: '100%', 
                             left: '0',
                             width: '100%',
+                            maxHeight: 'calc(100vh - 60px)',
+                            overflowY: 'auto', 
                             background: dropdownBg,
                             borderBottom: `1px solid ${dropdownBorderColor}`,
                             padding: '1.5rem',
@@ -198,7 +197,6 @@ export default function Navbar({ currentUser, setCurrentUser, theme, toggleTheme
     );
 }
 
-// Reusable inline style helper
 const mobileLinkStyle = (color) => ({
     textDecoration: 'none',
     color,
@@ -208,7 +206,6 @@ const mobileLinkStyle = (color) => ({
     fontSize: '1.1rem'
 });
 
-// SVG Icon Helper Components
 const StemIcon = ({ strokeColor }) => (
     <svg width="22" height="22" viewBox="0 0 24 24" style={{ stroke: strokeColor, fill: 'none' }} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="12" cy="12" r="3"></circle>
