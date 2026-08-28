@@ -1004,14 +1004,3 @@ button.btn-primary img,
   color: #000000;
 }
 
-html, body {
-    margin: 0;
-    padding: 0;
-    width: 100%;
-    overflow-x: hidden; 
-    overscroll-behavior-y: none; 
-}
-
-body {
-    padding-top: 65px; 
-}
