@@ -82,6 +82,7 @@ html, body {
     flex-direction: column;
     overflow-x: hidden !important;
     transition: background-color 0.3s ease, color 0.3s ease;
+    padding-top: 65px;
 }
 
 main, .container, .content-wrapper, .app-main-container {
@@ -1001,4 +1002,16 @@ button.btn-primary img,
 
 .inline-svg {
   color: #000000;
+}
+
+html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    overflow-x: hidden; 
+    overscroll-behavior-y: none; 
+}
+
+body {
+    padding-top: 65px; 
 }

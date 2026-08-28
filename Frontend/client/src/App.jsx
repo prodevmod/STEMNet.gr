@@ -21,6 +21,8 @@ import Education from './pages/Education';
 import CreateGroup from './pages/CreateGroup';
 import './style.css'; 
 
+const API_BASE = import.meta.env.VITE_API_URL || '';
+
 function App() {
   const [currentUser, setCurrentUser] = useState(null);
   const [authChecked, setAuthChecked] = useState(false);
@@ -37,7 +39,7 @@ function App() {
   }, [theme]);
 
   useEffect(() => {
-    fetch('/api/auth/me', { credentials: 'include' })
+    fetch(`${API_BASE}/api/auth/me`, { credentials: 'include' })
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         setCurrentUser(data?.user || null);
@@ -56,7 +58,7 @@ function App() {
     }
     const checkUnread = async () => {
       try {
-        const res = await fetch('/api/notifications', { credentials: 'include' });
+        const res = await fetch(`${API_BASE}/api/notifications`, { credentials: 'include' });
         if (res.ok) {
           const data = await res.json();
           const unread = data.some((n) => !n.is_read);
