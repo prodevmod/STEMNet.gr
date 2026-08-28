@@ -1,28 +1,16 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
-import { useGoogleReCaptcha } from 'react-google-recaptcha-v3';
 
 export default function Login({ setCurrentUser, theme, toggleTheme }) {
     const [identifier, setIdentifier] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const navigate = useNavigate();
-    
-    const { executeRecaptcha } = useGoogleReCaptcha();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
-
-        let captchaToken = null;
-        try {
-            if (executeRecaptcha) {
-                captchaToken = await executeRecaptcha('login');
-            }
-        } catch (recaptchaErr) {
-            console.error("reCAPTCHA execution failed:", recaptchaErr);
-        }
 
         try {
             const res = await fetch('/api/login', {
@@ -33,8 +21,7 @@ export default function Login({ setCurrentUser, theme, toggleTheme }) {
                     username: identifier,
                     email: identifier,
                     identifier: identifier,
-                    password: password,
-                    "g-recaptcha-response": captchaToken 
+                    password: password
                 }),
             });
 

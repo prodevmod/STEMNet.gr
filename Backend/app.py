@@ -297,26 +297,6 @@ def get_current_user():
 @app.route("/api/register", methods=["POST"])
 def register():
     data = request.get_json(silent=True) or request.form
-    
-    token = data.get("g-recaptcha-response")
-    if not token:
-        return jsonify({"error": "reCAPTCHA token is missing."}), 400
-
-    payload = {
-        "secret": os.environ.get("RECAPTCHA_SECRET_KEY"), 
-        "response": token, 
-        "remoteip": request.remote_addr
-    }
-    
-    try:
-        google_res = requests.post("https://www.google.com/recaptcha/api/siteverify", data=payload, timeout=5)
-        result = google_res.json()
-
-        if not result.get("success") or result.get("score", 0) < 0:
-            return jsonify({"error": "Automated activity detected."}), 400
-    except requests.exceptions.RequestException as e:
-        print(f"reCAPTCHA network error: {e}")
-        return jsonify({"error": "Failed to connect to verification server."}), 500
 
     username = data.get("username", "").strip()
     email = data.get("email", "").strip()

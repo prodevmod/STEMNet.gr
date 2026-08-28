@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
-import { useGoogleReCaptcha } from 'react-google-recaptcha-v3'; 
 
 export default function Register() {
     const [formData, setFormData] = useState({
@@ -27,7 +26,6 @@ export default function Register() {
     const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
     
     const navigate = useNavigate();
-    const { executeRecaptcha } = useGoogleReCaptcha();
 
     useEffect(() => {
         document.documentElement.setAttribute('data-theme', theme);
@@ -58,19 +56,13 @@ export default function Register() {
             return;
         }
 
-        if (!executeRecaptcha) {
-            setError('reCAPTCHA has not loaded yet. Please try again.');
-            return;
-        }
-
         setLoading(true);
 
         try {
-            const token = await executeRecaptcha('register');
-            await sendRegistrationRequest({ ...formData, 'g-recaptcha-response': token });
+            await sendRegistrationRequest(formData);
         } catch (err) {
-            console.error('reCAPTCHA execution error:', err);
-            setError('Failed to verify reCAPTCHA. Please try again.');
+            console.error('Registration error:', err);
+            setError('An unexpected error occurred.');
             setLoading(false);
         }
     };
