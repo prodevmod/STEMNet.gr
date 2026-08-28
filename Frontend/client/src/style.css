@@ -48,7 +48,6 @@
     background-color: var(--border-color);
 }
 
-
 :root, [data-theme="light"] {
     --bg-color: #f8fafc;
     --text-color: #000000;
@@ -63,7 +62,6 @@
     --card-bg: #121212;
 }
 
-
 *, *::before, *::after {
     box-sizing: border-box;
     margin: 0;
@@ -76,17 +74,11 @@ html, body {
     font-family: var(--font-main);
     line-height: 1.6;
     width: 100%;
-    max-width: 100%;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    overflow-x: hidden !important;
+    min-height: 100%;
     transition: background-color 0.3s ease, color 0.3s ease;
-    padding-top: 65px;
 }
 
 main, .container, .content-wrapper, .app-main-container {
-    flex: 1 0 auto;
     width: 100% !important;
     max-width: var(--max-width) !important;
     margin: 0 auto !important;
@@ -109,7 +101,6 @@ img, video, canvas, svg {
     max-width: 100%;
     height: auto;
 }
-
 
 header {
     background-color: #0f172a;
@@ -218,7 +209,6 @@ nav a:hover {
     }
 }
 
-
 .nav-links a.nav-login-btn {
     color: #ffffff !important;
     background-color: #001f3f !important;
@@ -241,7 +231,6 @@ header nav a.nav-logout-link:hover {
     color: #ccff00 !important;
 }
 
-
 .flash-container {
     margin-bottom: 1.5rem;
 }
@@ -257,7 +246,6 @@ header nav a.nav-logout-link:hover {
 .flash.warning { background-color: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
 .flash.danger { background-color: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
 .flash.success { background-color: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
-
 
 .card, article, .post-card {
     background: var(--card-bg) !important;
@@ -298,7 +286,6 @@ header nav a.nav-logout-link:hover {
     font-family: var(--font-mono);
 }
 
-/* Vault Specifics */
 .vault-container {
     width: 100%;
     max-width: var(--max-width, 1100px);
@@ -421,7 +408,6 @@ header nav a.nav-logout-link:hover {
     border: 1px solid var(--primary-color, #ccff00) !important;
 }
 
-
 form {
     display: flex;
     flex-direction: column;
@@ -475,7 +461,6 @@ textarea {
     min-height: 120px;
 }
 
-
 .search-form-bar, .search-horizontal-form {
     display: flex !important;
     flex-direction: row !important;
@@ -505,7 +490,6 @@ textarea {
     }
 }
 
-/* Custom Checkbox */
 .checkbox-container, .checkbox-label {
     display: flex;
     align-items: center;
@@ -550,7 +534,6 @@ textarea {
     transform: scale(1);
 }
 
-
 textarea[name="h-captcha-response"],
 input[name="h-captcha-response"],
 #h-captcha-response {
@@ -563,7 +546,6 @@ input[name="h-captcha-response"],
     padding: 0 !important;
     border: none !important;
 }
-
 
 .btn {
     display: inline-flex;
@@ -639,7 +621,6 @@ a.btn-primary {
     isolation: isolate;
 }
 
-
 .hero {
     background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
     color: #ffffff;
@@ -665,7 +646,6 @@ a.btn-primary {
     gap: 1rem;
 }
 
-
 [data-theme="light"] .hero.light-hero-gradient,
 :not([data-theme="dark"]) .hero.light-hero-gradient {
     background: #ffffff !important;
@@ -680,7 +660,6 @@ a.btn-primary {
 :not([data-theme="dark"]) .hero.light-hero-gradient p {
     color: #000000 !important;
 }
-
 
 .category-filter-bar {
     display: flex;
@@ -722,7 +701,6 @@ a.btn-primary {
     box-shadow: 3px 3px 0px #000000 !important;
 }
 
-
 [data-theme="dark"] body,
 [data-theme="dark"] p,
 [data-theme="dark"] span,
@@ -761,7 +739,6 @@ a.btn-primary {
     color: #000000 !important;
 }
 
-
 .btn img, button img, a img, .profile-link img {
     flex-shrink: 0 !important;
     display: block !important;
@@ -789,7 +766,6 @@ a.btn-primary {
     filter: none !important;
 }
 
-
 [data-theme="dark"] img[src*="comment.svg"],
 [data-theme="dark"] img[src*="like.svg"],
 [data-theme="dark"] img[src*="liked.svg"],
@@ -801,7 +777,6 @@ a.btn-primary {
 [data-theme="dark"] .subreply-action-btn img {
     filter: brightness(0) invert(1) !important;
 }
-
 
 [data-theme="dark"] img[src*="liked.svg"] {
     filter: none !important; 
@@ -816,7 +791,6 @@ a.btn-primary {
     filter: none !important;
 }
 
-
 [data-theme="light"] header nav .brand,
 [data-theme="light"] header nav .nav-brand span,
 :not([data-theme="dark"]) header nav .brand,
@@ -824,14 +798,12 @@ a.btn-primary {
     color: #ffffff !important;
 }
 
-
 [data-theme="light"] header p,
 [data-theme="light"] header span,
 :not([data-theme="dark"]) header p,
 :not([data-theme="dark"]) header span {
     color: #ffffff !important;
 }
-
 
 .theme-toggle-btn {
     background: transparent !important;
@@ -853,7 +825,6 @@ a.btn-primary {
     width: 22px;
     height: 22px;
 }
-
 
 @keyframes heartPop {
     0% { transform: scale(1); }
@@ -888,14 +859,12 @@ a.btn-primary {
     background: var(--primary-color, #2563eb);
 }
 
-
 .small-png-logo {
     width: 32px !important;    
     height: 32px !important;
     max-width: 100% !important;
     object-fit: contain !important;
 }
-
 
 .post-action-btn {
   background: none;
@@ -914,7 +883,6 @@ a.btn-primary {
   opacity: 0.85;
 }
 
-/* Like pop animation */
 @keyframes pop {
   0% { transform: scale(1); }
   50% { transform: scale(1.35); }
@@ -924,6 +892,7 @@ a.btn-primary {
 .like-pop {
   animation: pop 0.3s ease-in-out;
 }
+
 .auth-page-wrapper {
     min-height: calc(100vh - 70px);
     display: flex;
@@ -947,7 +916,6 @@ a.btn-primary {
     color: #ffffff !important;
 }
 
-
 [data-theme="dark"] .force-dark-text,
 [data-theme="dark"] .force-dark-text *,
 [data-theme="dark"] .force-dark-text strong,
@@ -956,12 +924,10 @@ a.btn-primary {
     color: #000000 !important;
 }
 
-
 [data-theme="dark"] .force-white,
 [data-theme="dark"] .force-white-text {
   color: #ffffff !important;
 }
-
 
 [data-theme="dark"] .btn-outline.force-white {
   color: #ffffff !important;
@@ -974,7 +940,6 @@ a.btn-primary {
   background-color: rgba(255, 255, 255, 0.1);
 }
 
-
 .comments-section .btn-primary,
 .comments-section .btn-primary *,
 button.btn-primary,
@@ -982,25 +947,20 @@ button.btn-primary span {
     color: #000000 !important;
 }
 
-
 button.btn-primary img,
 .comments-section button img {
     filter: brightness(0) !important;
     -webkit-filter: brightness(0) !important;
 }
 
-
 .theme-icon {
   filter: brightness(0);
 }
-
 
 [data-theme="dark"] .inline-svg {
   color: #ffffff;
 }
 
-
 .inline-svg {
   color: #000000;
 }
-
