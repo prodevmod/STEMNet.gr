@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 
-import logoPng from '../assets/logo.png';
+
 
 export default function Navbar({ currentUser, setCurrentUser, theme, toggleTheme, hasUnreadNotifications }) {
     const navigate = useNavigate();
@@ -117,7 +117,7 @@ export default function Navbar({ currentUser, setCurrentUser, theme, toggleTheme
             <nav style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', maxWidth: '1200px', margin: '0 auto', padding: '0.5rem 1rem', color: lightGreen }}>
                 {/* Brand Logo & Title */}
                 <Link to="/" className="nav-brand" title="STEMNet Greece Home" style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', textDecoration: 'none', fontWeight: 700, color: lightGreen }}>
-                    <img src={logoPng} alt="Logo" width="30" height="30" />
+                    <img src="/logo.png" alt="Logo" width="30" height="30" />
                     <span style={{ color: lightGreen }}>STEMNet.gr</span>
                 </Link>
 
