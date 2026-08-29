@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 
-// Import your SVGs here
+// Import your SVGs here (Ensure these filenames match your actual files in src/assets/)
 import bellIcon from '../assets/bell.svg';
 import notificationsOnIcon from '../assets/notification_on.svg';
 
@@ -88,12 +88,12 @@ export default function Navbar({ currentUser, setCurrentUser, theme, toggleTheme
                             <Link to="/groups" title="Groups" style={{ color: lightGreen, display: 'flex', alignItems: 'center' }}><GroupIcon strokeColor={lightGreen} /></Link>
                             <Link to="/events" title="Events" style={{ color: lightGreen, display: 'flex', alignItems: 'center' }}><EventsIcon strokeColor={lightGreen} /></Link>
                             
-                            {/* UPDATED: Custom SVG Icons for Notifications */}
+                            {/* Dynamic Notification Icon */}
                             <Link to="/notifications" title="Notifications" style={{ color: lightGreen, display: 'flex', alignItems: 'center' }}>
                                 <img 
                                     src={hasUnreadNotifications ? notificationsOnIcon : bellIcon} 
                                     alt="Notifications" 
-                                    style={{ width: '22px', height: '22px', filter: 'invert(87%) sepia(50%) saturate(718%) hue-rotate(33deg) brightness(109%) contrast(108%)' }} // Note: you might need to adjust this filter or apply color inside the SVG itself to match `lightGreen`
+                                    style={{ width: '22px', height: '22px' }} 
                                 />
                             </Link>
                             
@@ -154,7 +154,7 @@ export default function Navbar({ currentUser, setCurrentUser, theme, toggleTheme
                                     <Link to="/groups" style={mobileLinkStyle(lightGreen)}><GroupIcon strokeColor={lightGreen} /> <span>Groups</span></Link>
                                     <Link to="/events" style={mobileLinkStyle(lightGreen)}><EventsIcon strokeColor={lightGreen} /> <span>Events</span></Link>
                                     
-                                    {/* UPDATED: Mobile Custom SVG Icons for Notifications */}
+                                    {/* Mobile Dynamic Notification Icon */}
                                     <Link to="/notifications" style={mobileLinkStyle(lightGreen)}>
                                         <img 
                                             src={hasUnreadNotifications ? notificationsOnIcon : bellIcon} 
@@ -218,7 +218,6 @@ const mobileLinkStyle = (color) => ({
     fontSize: '1.1rem'
 });
 
-// Removed BellIcon component. Other SVG Icons remain unchanged:
 const StemIcon = ({ strokeColor }) => (
     <svg width="22" height="22" viewBox="0 0 24 24" style={{ stroke: strokeColor, fill: 'none' }} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="12" cy="12" r="3"></circle>
