@@ -135,21 +135,45 @@ def send_verification_email(user_email, token):
     if not resend_api_key:
         print("RESEND_API_KEY not found. Skipping email.")
         return
-        
+
     verify_url = url_for('verify_email', token=token, _external=True)
     headers = {
         "Authorization": f"Bearer {resend_api_key}",
         "Content-Type": "application/json"
     }
     data = {
-        "from": "STEMNet Greece <noreply@verify.stemnet.app>", 
+        "from": "STEMNet Greece <noreply@verify.stemnet.app>",
         "to": [user_email],
         "subject": "Verify your STEMNet Greece Account",
         "html": f"""
-            <div style="font-family: -apple-system, sans-serif; text-align: center; padding: 40px;">
-                <h2>Welcome to STEMNet Greece!</h2>
-                <p>Please verify your email address below to activate your account.</p>
-                <a href="{verify_url}" style="padding: 14px 32px; background-color: #3ba47c; color: white; text-decoration: none; border-radius: 8px;">Verify Email</a>
+            <div style="background-color: #121212; padding: 40px 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;">
+                <div style="max-width: 480px; margin: 0 auto; background-color: #1a1a1a; border: 1px solid #333333; border-radius: 12px; overflow: hidden;">
+                    <div style="padding: 32px 32px 24px 32px; text-align: center; border-bottom: 1px solid #2a2a2a;">
+                        <h1 style="margin: 0; color: #ccff00; font-size: 22px; font-weight: 700; letter-spacing: -0.5px;">
+                            STEMNet Greece
+                        </h1>
+                    </div>
+                    <div style="padding: 32px; text-align: center;">
+                        <h2 style="margin: 0 0 12px 0; color: #ffffff; font-size: 20px; font-weight: 600;">
+                            Welcome aboard!
+                        </h2>
+                        <p style="margin: 0 0 28px 0; color: #a1a1aa; font-size: 15px; line-height: 1.6;">
+                            You're one step away from joining Greece's STEM and robotics community. Verify your email to activate your account.
+                        </p>
+                        <a href="{verify_url}" style="display: inline-block; padding: 14px 36px; background-color: #ccff00; color: #111111; text-decoration: none; border-radius: 8px; font-weight: 700; font-size: 15px;">
+                            Verify Email
+                        </a>
+                        <p style="margin: 28px 0 0 0; color: #6b7280; font-size: 12px; line-height: 1.5;">
+                            If the button doesn't work, copy and paste this link into your browser:<br>
+                            <a href="{verify_url}" style="color: #ccff00; word-break: break-all;">{verify_url}</a>
+                        </p>
+                    </div>
+                    <div style="padding: 20px 32px; background-color: #0f0f0f; text-align: center; border-top: 1px solid #2a2a2a;">
+                        <p style="margin: 0; color: #52525b; font-size: 12px;">
+                            If you didn't create this account, you can safely ignore this email.
+                        </p>
+                    </div>
+                </div>
             </div>
         """
     }
@@ -447,7 +471,7 @@ def verify_email(token):
     db.execute("UPDATE users SET is_verified = 1 WHERE email = ?", (email,))
     db.commit()
     return redirect(f"{FRONTEND_URL}/login?verified=true")
-
+ 
 @app.route("/api/logout", methods=["POST"])
 def logout():
     session.clear()
@@ -828,23 +852,19 @@ def api_edit_post(post_id):
     if not content:
         return jsonify({"error": "Post content cannot be empty."}), 400
         
-    # --- IMAGE HANDLING ---
-    # Start by keeping the existing image path from the database row
-    media_path = post["media_path"] # Change to post["image_url"] if your column is named differently
+    media_path = post["media_path"] 
     
-    # Check if a new file was uploaded in request.files
     if "image" in request.files:
         file = request.files["image"]
         if file and file.filename != "" and allowed_file(file.filename):
             filename = secure_filename(file.filename)
-            # Ensure unique filenames if necessary, or save directly:
+
             upload_folder = app.config.get("UPLOAD_FOLDER", "static/uploads")
             os.makedirs(upload_folder, exist_ok=True)
             
             file_path = os.path.join(upload_folder, filename)
             file.save(file_path)
             
-            # Save the relative path to be stored in the database
             media_path = f"uploads/{filename}"
 
     try:
@@ -1162,7 +1182,7 @@ def api_cleanup_events():
 
     try:
         if is_postgres:
-            expired_ids_rows = db.execute(
+            expired_rows = db.execute(
                 """
                 SELECT id FROM posts
                 WHERE event_time IS NOT NULL
@@ -1171,7 +1191,7 @@ def api_cleanup_events():
                 """
             ).fetchall()
         else:
-            expired_ids_rows = db.execute(
+            expired_rows = db.execute(
                 """
                 SELECT id FROM posts
                 WHERE event_time IS NOT NULL
@@ -1183,21 +1203,51 @@ def api_cleanup_events():
                 """
             ).fetchall()
 
-        expired_ids = [row["id"] for row in expired_ids_rows]
+        expired_ids = [row["id"] for row in expired_rows]
+        deleted_count = 0
 
-        if expired_ids:
-            for post_id in expired_ids:
-                db.execute("DELETE FROM likes WHERE post_id = ?", (post_id,))
-                db.execute("DELETE FROM notifications WHERE post_id = ?", (post_id,))
-                db.execute("DELETE FROM posts WHERE id = ?", (post_id,))
+        for event_id in expired_ids:
+            if is_postgres:
+                descendant_rows = db.execute(
+                    """
+                    WITH RECURSIVE descendants AS (
+                        SELECT id FROM posts WHERE id = ?
+                        UNION ALL
+                        SELECT p.id FROM posts p
+                        JOIN descendants d ON p.parent_id = d.id
+                    )
+                    SELECT id FROM descendants
+                    """,
+                    (event_id,)
+                ).fetchall()
+                descendant_ids = [row["id"] for row in descendant_rows]
+            else:
+                descendant_ids = [event_id]
+                frontier = [event_id]
+                while frontier:
+                    placeholders = ",".join("?" * len(frontier))
+                    children = db.execute(
+                        f"SELECT id FROM posts WHERE parent_id IN ({placeholders})",
+                        tuple(frontier)
+                    ).fetchall()
+                    child_ids = [row["id"] for row in children]
+                    descendant_ids.extend(child_ids)
+                    frontier = child_ids
+
+            for pid in descendant_ids:
+                db.execute("DELETE FROM likes WHERE post_id = ?", (pid,))
+                db.execute("DELETE FROM notifications WHERE post_id = ?", (pid,))
+
+            db.execute("DELETE FROM posts WHERE id = ?", (event_id,))
+            deleted_count += 1
 
         db.commit()
-        return jsonify({"message": f"Expired events cleaned up.", "deleted": len(expired_ids)}), 200
+        return jsonify({"message": "Expired events cleaned up.", "deleted": deleted_count}), 200
     except Exception as e:
         db.rollback()
         app.logger.error(f"Event cleanup error: {e}")
         return jsonify({"error": "Failed to clean up events."}), 500
-
+    
 # Education API Endpoint
 @app.route('/api/education', methods=['GET'])
 def get_education_extras():
