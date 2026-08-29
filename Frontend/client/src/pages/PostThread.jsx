@@ -72,24 +72,45 @@ export default function PostThread({ currentUser, setCurrentUser, theme, toggleT
         fetchThread();
     }, [postId]);
 
-    const handleAddReply = async (e) => {
-        e.preventDefault();
-        if (!currentUser) return navigate('/login');
-        if (!replyContent.trim()) return;
+
+    const handleCreateComment = async (e, parentId = null) => {
+        if (e) e.preventDefault();
+        
+        if (!currentUser) {
+        alert('Please log in to reply.');
+        return;
+        }
+
+        const textToSend = parentId ? replyContent : commentContent;
+        if (!textToSend.trim()) return;
+
+        setSubmitting(true);
+        const formData = new FormData();
+        formData.append('content', textToSend.trim());
+        formData.append('reply_to', parentId || postId);
 
         try {
-            const res = await fetch(`/api/posts/${postId}/comments`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify({ content: replyContent }),
-            });
-            if (res.ok) {
-                setReplyContent('');
-                fetchThread();
+        const res = await fetch('/api/posts/create', {
+            method: 'POST',
+            body: formData,
+            credentials: 'include',
+        });
+
+        if (res.ok) {
+            if (parentId) {
+            setReplyContent('');
+            setReplyToId(null);
+            } else {
+            setCommentContent('');
             }
+            await fetchPostDetails();
+        } else {
+            alert('Failed to post reply.');
+        }
         } catch (err) {
-            console.error('Error posting reply:', err);
+        console.error('Error posting reply:', err);
+        } finally {
+        setSubmitting(false);
         }
     };
 
@@ -223,7 +244,7 @@ export default function PostThread({ currentUser, setCurrentUser, theme, toggleT
                     )}
                 </div>
 
-                <form onSubmit={handleAddReply} style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>
+                <form onSubmit={handleCreateComment} style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>
                     <input
                         type="text"
                         placeholder="Post your reply..."
