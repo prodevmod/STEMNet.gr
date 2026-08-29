@@ -680,7 +680,8 @@ export default function Profile({ currentUser, setCurrentUser, theme, toggleThem
                                                             Reply
                                                         </button>
                                                     </form>
-
+                                                </div>
+                                            )}
                                         </div>
                                     );
                                 })}
