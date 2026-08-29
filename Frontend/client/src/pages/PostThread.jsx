@@ -294,7 +294,7 @@ export default function PostThread({ currentUser, setCurrentUser, theme, toggleT
                     </div>
                 )}
 
-                {/* Comment Actions */}
+                {/* Comment Actions (Rendered for all comments including user's own) */}
                 <div
                     style={{
                         display: 'flex',
@@ -347,6 +347,7 @@ export default function PostThread({ currentUser, setCurrentUser, theme, toggleT
                             alt="Reply" 
                             style={{ width: '18px', height: '18px', display: 'block' }} 
                         />
+                        <span>Reply</span>
                     </button>
                 </div>
 
@@ -479,8 +480,9 @@ export default function PostThread({ currentUser, setCurrentUser, theme, toggleT
                         </div>
                     )}
 
+                    {/* Right-aligned Edit & Delete Buttons for Post Owner */}
                     {isOwner && (
-                        <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid var(--border-color)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid var(--border-color)' }}>
                             <button 
                                 onClick={() => navigate(`/post/edit/${postId}`)}
                                 style={{ 
