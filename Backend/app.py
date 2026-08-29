@@ -658,6 +658,8 @@ def api_update_post(post_id):
         return jsonify({"error": str(e)}), 500
  
 @app.route("/api/posts/<int:post_id>/comments", methods=["PUT","POST"])
+@app.route("/api/post/<int:post_id>/comments", methods=["PUT","POST"])
+@login_required
 def api_update_comment(post_id):
     if not g.get("user"):
         return jsonify({"error": "Unauthorized"}), 401
@@ -1212,20 +1214,17 @@ def get_group_details(group_id):
 @login_required
 def api_get_notifications():
     db = get_db()
-    
-    # Safely fetch notifications, actors, and post content (if applicable)
     notifications = db.execute(
         """
-        SELECT n.*, u.username AS actor_username, u.profile_pic AS actor_pic, p.content AS post_content
+        SELECT n.*, n.actor_username, u.profile_pic AS actor_pic, p.content AS post_content
         FROM notifications n
-        JOIN users u ON n.actor_id = u.id
+        LEFT JOIN users u ON u.username = n.actor_username
         LEFT JOIN posts p ON n.post_id = p.id
         WHERE n.user_id = ?
         ORDER BY n.created_at DESC
         """,
         (g.user["id"],)
     ).fetchall()
-    
     return jsonify([dict(row) for row in notifications]), 200
 
 @app.route("/api/notifications/unread", methods=["GET"])
