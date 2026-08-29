@@ -2,6 +2,10 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 
+import likeIcon from '../assets/like.svg';
+import likedIcon from '../assets/liked.svg';
+import commentIcon from '../assets/comment.svg';
+
 // ==========================================
 // UTILS & HELPERS
 // ==========================================
@@ -216,7 +220,6 @@ export default function PostThread({ currentUser, setCurrentUser, theme, toggleT
         }
     };
 
-    // Theme-aware styles
     const inputStyle = {
         flex: 1,
         padding: '0.5rem 0.75rem',
@@ -309,31 +312,41 @@ export default function PostThread({ currentUser, setCurrentUser, theme, toggleT
                             cursor: 'pointer',
                             display: 'flex',
                             alignItems: 'center',
-                            gap: '0.3rem',
+                            gap: '0.4rem',
                             padding: 0,
                             color: theme === 'dark' ? '#f3f4f6' : '#1e293b',
                             fontSize: '0.85rem',
                         }}
                     >
-                        <span>{comment.user_liked ? '♥' : '♡'}</span>
+                        <img 
+                            src={comment.user_liked ? likedIcon : likeIcon} 
+                            alt={comment.user_liked ? 'Liked' : 'Like'} 
+                            style={{ width: '18px', height: '18px', display: 'block' }} 
+                        />
                         <span>{Number(comment.like_count) > 0 ? comment.like_count : 'Like'}</span>
                     </button>
 
                     <button
                         type="button"
                         onClick={() => setReplyToId(replyToId === comment.id ? null : comment.id)}
+                        title="Reply"
                         style={{
                             background: 'none',
                             border: 'none',
                             cursor: 'pointer',
                             display: 'flex',
                             alignItems: 'center',
+                            gap: '0.4rem',
                             padding: 0,
                             color: theme === 'dark' ? '#f3f4f6' : '#1e293b',
                             fontSize: '0.85rem',
                         }}
                     >
-                        Reply
+                        <img 
+                            src={commentIcon} 
+                            alt="Reply" 
+                            style={{ width: '18px', height: '18px', display: 'block' }} 
+                        />
                     </button>
                 </div>
 
@@ -466,7 +479,6 @@ export default function PostThread({ currentUser, setCurrentUser, theme, toggleT
                         </div>
                     )}
 
-                    {/* Edit & Delete Buttons for Post Owner */}
                     {isOwner && (
                         <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid var(--border-color)' }}>
                             <button 
@@ -501,7 +513,6 @@ export default function PostThread({ currentUser, setCurrentUser, theme, toggleT
                     )}
                 </div>
 
-                {/* Main Reply Form */}
                 <form onSubmit={(e) => handleCreateComment(e)} style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>
                     <input
                         type="text"
