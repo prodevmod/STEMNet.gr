@@ -72,5 +72,18 @@ export default function Recaptcha({ onChange, onExpired }) {
         );
     }
 
-    return <div ref={containerRef}></div>;
+    return (
+        <>
+            <style>{`
+                .g-recaptcha-response {
+                    display: none !important;
+                    position: absolute !important;
+                    width: 0 !important;
+                    height: 0 !important;
+                    overflow: hidden !important;
+                }
+            `}</style>
+            <div ref={containerRef}></div>
+        </>
+    );
 }
