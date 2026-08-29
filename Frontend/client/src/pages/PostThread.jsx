@@ -42,7 +42,11 @@ export default function PostThread({ currentUser, setCurrentUser, theme, toggleT
     const [threadData, setThreadData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    
+    const [commentContent, setCommentContent] = useState('');
+    const [replyToId, setReplyToId] = useState(null);
     const [replyContent, setReplyContent] = useState('');
+    const [submitting, setSubmitting] = useState(false);
 
     const fetchThread = async () => {
         if (!postId || postId === 'undefined') {
