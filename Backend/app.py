@@ -211,6 +211,7 @@ def get_db():
             g.db = connection
     return g.db
 
+#Before and After Request Handlers
 @app.teardown_appcontext
 def close_db(exception):
     db = g.pop("db", None)
@@ -286,6 +287,7 @@ def login_required(view):
         return view(*args, **kwargs)
     return wrapped_view
 
+#Authentication Endpoints
 @app.route("/api/auth/me", methods=["GET"])
 def get_current_user():
     if g.get("user"):
@@ -341,6 +343,21 @@ def register():
     except Exception as e:
         db.rollback()
         return jsonify({"error": "Registration failed due to a database error."}), 500
+
+@app.route("/api/verify/<token>")
+def verify_email(token):
+    email = confirm_verification_token(token)
+    if not email:
+        return redirect(f"{FRONTEND_URL}/login?error=invalid_token")
+
+    db = get_db()
+    user = db.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
+    if not user:
+        return redirect(f"{FRONTEND_URL}/login?error=user_not_found")
+        
+    db.execute("UPDATE users SET is_verified = 1 WHERE email = ?", (email,))
+    db.commit()
+    return redirect(f"{FRONTEND_URL}/login?verified=true")
 
 @app.route("/api/login", methods=["POST"])
 @limiter.limit("10 per minute")
@@ -399,7 +416,6 @@ def login():
     user_dict.pop("password_hash", None)
     return jsonify({"success": True, "user": sanitize_profile_links(user_dict)}), 200
 
-
 @app.route("/api/logout", methods=["POST"])
 def logout():
     session.clear()
@@ -456,21 +472,6 @@ def search():
         print(f"Search error: {e}")
         return jsonify({'error': 'An error occurred while searching'}), 500
     
-@app.route("/api/verify/<token>")
-def verify_email(token):
-    email = confirm_verification_token(token)
-    if not email:
-        return redirect(f"{FRONTEND_URL}/login?error=invalid_token")
-
-    db = get_db()
-    user = db.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
-    if not user:
-        return redirect(f"{FRONTEND_URL}/login?error=user_not_found")
-        
-    db.execute("UPDATE users SET is_verified = 1 WHERE email = ?", (email,))
-    db.commit()
-    return redirect(f"{FRONTEND_URL}/login?verified=true")
-
 #Post related Endpoints
 @app.route("/api/posts/create", methods=["POST"])
 @login_required
