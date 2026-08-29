@@ -1159,31 +1159,40 @@ def get_events():
 def api_cleanup_events():
     db = get_db()
     is_postgres = bool(os.environ.get("DATABASE_URL"))
-    
+
     try:
         if is_postgres:
-            db.execute(
+            expired_ids_rows = db.execute(
                 """
-                DELETE FROM posts 
-                WHERE event_time IS NOT NULL 
+                SELECT id FROM posts
+                WHERE event_time IS NOT NULL
                   AND event_time != ''
                   AND event_time::timestamp < NOW()
                 """
-            )
+            ).fetchall()
         else:
-            db.execute(
+            expired_ids_rows = db.execute(
                 """
-                DELETE FROM posts 
-                WHERE event_time IS NOT NULL 
-                  AND event_time != '' 
+                SELECT id FROM posts
+                WHERE event_time IS NOT NULL
+                  AND event_time != ''
                   AND (
                       datetime(event_time) < datetime('now')
                       OR date(event_time) < date('now')
                   )
                 """
-            )
+            ).fetchall()
+
+        expired_ids = [row["id"] for row in expired_ids_rows]
+
+        if expired_ids:
+            for post_id in expired_ids:
+                db.execute("DELETE FROM likes WHERE post_id = ?", (post_id,))
+                db.execute("DELETE FROM notifications WHERE post_id = ?", (post_id,))
+                db.execute("DELETE FROM posts WHERE id = ?", (post_id,))
+
         db.commit()
-        return jsonify({"message": "Expired events cleaned up."}), 200
+        return jsonify({"message": f"Expired events cleaned up.", "deleted": len(expired_ids)}), 200
     except Exception as e:
         db.rollback()
         app.logger.error(f"Event cleanup error: {e}")
