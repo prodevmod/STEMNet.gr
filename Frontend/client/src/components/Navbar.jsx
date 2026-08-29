@@ -1,6 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 
+// Import your SVGs here
+import bellIcon from '../assets/bell.svg';
+import notificationsOnIcon from '../assets/notifications_on.svg';
+
 export default function Navbar({ currentUser, setCurrentUser, theme, toggleTheme, hasUnreadNotifications }) {
     const navigate = useNavigate();
     const location = useLocation();
@@ -83,9 +87,16 @@ export default function Navbar({ currentUser, setCurrentUser, theme, toggleTheme
                             <Link to="/education" title="Education" style={{ color: lightGreen, display: 'flex', alignItems: 'center' }}><StemIcon strokeColor={lightGreen} /></Link>
                             <Link to="/groups" title="Groups" style={{ color: lightGreen, display: 'flex', alignItems: 'center' }}><GroupIcon strokeColor={lightGreen} /></Link>
                             <Link to="/events" title="Events" style={{ color: lightGreen, display: 'flex', alignItems: 'center' }}><EventsIcon strokeColor={lightGreen} /></Link>
+                            
+                            {/* UPDATED: Custom SVG Icons for Notifications */}
                             <Link to="/notifications" title="Notifications" style={{ color: lightGreen, display: 'flex', alignItems: 'center' }}>
-                                <BellIcon strokeColor={lightGreen} unread={hasUnreadNotifications} />
+                                <img 
+                                    src={hasUnreadNotifications ? notificationsOnIcon : bellIcon} 
+                                    alt="Notifications" 
+                                    style={{ width: '22px', height: '22px', filter: 'invert(87%) sepia(50%) saturate(718%) hue-rotate(33deg) brightness(109%) contrast(108%)' }} // Note: you might need to adjust this filter or apply color inside the SVG itself to match `lightGreen`
+                                />
                             </Link>
+                            
                             <Link to={`/profile/${currentUser.username}`} title="Profile" style={{ color: lightGreen, display: 'flex', alignItems: 'center' }}><ProfileIcon strokeColor={lightGreen} /></Link>
                             <Link to="/search" title="Search" style={{ color: lightGreen, display: 'flex', alignItems: 'center' }}><SearchIcon strokeColor={lightGreen} /></Link>
                         </>
@@ -131,31 +142,28 @@ export default function Navbar({ currentUser, setCurrentUser, theme, toggleTheme
 
                     {dropdownOpen && (
                         <div className="dropdown-menu-popup" style={{
-                            position: 'absolute',
-                            top: '100%', 
-                            left: '0',
-                            width: '100%',
-                            height: 'calc(100vh - 60px)', 
-                            maxHeight: 'calc(100vh - 60px)',
-                            overflowY: 'auto',
-                            WebkitOverflowScrolling: 'touch', // Smooth scrolling for iOS devices
-                            background: dropdownBg,
-                            borderBottom: `1px solid ${dropdownBorderColor}`,
-                            padding: '1.5rem',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            gap: '0.9rem',
-                            boxShadow: '0 8px 16px rgba(0,0,0,0.15)',
-                            zIndex: 1000,
-                            boxSizing: 'border-box',
-                            color: lightGreen
+                            position: 'absolute', top: '100%', left: '0', width: '100%',
+                            height: 'calc(100vh - 60px)', maxHeight: 'calc(100vh - 60px)', overflowY: 'auto',
+                            WebkitOverflowScrolling: 'touch', background: dropdownBg, borderBottom: `1px solid ${dropdownBorderColor}`,
+                            padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.9rem',
+                            boxShadow: '0 8px 16px rgba(0,0,0,0.15)', zIndex: 1000, boxSizing: 'border-box', color: lightGreen
                         }}>
                             {currentUser && (
                                 <>
                                     <Link to="/education" style={mobileLinkStyle(lightGreen)}><StemIcon strokeColor={lightGreen} /> <span>Education</span></Link>
                                     <Link to="/groups" style={mobileLinkStyle(lightGreen)}><GroupIcon strokeColor={lightGreen} /> <span>Groups</span></Link>
                                     <Link to="/events" style={mobileLinkStyle(lightGreen)}><EventsIcon strokeColor={lightGreen} /> <span>Events</span></Link>
-                                    <Link to="/notifications" style={mobileLinkStyle(lightGreen)}><BellIcon strokeColor={lightGreen} unread={hasUnreadNotifications} /> <span>Notifications</span></Link>
+                                    
+                                    {/* UPDATED: Mobile Custom SVG Icons for Notifications */}
+                                    <Link to="/notifications" style={mobileLinkStyle(lightGreen)}>
+                                        <img 
+                                            src={hasUnreadNotifications ? notificationsOnIcon : bellIcon} 
+                                            alt="Notifications" 
+                                            style={{ width: '22px', height: '22px' }} 
+                                        />
+                                        <span>Notifications</span>
+                                    </Link>
+                                    
                                     <Link to={`/profile/${currentUser.username}`} style={mobileLinkStyle(lightGreen)}><ProfileIcon strokeColor={lightGreen} /> <span>Profile</span></Link>
                                     <Link to="/search" style={mobileLinkStyle(lightGreen)}><SearchIcon strokeColor={lightGreen} /> <span>Search</span></Link>
                                 </>
@@ -210,7 +218,7 @@ const mobileLinkStyle = (color) => ({
     fontSize: '1.1rem'
 });
 
-// SVG Icons (unchanged)
+// Removed BellIcon component. Other SVG Icons remain unchanged:
 const StemIcon = ({ strokeColor }) => (
     <svg width="22" height="22" viewBox="0 0 24 24" style={{ stroke: strokeColor, fill: 'none' }} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="12" cy="12" r="3"></circle>
@@ -231,12 +239,6 @@ const EventsIcon = ({ strokeColor }) => (
         <line x1="16" y1="2" x2="16" y2="6"></line>
         <line x1="8" y1="2" x2="8" y2="6"></line>
         <line x1="3" y1="10" x2="21" y2="10"></line>
-    </svg>
-);
-const BellIcon = ({ strokeColor, unread }) => (
-    <svg width="22" height="22" viewBox="0 0 24 24" style={{ stroke: strokeColor, fill: unread ? strokeColor : "none" }} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
-        <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
     </svg>
 );
 const ProfileIcon = ({ strokeColor }) => (

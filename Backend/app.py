@@ -752,6 +752,7 @@ def api_get_post_thread(post_id):
         "parent": parent_post,
         "replies": replies
     }), 200
+ 
 
 @app.route("/api/posts/<int:post_id>/edit", methods=["POST", "PUT"])
 @login_required
