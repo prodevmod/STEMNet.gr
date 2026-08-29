@@ -181,28 +181,24 @@ export default function Register() {
                         </div>
 
                         <div className="form-group">
-                            <label htmlFor="custom_link_1">Discord / Tag</label>
-                            <input type="text" id="custom_link_1" name="custom_link_1" value={formData.custom_link_1} onChange={handleChange} placeholder="Discord Tag or Server Link" />
+                            <label htmlFor="custom_link_1">Custom Links</label>
+                            <input type="text" id="custom_link_1" name="custom_link_1" value={formData.custom_link_1} onChange={handleChange} placeholder="ex. Discord Tag or Server Link" />
                         </div>
 
                         <div className="form-group">
-                            <label htmlFor="custom_link_2">Instagram Profile</label>
-                            <input type="text" id="custom_link_2" name="custom_link_2" value={formData.custom_link_2} onChange={handleChange} placeholder="https://instagram.com/..." />
+                            <input type="text" id="custom_link_2" name="custom_link_2" value={formData.custom_link_2} onChange={handleChange} placeholder="ex. https://instagram.com/..." />
                         </div>
 
                         <div className="form-group">
-                            <label htmlFor="custom_link_3">Slack Workspace Link</label>
-                            <input type="text" id="custom_link_3" name="custom_link_3" value={formData.custom_link_3} onChange={handleChange} placeholder="Slack Channel or Invite Link" />
+                            <input type="text" id="custom_link_3" name="custom_link_3" value={formData.custom_link_3} onChange={handleChange} placeholder="ex. Slack Channel or Invite Link" />
                         </div>
 
                         <div className="form-group">
-                            <label htmlFor="custom_link_4">Personal Website / CAD Portfolio</label>
-                            <input type="text" id="custom_link_4" name="custom_link_4" value={formData.custom_link_4} onChange={handleChange} placeholder="https://myroboticslab.gr" />
+                            <input type="text" id="custom_link_4" name="custom_link_4" value={formData.custom_link_4} onChange={handleChange} placeholder="ex. https://myroboticslab.gr" />
                         </div>
 
                         <div className="form-group">
-                            <label htmlFor="custom_link_5">Other Custom Link</label>
-                            <input type="text" id="custom_link_5" name="custom_link_5" value={formData.custom_link_5} onChange={handleChange} placeholder="Any link or handle" />
+                            <input type="text" id="custom_link_5" name="custom_link_5" value={formData.custom_link_5} onChange={handleChange} placeholder="ex. https://example.com" />
                         </div>
 
                         <button type="submit" disabled={loading} className="btn btn-primary" style={{ width: '100%', marginTop: '0.5rem', cursor: loading ? 'not-allowed' : 'pointer' }}>
