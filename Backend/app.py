@@ -1158,23 +1158,35 @@ def get_events():
 @app.route("/api/cron/cleanup-events", methods=["POST"])
 def api_cleanup_events():
     db = get_db()
+    is_postgres = bool(os.environ.get("DATABASE_URL"))
     
     try:
-        db.execute(
-            """
-            DELETE FROM posts 
-            WHERE event_time IS NOT NULL 
-              AND event_time != '' 
-              AND (
-                  datetime(event_time) < datetime('now')
-                  OR date(event_time) < date('now')
-              )
-            """
-        )
+        if is_postgres:
+            db.execute(
+                """
+                DELETE FROM posts 
+                WHERE event_time IS NOT NULL 
+                  AND event_time != ''
+                  AND event_time::timestamp < NOW()
+                """
+            )
+        else:
+            db.execute(
+                """
+                DELETE FROM posts 
+                WHERE event_time IS NOT NULL 
+                  AND event_time != '' 
+                  AND (
+                      datetime(event_time) < datetime('now')
+                      OR date(event_time) < date('now')
+                  )
+                """
+            )
         db.commit()
         return jsonify({"message": "Expired events cleaned up."}), 200
     except Exception as e:
         db.rollback()
+        app.logger.error(f"Event cleanup error: {e}")
         return jsonify({"error": "Failed to clean up events."}), 500
 
 # Education API Endpoint
