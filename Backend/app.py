@@ -94,6 +94,25 @@ limiter = Limiter(
     default_limits=["50 per hour"],
     storage_uri="memory://"
 )
+RECAPTCHA_SECRET_KEY = os.environ.get("RECAPTCHA_SECRET_KEY")
+
+def verify_recaptcha(token):
+    if not RECAPTCHA_SECRET_KEY:
+        app.logger.warning("RECAPTCHA_SECRET_KEY not set; skipping verification.")
+        return True
+    if not token:
+        return False
+    try:
+        resp = requests.post(
+            "https://www.google.com/recaptcha/api/siteverify",
+            data={"secret": RECAPTCHA_SECRET_KEY, "response": token},
+            timeout=5
+        )
+        result = resp.json()
+        return bool(result.get("success"))
+    except Exception as e:
+        app.logger.error(f"reCAPTCHA verification error: {e}")
+        return False
 
 # Utility Functions for Email Verification
 def get_serializer():
@@ -301,9 +320,74 @@ def get_current_user():
         return jsonify({"user": user_dict}), 200
     return jsonify({"user": None}), 200
 
+@app.route("/api/login", methods=["POST"])
+@limiter.limit("10 per minute")
+def login():
+    data = request.get_json(silent=True) or request.form or {}
+
+    recaptcha_token = data.get("recaptcha_token", "")
+    if not verify_recaptcha(recaptcha_token):
+        return jsonify({"error": "reCAPTCHA verification failed. Please try again."}), 400
+
+    identifier = (
+        data.get("username_or_email") or 
+        data.get("username") or 
+        data.get("email") or ""
+    ).strip()
+    password = data.get("password", "")
+    remember = data.get("remember", False)
+
+    if not identifier or not password:
+        return jsonify({"error": "Missing credentials"}), 400
+
+    db = get_db()
+    user = db.execute(
+        "SELECT * FROM users WHERE username = ? OR email = ?", 
+        (identifier, identifier)
+    ).fetchone()
+
+    if user is None:
+        return jsonify({"error": "Invalid credentials"}), 401
+
+    user_dict = dict(user)
+    current_time = time.time()
+    locked_until = user_dict.get("locked_until", 0) or 0
+    if locked_until > current_time:
+        return jsonify({"error": "Account temporarily locked."}), 403
+
+    if not check_password_hash(user_dict["password_hash"], password):
+        failed_attempts = user_dict.get("failed_attempts", 0) + 1
+        new_locked_until = current_time + 300 if failed_attempts >= 5 else 0
+        db.execute(
+            "UPDATE users SET failed_attempts = ?, locked_until = ? WHERE id = ?", 
+            (failed_attempts, new_locked_until, user_dict["id"])
+        )
+        db.commit()
+        return jsonify({"error": "Invalid credentials"}), 401
+
+    if user_dict.get("is_verified") == 0:
+        return jsonify({"error": "Email not verified.", "needs_verification": True}), 403
+
+    db.execute(
+        "UPDATE users SET failed_attempts = 0, locked_until = 0 WHERE id = ?", 
+        (user_dict["id"],)
+    )
+    db.commit()
+
+    session.clear()
+    session.permanent = bool(remember)
+    session["user_id"] = user_dict["id"]
+    
+    user_dict.pop("password_hash", None)
+    return jsonify({"success": True, "user": sanitize_profile_links(user_dict)}), 200
+
 @app.route("/api/register", methods=["POST"])
 def register():
     data = request.get_json(silent=True) or request.form
+
+    recaptcha_token = data.get("recaptcha_token", "")
+    if not verify_recaptcha(recaptcha_token):
+        return jsonify({"error": "reCAPTCHA verification failed. Please try again."}), 400
 
     username = data.get("username", "").strip()
     email = data.get("email", "").strip()
@@ -363,63 +447,6 @@ def verify_email(token):
     db.execute("UPDATE users SET is_verified = 1 WHERE email = ?", (email,))
     db.commit()
     return redirect(f"{FRONTEND_URL}/login?verified=true")
-
-@app.route("/api/login", methods=["POST"])
-@limiter.limit("10 per minute")
-def login():
-    data = request.get_json(silent=True) or request.form or {}
-    
-    identifier = (
-        data.get("username_or_email") or 
-        data.get("username") or 
-        data.get("email") or ""
-    ).strip()
-    password = data.get("password", "")
-    remember = data.get("remember", False)
-
-    if not identifier or not password:
-        return jsonify({"error": "Missing credentials"}), 400
-
-    db = get_db()
-    user = db.execute(
-        "SELECT * FROM users WHERE username = ? OR email = ?", 
-        (identifier, identifier)
-    ).fetchone()
-
-    if user is None:
-        return jsonify({"error": "Invalid credentials"}), 401
-
-    user_dict = dict(user)
-    current_time = time.time()
-    locked_until = user_dict.get("locked_until", 0) or 0
-    if locked_until > current_time:
-        return jsonify({"error": "Account temporarily locked."}), 403
-
-    if not check_password_hash(user_dict["password_hash"], password):
-        failed_attempts = user_dict.get("failed_attempts", 0) + 1
-        new_locked_until = current_time + 300 if failed_attempts >= 5 else 0
-        db.execute(
-            "UPDATE users SET failed_attempts = ?, locked_until = ? WHERE id = ?", 
-            (failed_attempts, new_locked_until, user_dict["id"])
-        )
-        db.commit()
-        return jsonify({"error": "Invalid credentials"}), 401
-
-    if user_dict.get("is_verified") == 0:
-        return jsonify({"error": "Email not verified.", "needs_verification": True}), 403
-
-    db.execute(
-        "UPDATE users SET failed_attempts = 0, locked_until = 0 WHERE id = ?", 
-        (user_dict["id"],)
-    )
-    db.commit()
-
-    session.clear()
-    session.permanent = bool(remember)
-    session["user_id"] = user_dict["id"]
-    
-    user_dict.pop("password_hash", None)
-    return jsonify({"success": True, "user": sanitize_profile_links(user_dict)}), 200
 
 @app.route("/api/logout", methods=["POST"])
 def logout():

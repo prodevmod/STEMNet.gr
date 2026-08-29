@@ -1,27 +1,35 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
+import Recaptcha from '../components/Recaptcha';
 
 export default function Login({ setCurrentUser, theme, toggleTheme }) {
     const [identifier, setIdentifier] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
+    const [recaptchaToken, setRecaptchaToken] = useState('');
     const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
 
+        if (!recaptchaToken) {
+            setError('Please complete the reCAPTCHA.');
+            return;
+        }
+
         try {
             const res = await fetch('/api/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
-                body: JSON.stringify({ 
+                body: JSON.stringify({
                     username: identifier,
                     email: identifier,
                     identifier: identifier,
-                    password: password
+                    password: password,
+                    recaptcha_token: recaptchaToken
                 }),
             });
 
@@ -31,10 +39,14 @@ export default function Login({ setCurrentUser, theme, toggleTheme }) {
                 navigate('/');
             } else {
                 setError(data.error || 'Invalid credentials');
+                if (window.grecaptcha) window.grecaptcha.reset();
+                setRecaptchaToken('');
             }
         } catch (err) {
             console.error("Login fetch error:", err);
             setError('An error occurred during login.');
+            if (window.grecaptcha) window.grecaptcha.reset();
+            setRecaptchaToken('');
         }
     };
 
@@ -80,7 +92,9 @@ export default function Login({ setCurrentUser, theme, toggleTheme }) {
                             />
                         </div>
 
-                        <button type="submit" className="btn btn-primary" style={{ marginTop: '0.5rem', padding: '0.75rem', fontWeight: 700, width: '100%' }}>
+                        <Recaptcha onChange={setRecaptchaToken} />
+
+                        <button type="submit" disabled={!recaptchaToken} className="btn btn-primary" style={{ marginTop: '0.5rem', padding: '0.75rem', fontWeight: 700, width: '100%', cursor: !recaptchaToken ? 'not-allowed' : 'pointer' }}>
                             Log In
                         </button>
                     </form>

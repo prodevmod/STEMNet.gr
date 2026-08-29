@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
+import Recaptcha from '../components/Recaptcha';
 
 export default function Register() {
     const [formData, setFormData] = useState({
@@ -24,6 +25,7 @@ export default function Register() {
     const [loading, setLoading] = useState(false);
     const [currentUser, setCurrentUser] = useState(null);
     const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
+    const [recaptchaToken, setRecaptchaToken] = useState('');
     
     const navigate = useNavigate();
 
@@ -56,10 +58,15 @@ export default function Register() {
             return;
         }
 
+        if (!recaptchaToken) {
+            setError('Please complete the reCAPTCHA.');
+            return;
+        }
+
         setLoading(true);
 
         try {
-            await sendRegistrationRequest(formData);
+            await sendRegistrationRequest({ ...formData, recaptcha_token: recaptchaToken });
         } catch (err) {
             console.error('Registration error:', err);
             setError('An unexpected error occurred.');
@@ -83,10 +90,14 @@ export default function Register() {
                 navigate('/login');
             } else {
                 setError(data.error || 'Registration failed.');
+                if (window.grecaptcha) window.grecaptcha.reset();
+                setRecaptchaToken('');
             }
         } catch (err) {
             console.error('Registration network error:', err);
             setError('An unexpected network error occurred.');
+            if (window.grecaptcha) window.grecaptcha.reset();
+            setRecaptchaToken('');
         } finally {
             setLoading(false);
         }
@@ -201,7 +212,11 @@ export default function Register() {
                             <input type="text" id="custom_link_5" name="custom_link_5" value={formData.custom_link_5} onChange={handleChange} placeholder=" e.g. https://example.com" />
                         </div>
 
-                        <button type="submit" disabled={loading} className="btn btn-primary" style={{ width: '100%', marginTop: '0.5rem', cursor: loading ? 'not-allowed' : 'pointer' }}>
+                        <div className="form-group" style={{ marginTop: '0.5rem' }}>
+                            <Recaptcha onChange={setRecaptchaToken} />
+                        </div>
+
+                        <button type="submit" disabled={loading || !recaptchaToken} className="btn btn-primary" style={{ width: '100%', marginTop: '0.5rem', cursor: (loading || !recaptchaToken) ? 'not-allowed' : 'pointer' }}>
                             {loading ? 'Registering...' : 'Register Account'}
                         </button>
                     </form>
