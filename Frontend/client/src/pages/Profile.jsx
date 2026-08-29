@@ -159,61 +159,56 @@ export default function Profile({ currentUser, setCurrentUser, theme, toggleThem
     };
 
     const handleLikePost = async (postId) => {
-        if (!currentUser) return navigate('/login');
+            if (!currentUser) return navigate('/login');
 
+            setPosts((prevPosts) =>
+                prevPosts.map((post) => {
+                    if (post.id === postId) {
+                        const wasLiked = Boolean(post.user_liked);
+                        return {
+                            ...post,
+                            user_liked: wasLiked ? 0 : 1,
+                            like_count: wasLiked ? Math.max(0, (post.like_count || 0) - 1) : (post.like_count || 0) + 1,
+                        };
+                    }
+                    return post;
+                })
+            );
 
-        setPosts((prevPosts) =>
-            prevPosts.map((post) => {
-                if (post.id === postId) {
-                    const wasLiked = Boolean(post.user_liked);
-                    return {
-                        ...post,
-                        user_liked: wasLiked ? 0 : 1,
-                        like_count: wasLiked ? Math.max(0, (post.like_count || 0) - 1) : (post.like_count || 0) + 1,
-                    };
-                }
-                return post;
-            })
-        );
-
-        const payload = JSON.stringify({
-            postId,
-            post_id: postId,
-            userId: currentUser?.id,
-            user_id: currentUser?.id,
-        });
-
-        const headers = { 'Content-Type': 'application/json' };
-        const endpoints = [
-            `/api/posts/${postId}/like`,
-            `/api/post/${postId}/like`,
-            `/api/like/${postId}`,
-            `/api/like`
-        ];
-
-        let success = false;
-
-        for (const url of endpoints) {
             try {
-                const res = await fetch(url, {
+                const res = await fetch(`/api/posts/${postId}/like/`, {
                     method: 'POST',
-                    headers,
+                    headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
-                    body: payload,
+                    body: JSON.stringify({
+                        postId,
+                        post_id: postId,
+                        userId: currentUser?.id,
+                        user_id: currentUser?.id,
+                    }),
                 });
 
-                if (res.ok) {
-                    success = true;
-                    break;
+                if (!res.ok) {
+                    throw new Error(`Server responded with status ${res.status}`);
                 }
             } catch (err) {
+                console.error('Like request failed:', err);
+                
+                setPosts((prevPosts) =>
+                    prevPosts.map((post) => {
+                        if (post.id === postId) {
+                            const wasLiked = Boolean(post.user_liked);
+                            return {
+                                ...post,
+                                user_liked: wasLiked ? 0 : 1,
+                                like_count: wasLiked ? Math.max(0, (post.like_count || 0) - 1) : (post.like_count || 0) + 1,
+                            };
+                        }
+                        return post;
+                    })
+                );
             }
-        }
-
-        if (!success) {
-            console.warn('Like request failed on all endpoint attempts.');
-        }
-    };
+        };
 
     const handleAddComment = async (postId, e) => {
         e.preventDefault();
