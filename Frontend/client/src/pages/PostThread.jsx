@@ -300,16 +300,17 @@ export default function PostThread({ currentUser, setCurrentUser, theme, toggleT
                     border: '1px solid var(--border-color)',
                     borderRadius: '6px',
                     marginBottom: '0.75rem',
+                    width: '100%',
+                    boxSizing: 'border-box'
                 }}
             >
-                {/* Header: Username on Left, Date pushed to Far Right */}
+                {/* Header: Username Left, Date Right */}
                 <div
                     style={{
                         display: 'flex',
-                        justify: 'space-between',
+                        width: '100%',
                         alignItems: 'center',
                         marginBottom: '0.5rem',
-                        gap: '1rem',
                     }}
                 >
                     <Link
@@ -324,7 +325,7 @@ export default function PostThread({ currentUser, setCurrentUser, theme, toggleT
                         @{comment.username}
                     </Link>
                     {comment.created_at && (
-                        <small style={{ color: 'gray', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>
+                        <small style={{ marginLeft: 'auto', color: 'gray', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>
                             {comment.created_at}
                         </small>
                     )}
@@ -352,11 +353,11 @@ export default function PostThread({ currentUser, setCurrentUser, theme, toggleT
                     </div>
                 )}
 
-                {/* Bottom Bar: Like & Reply on Left | Edit & Delete on Right */}
+                {/* Action Bar: Like & Reply (Far Left) | Edit & Delete (Far Right via marginLeft auto) */}
                 <div
                     style={{
                         display: 'flex',
-                        justify: 'space-between',
+                        width: '100%',
                         alignItems: 'center',
                         marginTop: '0.75rem',
                     }}
@@ -411,7 +412,7 @@ export default function PostThread({ currentUser, setCurrentUser, theme, toggleT
                     </div>
 
                     {isCommentOwner && (
-                        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                        <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
                             <button
                                 type="button"
                                 onClick={() => navigate(`/post/edit/${comment.id}`)}
@@ -556,23 +557,23 @@ export default function PostThread({ currentUser, setCurrentUser, theme, toggleT
 
                 {parent && (
                     <div className="card" style={{ padding: '1rem', opacity: 0.8, marginBottom: '0.75rem', borderLeft: '3px solid var(--primary-color)' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div style={{ display: 'flex', width: '100%', alignItems: 'center' }}>
                             <Link to={`/profile/${parent.username}`} style={{ fontWeight: 'bold', color: 'var(--primary-color)', textDecoration: 'none' }}>@{parent.username}</Link>
-                            {parent.created_at && <small style={{ color: 'gray', fontSize: '0.8rem' }}>{parent.created_at}</small>}
+                            {parent.created_at && <small style={{ marginLeft: 'auto', color: 'gray', fontSize: '0.8rem' }}>{parent.created_at}</small>}
                         </div>
                         <p style={{ margin: '0.5rem 0 0', color: theme === 'dark' ? '#f3f4f6' : '#1e293b' }}>{renderTextWithLinks(parent.content)}</p>
                     </div>
                 )}
 
                 {/* Main Post Card */}
-                <div className="card" style={{ padding: '1.25rem', backgroundColor: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: '8px', marginBottom: '1.5rem' }}>
-                    {/* Main Post Header */}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', gap: '1rem' }}>
+                <div className="card" style={{ padding: '1.25rem', backgroundColor: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: '8px', marginBottom: '1.5rem', width: '100%', boxSizing: 'border-box' }}>
+                    {/* Header */}
+                    <div style={{ display: 'flex', width: '100%', alignItems: 'center', marginBottom: '0.75rem' }}>
                         <Link to={`/profile/${post.username}`} style={{ fontWeight: 'bold', color: 'var(--primary-color)', textDecoration: 'none' }}>
                             @{post.username}
                         </Link>
                         {post.created_at && (
-                            <small style={{ color: 'gray', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>{post.created_at}</small>
+                            <small style={{ marginLeft: 'auto', color: 'gray', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>{post.created_at}</small>
                         )}
                     </div>
 
@@ -588,7 +589,7 @@ export default function PostThread({ currentUser, setCurrentUser, theme, toggleT
                     <div
                         style={{
                             display: 'flex',
-                            justify: 'space-between',
+                            width: '100%',
                             alignItems: 'center',
                             marginTop: '1rem',
                             paddingTop: '1rem',
@@ -645,7 +646,7 @@ export default function PostThread({ currentUser, setCurrentUser, theme, toggleT
                         </div>
 
                         {isOwner && (
-                            <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                            <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
                                 <button 
                                     onClick={() => navigate(`/post/edit/${postId}`)}
                                     style={{ 
