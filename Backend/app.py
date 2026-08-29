@@ -478,12 +478,17 @@ def search():
 def create_post():
     db = get_db()
     
+
+    current_user_id = g.user["id"]
+    current_user_username = g.user["username"] 
+    
     content = request.form.get("content", "").strip()
     category = request.form.get("category", "").strip()
     parent_id = request.form.get("reply_to", type=int)
     group_id = request.form.get("group_id", type=int)
     
-    if not content: return jsonify({"error": "Content cannot be empty."}), 400
+    if not content: 
+        return jsonify({"error": "Content cannot be empty."}), 400
     
     github_link = request.form.get("github_link", "").strip() or None
     event_type = request.form.get("event_type", "").strip() if category == "Events" else None
@@ -494,7 +499,7 @@ def create_post():
     file = request.files.get("media")
     if file and file.filename != '' and allowed_file(file.filename):
         filename = secure_filename(file.filename)
-        unique_filename = f"{g.user['id']}_{int(time.time())}_{filename}"
+        unique_filename = f"{current_user_id}_{int(time.time())}_{filename}"
         if supabase:
             try:
                 supabase.storage.from_("uploads").upload(
@@ -509,15 +514,43 @@ def create_post():
     cursor = db.execute(
         """INSERT INTO posts (user_id, content, media_path, github_link, category, parent_id, event_type, event_time, event_location, group_id) 
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-        (g.user["id"], content, media_path, github_link, category, parent_id, event_type, event_time, event_location, group_id)
+        (current_user_id, content, media_path, github_link, category, parent_id, event_type, event_time, event_location, group_id)
     )
     post_id = cursor.lastrowid
 
+
+    db.execute(
+        """
+        INSERT INTO notifications (user_id, actor_username, type, post_id, is_read)
+        VALUES (?, 'System', 'self_post', ?, 0)
+        """,
+        (current_user_id, post_id)
+    )
+
+
     if parent_id:
         parent_author = db.execute("SELECT user_id FROM posts WHERE id = ?", (parent_id,)).fetchone()
-        if parent_author and parent_author["user_id"] != g.user["id"]:
-            db.execute("INSERT INTO notifications (user_id, actor_id, type, post_id) VALUES (?, ?, ?, ?)",
-                       (parent_author["user_id"], g.user["id"], "reply", post_id))
+        if parent_author and parent_author["user_id"] != current_user_id:
+
+            db.execute(
+                """
+                INSERT INTO notifications (user_id, actor_username, type, post_id, is_read) 
+                VALUES (?, ?, 'reply', ?, 0)
+                """,
+                (parent_author["user_id"], current_user_username, post_id)
+            )
+            
+
+    elif not parent_id:
+        db.execute(
+            """
+            INSERT INTO notifications (user_id, actor_username, type, post_id, is_read)
+            SELECT follower_id, ?, 'new_post', ?, 0
+            FROM followers 
+            WHERE followed_id = ?
+            """,
+            (current_user_username, post_id, current_user_id)
+        )
 
     db.commit()
     return jsonify({"success": True, "post_id": post_id}), 201
@@ -557,23 +590,6 @@ def get_posts():
 def api_get_single_post(post_id):
     db = get_db()
     current_user_id = g.user["id"] if g.get("user") else 0
-
-    try:
-        db.execute(
-            """
-            DELETE FROM posts 
-            WHERE event_time IS NOT NULL 
-              AND event_time != '' 
-              AND (
-                  datetime(event_time) < datetime('now')
-                  OR date(event_time) < date('now')
-              )
-            """
-        )
-        db.commit()
-    except Exception as e:
-        db.rollback()
-
 
     post = db.execute(
         """
@@ -1076,7 +1092,7 @@ def get_following(username):
 
     return jsonify([dict(row) for row in following]), 200
 
-# Events API Endpoint
+# Events API Endpoints
 @app.route("/api/events", methods=["GET"])
 def get_events():
     db = get_db()
@@ -1107,6 +1123,28 @@ def get_events():
         ).fetchall()
     
     return jsonify([dict(row) for row in events]), 200
+
+@app.route("/api/cron/cleanup-events", methods=["POST"])
+def api_cleanup_events():
+    db = get_db()
+    
+    try:
+        db.execute(
+            """
+            DELETE FROM posts 
+            WHERE event_time IS NOT NULL 
+              AND event_time != '' 
+              AND (
+                  datetime(event_time) < datetime('now')
+                  OR date(event_time) < date('now')
+              )
+            """
+        )
+        db.commit()
+        return jsonify({"message": "Expired events cleaned up."}), 200
+    except Exception as e:
+        db.rollback()
+        return jsonify({"error": "Failed to clean up events."}), 500
 
 # Education API Endpoint
 @app.route('/api/education', methods=['GET'])

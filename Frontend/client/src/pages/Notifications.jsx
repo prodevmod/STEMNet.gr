@@ -7,7 +7,6 @@ export default function Notifications({ currentUser, theme, toggleTheme, setHasU
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // 1. Fetch the notifications
         fetch('/api/notifications', { credentials: 'include' })
             .then(res => {
                 if (!res.ok) throw new Error('Failed to fetch notifications');
@@ -16,6 +15,18 @@ export default function Notifications({ currentUser, theme, toggleTheme, setHasU
             .then(data => {
                 if (Array.isArray(data)) {
                     setNotifications(data);
+                    
+                    if (data.length > 0) {
+                        fetch('/api/notifications/read', { method: 'POST', credentials: 'include' })
+                            .then(() => {
+                                if (setHasUnreadNotifications) {
+                                    setHasUnreadNotifications(false);
+                                }
+                            })
+                            .catch(err => console.error('Error marking as read:', err));
+                    } else if (setHasUnreadNotifications) {
+                        setHasUnreadNotifications(false);
+                    }
                 } else {
                     setNotifications([]);
                 }
@@ -27,21 +38,11 @@ export default function Notifications({ currentUser, theme, toggleTheme, setHasU
             .finally(() => {
                 setLoading(false);
             });
-
-        // 2. Mark them as read in the backend so the bell stops glowing
-        fetch('/api/notifications/read', { method: 'POST', credentials: 'include' })
-            .then(() => {
-                // If you pass this prop from App.jsx, it will instantly clear the bell
-                if (setHasUnreadNotifications) {
-                    setHasUnreadNotifications(false);
-                }
-            })
-            .catch(err => console.error('Error marking as read:', err));
     }, [setHasUnreadNotifications]);
 
     return (
         <div>
-            <Navbar currentUser={currentUser} theme={theme} toggleTheme={toggleTheme} />
+            <Navbar currentUser={currentUser} theme={theme} toggleTheme={toggleTheme} setHasUnreadNotifications={setHasUnreadNotifications} />
             <main className="app-main-container" style={{ maxWidth: '700px', margin: '2rem auto', padding: '0 1rem' }}>
                 <h2 style={{ color: '#ccff00' }}>Notifications</h2>
                 {loading ? (
@@ -72,6 +73,8 @@ export default function Notifications({ currentUser, theme, toggleTheme, setHasU
                                         {notif.type === 'like' && 'liked your post.'}
                                         {notif.type === 'reply' && 'replied to your post.'}
                                         {notif.type === 'follow' && 'started following you.'}
+                                        {notif.type === 'new_post' && 'created a new post.'}
+                                        {notif.type === 'self_post' && 'Your post was successfully published!'}
                                     </span>
                                 </div>
                                 {notif.post_id && (
