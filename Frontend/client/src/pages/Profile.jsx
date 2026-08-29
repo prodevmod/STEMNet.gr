@@ -656,6 +656,9 @@ export default function Profile({ currentUser, setCurrentUser, theme, toggleThem
                                                 </Link>
                                             </div>
 
+                                            {/* COMMENT ACCORDION */}
+                                            {isCommentsOpen && (
+                                                <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px dashed var(--border-color)' }}>
 
                                                     <form onSubmit={(e) => handleAddComment(post.id, e)} style={{ display: 'flex', gap: '0.5rem' }}>
                                                         <input
