@@ -3,7 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 
 // Import your SVGs here
 import bellIcon from '../assets/bell.svg';
-import notificationsOnIcon from '../assets/notifications_on.svg';
+import notificationsOnIcon from '../assets/notification_on.svg';
 
 export default function Navbar({ currentUser, setCurrentUser, theme, toggleTheme, hasUnreadNotifications }) {
     const navigate = useNavigate();
