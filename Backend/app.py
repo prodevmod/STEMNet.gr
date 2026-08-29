@@ -240,7 +240,6 @@ def upgrade_database():
             db.cursor().executescript(schema_script)
         db.commit()
 
-        # Safely add missing columns to PostgreSQL or SQLite without crashing
         alter_cols = [
             ("posts", "parent_id INTEGER"),
             ("posts", "event_type TEXT"),
@@ -477,10 +476,7 @@ def search():
 @login_required
 def create_post():
     db = get_db()
-    
-
     current_user_id = g.user["id"]
-    current_user_username = g.user["username"] 
     
     content = request.form.get("content", "").strip()
     category = request.form.get("category", "").strip()
@@ -518,38 +514,34 @@ def create_post():
     )
     post_id = cursor.lastrowid
 
-
     db.execute(
         """
-        INSERT INTO notifications (user_id, actor_username, type, post_id, is_read)
-        VALUES (?, 'System', 'self_post', ?, 0)
+        INSERT INTO notifications (user_id, actor_id, type, post_id, is_read)
+        VALUES (?, ?, 'self_post', ?, 0)
         """,
-        (current_user_id, post_id)
+        (current_user_id, current_user_id, post_id)
     )
-
 
     if parent_id:
         parent_author = db.execute("SELECT user_id FROM posts WHERE id = ?", (parent_id,)).fetchone()
         if parent_author and parent_author["user_id"] != current_user_id:
-
             db.execute(
                 """
-                INSERT INTO notifications (user_id, actor_username, type, post_id, is_read) 
+                INSERT INTO notifications (user_id, actor_id, type, post_id, is_read) 
                 VALUES (?, ?, 'reply', ?, 0)
                 """,
-                (parent_author["user_id"], current_user_username, post_id)
+                (parent_author["user_id"], current_user_id, post_id)
             )
-            
 
     elif not parent_id:
         db.execute(
             """
-            INSERT INTO notifications (user_id, actor_username, type, post_id, is_read)
+            INSERT INTO notifications (user_id, actor_id, type, post_id, is_read)
             SELECT follower_id, ?, 'new_post', ?, 0
-            FROM followers 
-            WHERE followed_id = ?
+            FROM follows 
+            WHERE following_id = ?
             """,
-            (current_user_username, post_id, current_user_id)
+            (current_user_id, post_id, current_user_id)
         )
 
     db.commit()
@@ -604,7 +596,7 @@ def api_get_single_post(post_id):
     ).fetchone()
     
     if not post:
-        return jsonify({"error": "Event not found or has expired."}), 404
+        return jsonify({"error": "Post not found."}), 404
         
     post_dict = dict(post)
     
@@ -615,10 +607,10 @@ def api_get_single_post(post_id):
                (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id AND likes.user_id = ?) AS user_liked
         FROM posts 
         JOIN users ON posts.user_id = users.id 
-        WHERE posts.parent_id = ? OR posts.reply_to = ?
+        WHERE posts.parent_id = ?
         ORDER BY posts.created_at ASC
         """,
-        (current_user_id, post_id, str(post_id))
+        (current_user_id, post_id)
     ).fetchall()
     
     comments = [dict(row) for row in comments_cursor]
@@ -1216,9 +1208,9 @@ def api_get_notifications():
     db = get_db()
     notifications = db.execute(
         """
-        SELECT n.*, n.actor_username, u.profile_pic AS actor_pic, p.content AS post_content
+        SELECT n.*, u.username AS actor_username, u.profile_pic AS actor_pic, p.content AS post_content
         FROM notifications n
-        LEFT JOIN users u ON u.username = n.actor_username
+        LEFT JOIN users u ON u.id = n.actor_id
         LEFT JOIN posts p ON n.post_id = p.id
         WHERE n.user_id = ?
         ORDER BY n.created_at DESC
