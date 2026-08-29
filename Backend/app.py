@@ -247,7 +247,13 @@ def upgrade_database():
             ("posts", "event_location TEXT"),
             ("posts", "group_id INTEGER"),
             ("users", "failed_attempts INTEGER DEFAULT 0"),
-            ("users", "locked_until REAL DEFAULT 0")
+            ("users", "locked_until REAL DEFAULT 0"),
+            ("notifications", "user_id INTEGER"),
+            ("notifications", "actor_id INTEGER"),
+            ("notifications", "type TEXT"),
+            ("notifications", "post_id INTEGER"),
+            ("notifications", "is_read INTEGER DEFAULT 0"),
+            ("notifications", "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
         ]
 
         if is_postgres:
@@ -477,15 +483,15 @@ def search():
 def create_post():
     db = get_db()
     current_user_id = g.user["id"]
-    
+
     content = request.form.get("content", "").strip()
     category = request.form.get("category", "").strip()
     parent_id = request.form.get("reply_to", type=int)
     group_id = request.form.get("group_id", type=int)
-    
-    if not content: 
+
+    if not content:
         return jsonify({"error": "Content cannot be empty."}), 400
-    
+
     github_link = request.form.get("github_link", "").strip() or None
     event_type = request.form.get("event_type", "").strip() if category == "Events" else None
     event_time = request.form.get("event_time", "").strip() if category == "Events" else None
@@ -507,44 +513,47 @@ def create_post():
                 app.logger.error(f"Supabase upload error: {e}")
                 return jsonify({"error": "Failed to upload media."}), 500
 
-    cursor = db.execute(
-        """INSERT INTO posts (user_id, content, media_path, github_link, category, parent_id, event_type, event_time, event_location, group_id) 
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-        (current_user_id, content, media_path, github_link, category, parent_id, event_type, event_time, event_location, group_id)
-    )
-    post_id = cursor.lastrowid
+    try:
+        cursor = db.execute(
+            """INSERT INTO posts (user_id, content, media_path, github_link, category, parent_id, event_type, event_time, event_location, group_id)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (current_user_id, content, media_path, github_link, category, parent_id, event_type, event_time, event_location, group_id)
+        )
+        post_id = cursor.lastrowid
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        app.logger.error(f"Post insert error: {e}")
+        return jsonify({"error": "Failed to create post."}), 500
 
-    db.execute(
-        """
-        INSERT INTO notifications (user_id, actor_id, type, post_id, is_read)
-        VALUES (?, ?, 'self_post', ?, 0)
-        """,
-        (current_user_id, current_user_id, post_id)
-    )
-
-    if parent_id:
-        parent_author = db.execute("SELECT user_id FROM posts WHERE id = ?", (parent_id,)).fetchone()
-        if parent_author and parent_author["user_id"] != current_user_id:
-            db.execute(
-                """
-                INSERT INTO notifications (user_id, actor_id, type, post_id, is_read) 
-                VALUES (?, ?, 'reply', ?, 0)
-                """,
-                (parent_author["user_id"], current_user_id, post_id)
-            )
-
-    elif not parent_id:
+    try:
         db.execute(
-            """
-            INSERT INTO notifications (user_id, actor_id, type, post_id, is_read)
-            SELECT follower_id, ?, 'new_post', ?, 0
-            FROM follows 
-            WHERE following_id = ?
-            """,
-            (current_user_id, post_id, current_user_id)
+            """INSERT INTO notifications (user_id, actor_id, type, post_id, is_read)
+               VALUES (?, ?, 'self_post', ?, 0)""",
+            (current_user_id, current_user_id, post_id)
         )
 
-    db.commit()
+        if parent_id:
+            parent_author = db.execute("SELECT user_id FROM posts WHERE id = ?", (parent_id,)).fetchone()
+            if parent_author and parent_author["user_id"] != current_user_id:
+                db.execute(
+                    """INSERT INTO notifications (user_id, actor_id, type, post_id, is_read)
+                       VALUES (?, ?, 'reply', ?, 0)""",
+                    (parent_author["user_id"], current_user_id, post_id)
+                )
+        else:
+            db.execute(
+                """INSERT INTO notifications (user_id, actor_id, type, post_id, is_read)
+                   SELECT follower_id, ?, 'new_post', ?, 0
+                   FROM follows
+                   WHERE following_id = ?""",
+                (current_user_id, post_id, current_user_id)
+            )
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        app.logger.error(f"Notification insert error: {e}")
+
     return jsonify({"success": True, "post_id": post_id}), 201
 
 @app.route("/api/posts", methods=["GET"])
@@ -1206,39 +1215,50 @@ def get_group_details(group_id):
 @login_required
 def api_get_notifications():
     db = get_db()
-    notifications = db.execute(
-        """
-        SELECT n.*, u.username AS actor_username, u.profile_pic AS actor_pic, p.content AS post_content
-        FROM notifications n
-        LEFT JOIN users u ON u.id = n.actor_id
-        LEFT JOIN posts p ON n.post_id = p.id
-        WHERE n.user_id = ?
-        ORDER BY n.created_at DESC
-        """,
-        (g.user["id"],)
-    ).fetchall()
-    return jsonify([dict(row) for row in notifications]), 200
+    try:
+        notifications = db.execute(
+            """SELECT n.*, u.username AS actor_username, u.profile_pic AS actor_pic, p.content AS post_content
+               FROM notifications n
+               LEFT JOIN users u ON u.id = n.actor_id
+               LEFT JOIN posts p ON n.post_id = p.id
+               WHERE n.user_id = ?
+               ORDER BY n.created_at DESC""",
+            (g.user["id"],)
+        ).fetchall()
+        return jsonify([dict(row) for row in notifications]), 200
+    except Exception as e:
+        app.logger.error(f"Notifications fetch error: {e}")
+        return jsonify({"error": "Failed to load notifications."}), 500
 
 @app.route("/api/notifications/unread", methods=["GET"])
 @login_required
 def check_unread():
     db = get_db()
-    count = db.execute(
-        "SELECT COUNT(*) as count FROM notifications WHERE user_id = ? AND is_read = 0", 
-        (g.user["id"],)
-    ).fetchone()
-    return jsonify({"has_unread": count["count"] > 0}), 200
+    try:
+        count = db.execute(
+            "SELECT COUNT(*) as count FROM notifications WHERE user_id = ? AND is_read = 0",
+            (g.user["id"],)
+        ).fetchone()
+        return jsonify({"has_unread": count["count"] > 0}), 200
+    except Exception as e:
+        app.logger.error(f"Unread check error: {e}")
+        return jsonify({"has_unread": False}), 200
 
 @app.route("/api/notifications/read", methods=["POST"])
 @login_required
 def mark_notifications_read():
     db = get_db()
-    db.execute(
-        "UPDATE notifications SET is_read = 1 WHERE user_id = ? AND is_read = 0", 
-        (g.user["id"],)
-    )
-    db.commit()
-    return jsonify({"success": True}), 200
+    try:
+        db.execute(
+            "UPDATE notifications SET is_read = 1 WHERE user_id = ? AND is_read = 0",
+            (g.user["id"],)
+        )
+        db.commit()
+        return jsonify({"success": True}), 200
+    except Exception as e:
+        db.rollback()
+        app.logger.error(f"Mark read error: {e}")
+        return jsonify({"error": "Failed to update notifications."}), 500
 
 # Error Handlers for API
 @app.errorhandler(404)
