@@ -78,7 +78,6 @@ export default function Notifications({ currentUser, theme, toggleTheme, setHasU
                                     </span>
                                 </div>
                                 {notif.post_id && (
-                                    /* FIXED: Point to /post/:id instead of /posts/:postId to load PostThread properly */
                                     <Link to={`/post/${notif.post_id}`} className="btn btn-primary" style={{ fontSize: '0.85rem', textDecoration: 'none', padding: '0.3rem 0.6rem' }}>
                                         View
                                     </Link>
