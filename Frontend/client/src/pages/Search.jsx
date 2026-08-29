@@ -250,6 +250,11 @@ export default function Search({ currentUser }) {
                                                     </span>
                                                 </div>
                                             )}
+
+                                            {/* Added post content display here */}
+                                            <p style={{ marginTop: '10px', fontSize: '0.95rem', color: 'inherit', wordBreak: 'break-word' }}>
+                                                {post.content}
+                                            </p>
                                         </div>
                                     ))}
                                 </div>

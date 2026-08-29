@@ -656,19 +656,6 @@ export default function Profile({ currentUser, setCurrentUser, theme, toggleThem
                                                 </Link>
                                             </div>
 
-                                            {/* COMMENT ACCORDION */}
-                                            {isCommentsOpen && (
-                                                <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px dashed var(--border-color)' }}>
-                                                    {commentsList.length > 0 && (
-                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '0.75rem' }}>
-                                                            {commentsList.map((c, cIdx) => (
-                                                                <div key={c.id || cIdx} style={{ fontSize: '0.85rem', background: 'var(--border-color)', padding: '0.5rem 0.75rem', borderRadius: '6px' }}>
-                                                                    <strong>@{c.username || c.user?.username}: </strong>
-                                                                    <span>{c.content || c.text}</span>
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    )}
 
                                                     <form onSubmit={(e) => handleAddComment(post.id, e)} style={{ display: 'flex', gap: '0.5rem' }}>
                                                         <input
@@ -690,8 +677,7 @@ export default function Profile({ currentUser, setCurrentUser, theme, toggleThem
                                                             Reply
                                                         </button>
                                                     </form>
-                                                </div>
-                                            )}
+
                                         </div>
                                     );
                                 })}
