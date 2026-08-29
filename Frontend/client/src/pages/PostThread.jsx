@@ -88,6 +88,7 @@ export default function PostThread({ currentUser, setCurrentUser, theme, toggleT
     const [commentContent, setCommentContent] = useState('');
     const [replyToId, setReplyToId] = useState(null);
     const [replyContent, setReplyContent] = useState('');
+    const [showMainReplyForm, setShowMainReplyForm] = useState(false);
     const [submitting, setSubmitting] = useState(false);
 
     const fetchThread = useCallback(async () => {
@@ -119,6 +120,38 @@ export default function PostThread({ currentUser, setCurrentUser, theme, toggleT
     useEffect(() => {
         fetchThread();
     }, [fetchThread]);
+
+    const toggleMainPostLike = async () => {
+        if (!currentUser) {
+            alert('Please log in to like posts.');
+            return;
+        }
+
+        setThreadData(prev => {
+            if (!prev || !prev.post) return prev;
+            const currentlyLiked = Boolean(prev.post.user_liked);
+            const count = Number(prev.post.like_count) || 0;
+            return {
+                ...prev,
+                post: {
+                    ...prev.post,
+                    user_liked: !currentlyLiked ? 1 : 0,
+                    like_count: !currentlyLiked ? count + 1 : Math.max(0, count - 1)
+                }
+            };
+        });
+
+        try {
+            const response = await fetch(`/api/posts/${postId}/like`, {
+                method: 'POST',
+                credentials: 'include'
+            });
+            if (!response.ok) throw new Error('Failed to toggle post like');
+        } catch (err) {
+            console.error('Error liking post:', err);
+            fetchThread();
+        }
+    };
 
     const toggleCommentLike = async (commentId) => {
         if (!currentUser) {
@@ -187,6 +220,7 @@ export default function PostThread({ currentUser, setCurrentUser, theme, toggleT
                     setReplyToId(null);
                 } else {
                     setCommentContent('');
+                    setShowMainReplyForm(false);
                 }
                 await fetchThread();
             } else {
@@ -211,12 +245,30 @@ export default function PostThread({ currentUser, setCurrentUser, theme, toggleT
             if (res.ok) {
                 navigate('/'); 
             } else {
-                console.error('Failed to delete post');
                 alert('Failed to delete the post. Please try again.');
             }
         } catch (err) {
             console.error('Error deleting post:', err);
             alert('An error occurred while deleting the post.');
+        }
+    };
+
+    const handleDeleteComment = async (commentId) => {
+        if (!window.confirm("Are you sure you want to delete this comment?")) return;
+
+        try {
+            const res = await fetch(`/api/posts/${commentId}/delete`, {
+                method: 'DELETE',
+                credentials: 'include'
+            });
+
+            if (res.ok) {
+                await fetchThread();
+            } else {
+                alert('Failed to delete comment.');
+            }
+        } catch (err) {
+            console.error('Error deleting comment:', err);
         }
     };
 
@@ -236,6 +288,8 @@ export default function PostThread({ currentUser, setCurrentUser, theme, toggleT
 
     const renderCommentItem = (comment) => {
         const replyImage = getPostImage(comment);
+        const isCommentOwner = currentUser && currentUser.username === comment.username;
+
         return (
             <div
                 key={comment.id}
@@ -294,61 +348,98 @@ export default function PostThread({ currentUser, setCurrentUser, theme, toggleT
                     </div>
                 )}
 
-                {/* Comment Actions (Rendered for all comments including user's own) */}
+                {/* Comment Actions: Left (Like & Reply), Right (Edit & Delete for Owner) */}
                 <div
                     style={{
                         display: 'flex',
-                        gap: '1.25rem',
+                        justify: 'space-between',
                         alignItems: 'center',
                         marginTop: '0.5rem',
                     }}
                 >
-                    <button
-                        type="button"
-                        onClick={() => toggleCommentLike(comment.id)}
-                        style={{
-                            background: 'none',
-                            border: 'none',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '0.4rem',
-                            padding: 0,
-                            color: theme === 'dark' ? '#f3f4f6' : '#1e293b',
-                            fontSize: '0.85rem',
-                        }}
-                    >
-                        <img 
-                            src={comment.user_liked ? likedIcon : likeIcon} 
-                            alt={comment.user_liked ? 'Liked' : 'Like'} 
-                            style={{ width: '18px', height: '18px', display: 'block' }} 
-                        />
-                        <span>{Number(comment.like_count) > 0 ? comment.like_count : 'Like'}</span>
-                    </button>
+                    <div style={{ display: 'flex', gap: '1.25rem', alignItems: 'center' }}>
+                        <button
+                            type="button"
+                            onClick={() => toggleCommentLike(comment.id)}
+                            style={{
+                                background: 'none',
+                                border: 'none',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.4rem',
+                                padding: 0,
+                                color: theme === 'dark' ? '#f3f4f6' : '#1e293b',
+                                fontSize: '0.85rem',
+                            }}
+                        >
+                            <img 
+                                src={comment.user_liked ? likedIcon : likeIcon} 
+                                alt={comment.user_liked ? 'Liked' : 'Like'} 
+                                style={{ width: '18px', height: '18px', display: 'block' }} 
+                            />
+                            <span>{Number(comment.like_count) > 0 ? comment.like_count : 'Like'}</span>
+                        </button>
 
-                    <button
-                        type="button"
-                        onClick={() => setReplyToId(replyToId === comment.id ? null : comment.id)}
-                        title="Reply"
-                        style={{
-                            background: 'none',
-                            border: 'none',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '0.4rem',
-                            padding: 0,
-                            color: theme === 'dark' ? '#f3f4f6' : '#1e293b',
-                            fontSize: '0.85rem',
-                        }}
-                    >
-                        <img 
-                            src={commentIcon} 
-                            alt="Reply" 
-                            style={{ width: '18px', height: '18px', display: 'block' }} 
-                        />
-                        <span>Reply</span>
-                    </button>
+                        <button
+                            type="button"
+                            onClick={() => setReplyToId(replyToId === comment.id ? null : comment.id)}
+                            title="Reply"
+                            style={{
+                                background: 'none',
+                                border: 'none',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.4rem',
+                                padding: 0,
+                                color: theme === 'dark' ? '#f3f4f6' : '#1e293b',
+                                fontSize: '0.85rem',
+                            }}
+                        >
+                            <img 
+                                src={commentIcon} 
+                                alt="Reply" 
+                                style={{ width: '18px', height: '18px', display: 'block' }} 
+                            />
+                            <span>Reply</span>
+                        </button>
+                    </div>
+
+                    {isCommentOwner && (
+                        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                            <button
+                                type="button"
+                                onClick={() => navigate(`/post/edit/${comment.id}`)}
+                                style={{
+                                    background: 'none',
+                                    border: 'none',
+                                    color: theme === 'dark' ? '#ccff00' : '#000000',
+                                    cursor: 'pointer',
+                                    fontSize: '0.85rem',
+                                    fontWeight: '500',
+                                    padding: 0
+                                }}
+                            >
+                                Edit
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => handleDeleteComment(comment.id)}
+                                style={{
+                                    background: 'none',
+                                    border: 'none',
+                                    color: '#ef4444',
+                                    cursor: 'pointer',
+                                    fontSize: '0.85rem',
+                                    fontWeight: '500',
+                                    padding: 0
+                                }}
+                            >
+                                Delete
+                            </button>
+                        </div>
+                    )}
                 </div>
 
                 {replyToId === comment.id && (
@@ -466,6 +557,7 @@ export default function PostThread({ currentUser, setCurrentUser, theme, toggleT
                     </div>
                 )}
 
+                {/* Main Post Card */}
                 <div className="card" style={{ padding: '1.25rem', backgroundColor: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: '8px', marginBottom: '1.5rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' }}>
                         <Link to={`/profile/${post.username}`} style={{ fontWeight: 'bold', color: 'var(--primary-color)', textDecoration: 'none' }}>
@@ -480,53 +572,118 @@ export default function PostThread({ currentUser, setCurrentUser, theme, toggleT
                         </div>
                     )}
 
-                    {/* Right-aligned Edit & Delete Buttons for Post Owner */}
-                    {isOwner && (
-                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid var(--border-color)' }}>
-                            <button 
-                                onClick={() => navigate(`/post/edit/${postId}`)}
-                                style={{ 
-                                    padding: '0.4rem 1rem', 
-                                    backgroundColor: 'transparent', 
-                                    color: theme === 'dark' ? '#ccff00' : '#000000',
-                                    border: '1px solid ' + (theme === 'dark' ? '#ccff00' : '#000000'),
-                                    borderRadius: '4px',
-                                    cursor: 'pointer',
-                                    fontWeight: '500'
-                                }}
-                            >
-                                Edit
-                            </button>
-                            <button 
-                                onClick={handleDeletePost}
-                                style={{ 
-                                    padding: '0.4rem 1rem', 
-                                    backgroundColor: '#ef4444', 
-                                    color: '#ffffff', 
+                    {/* Main Post Action Bar: Left (Like & Reply), Right (Edit & Delete for Owner) */}
+                    <div
+                        style={{
+                            display: 'flex',
+                            justify: 'space-between',
+                            alignItems: 'center',
+                            marginTop: '1rem',
+                            paddingTop: '1rem',
+                            borderTop: '1px solid var(--border-color)',
+                        }}
+                    >
+                        <div style={{ display: 'flex', gap: '1.25rem', alignItems: 'center' }}>
+                            <button
+                                type="button"
+                                onClick={toggleMainPostLike}
+                                style={{
+                                    background: 'none',
                                     border: 'none',
-                                    borderRadius: '4px',
                                     cursor: 'pointer',
-                                    fontWeight: '500'
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '0.4rem',
+                                    padding: 0,
+                                    color: theme === 'dark' ? '#f3f4f6' : '#1e293b',
+                                    fontSize: '0.9rem',
                                 }}
                             >
-                                Delete
+                                <img 
+                                    src={post.user_liked ? likedIcon : likeIcon} 
+                                    alt={post.user_liked ? 'Liked' : 'Like'} 
+                                    style={{ width: '18px', height: '18px', display: 'block' }} 
+                                />
+                                <span>{Number(post.like_count) > 0 ? post.like_count : 'Like'}</span>
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={() => setShowMainReplyForm(prev => !prev)}
+                                title="Reply"
+                                style={{
+                                    background: 'none',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '0.4rem',
+                                    padding: 0,
+                                    color: theme === 'dark' ? '#f3f4f6' : '#1e293b',
+                                    fontSize: '0.9rem',
+                                }}
+                            >
+                                <img 
+                                    src={commentIcon} 
+                                    alt="Reply" 
+                                    style={{ width: '18px', height: '18px', display: 'block' }} 
+                                />
+                                <span>Reply</span>
                             </button>
                         </div>
-                    )}
+
+                        {isOwner && (
+                            <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                                <button 
+                                    onClick={() => navigate(`/post/edit/${postId}`)}
+                                    style={{ 
+                                        padding: '0.4rem 1rem', 
+                                        backgroundColor: 'transparent', 
+                                        color: theme === 'dark' ? '#ccff00' : '#000000',
+                                        border: '1px solid ' + (theme === 'dark' ? '#ccff00' : '#000000'),
+                                        borderRadius: '4px',
+                                        cursor: 'pointer',
+                                        fontWeight: '500',
+                                        fontSize: '0.85rem'
+                                    }}
+                                >
+                                    Edit
+                                </button>
+                                <button 
+                                    onClick={handleDeletePost}
+                                    style={{ 
+                                        padding: '0.4rem 1rem', 
+                                        backgroundColor: '#ef4444', 
+                                        color: '#ffffff', 
+                                        border: 'none',
+                                        borderRadius: '4px',
+                                        cursor: 'pointer',
+                                        fontWeight: '500',
+                                        fontSize: '0.85rem'
+                                    }}
+                                >
+                                    Delete
+                                </button>
+                            </div>
+                        )}
+                    </div>
                 </div>
 
-                <form onSubmit={(e) => handleCreateComment(e)} style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>
-                    <input
-                        type="text"
-                        placeholder="Post your reply..."
-                        value={commentContent}
-                        onChange={(e) => setCommentContent(e.target.value)}
-                        style={inputStyle}
-                    />
-                    <button type="submit" disabled={submitting || !commentContent.trim()} className="btn btn-primary">
-                        {submitting ? 'Posting...' : 'Reply'}
-                    </button>
-                </form>
+                {/* Optional Top-Level Reply Form (toggled via Reply button) */}
+                {showMainReplyForm && (
+                    <form onSubmit={(e) => handleCreateComment(e)} style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>
+                        <input
+                            type="text"
+                            placeholder="Post your reply..."
+                            value={commentContent}
+                            onChange={(e) => setCommentContent(e.target.value)}
+                            style={inputStyle}
+                        />
+                        <button type="submit" disabled={submitting || !commentContent.trim()} className="btn btn-primary">
+                            {submitting ? 'Posting...' : 'Reply'}
+                        </button>
+                    </form>
+                )}
 
                 <h3 style={{ color: theme === 'dark' ? '#f3f4f6' : '#1e293b' }}>Replies</h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '1rem' }}>
