@@ -83,7 +83,9 @@ export default function Recaptcha({ onChange, onExpired }) {
                     overflow: hidden !important;
                 }
             `}</style>
-            <div ref={containerRef}></div>
+            <div style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
+                <div ref={containerRef}></div>
+            </div>
         </>
     );
 }
