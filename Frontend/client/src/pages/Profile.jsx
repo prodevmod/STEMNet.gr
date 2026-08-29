@@ -176,7 +176,7 @@ export default function Profile({ currentUser, setCurrentUser, theme, toggleThem
             );
 
             try {
-                const res = await fetch(`/api/posts/${postId}/like/`, {
+                const res = await fetch(`/api/posts/${postId}/like`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
