@@ -2,11 +2,12 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 
-export default function Notifications({ currentUser, theme, toggleTheme }) {
+export default function Notifications({ currentUser, theme, toggleTheme, setHasUnreadNotifications }) {
     const [notifications, setNotifications] = useState([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        // 1. Fetch the notifications
         fetch('/api/notifications', { credentials: 'include' })
             .then(res => {
                 if (!res.ok) throw new Error('Failed to fetch notifications');
@@ -26,7 +27,17 @@ export default function Notifications({ currentUser, theme, toggleTheme }) {
             .finally(() => {
                 setLoading(false);
             });
-    }, []);
+
+        // 2. Mark them as read in the backend so the bell stops glowing
+        fetch('/api/notifications/read', { method: 'POST', credentials: 'include' })
+            .then(() => {
+                // If you pass this prop from App.jsx, it will instantly clear the bell
+                if (setHasUnreadNotifications) {
+                    setHasUnreadNotifications(false);
+                }
+            })
+            .catch(err => console.error('Error marking as read:', err));
+    }, [setHasUnreadNotifications]);
 
     return (
         <div>
@@ -58,7 +69,9 @@ export default function Notifications({ currentUser, theme, toggleTheme }) {
                                         @{notif.actor_username}
                                     </Link>
                                     <span style={{ color: 'var(--text-secondary)' }}>
-                                        {notif.type === 'like' ? 'liked your post.' : 'replied to your post.'}
+                                        {notif.type === 'like' && 'liked your post.'}
+                                        {notif.type === 'reply' && 'replied to your post.'}
+                                        {notif.type === 'follow' && 'started following you.'}
                                     </span>
                                 </div>
                                 {notif.post_id && (

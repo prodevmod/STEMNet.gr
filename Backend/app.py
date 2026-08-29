@@ -405,113 +405,6 @@ def logout():
     session.clear()
     return jsonify({"success": True}), 200
 
-@app.route("/api/profile/edit", methods=["POST"])
-@login_required
-def edit_profile():
-    data = request.form if request.form else (request.get_json(silent=True) or {})
-    
-    age_raw = data.get("age")
-    age = int(age_raw) if age_raw and str(age_raw).isdigit() else None
-    grade = data.get("grade", "").strip()
-    interest = data.get("interest", "").strip()
-    bio = data.get("bio", "").strip()
-    github_user = data.get("github_user", "").strip()
-    linkedin_url = data.get("linkedin_url", "").strip()
-    custom_link_1 = data.get("custom_link_1", "").strip()
-    custom_link_2 = data.get("custom_link_2", "").strip()
-    custom_link_3 = data.get("custom_link_3", "").strip()
-    custom_link_4 = data.get("custom_link_4", "").strip()
-    custom_link_5 = data.get("custom_link_5", "").strip()
-
-    file = request.files.get("profile_pic")
-    profile_pic_url = None
-
-    if file and file.filename != '' and allowed_pfp_file(file.filename):
-        filename = secure_filename(file.filename)
-        unique_filename = f"pfp_{g.user['id']}_{int(time.time())}_{filename}"
-        if supabase:
-            try:
-                supabase.storage.from_("uploads").upload(
-                    path=unique_filename, file=file.read(),
-                    file_options={"content-type": file.content_type, "upsert": "true"}
-                )
-                profile_pic_url = supabase.storage.from_("uploads").get_public_url(unique_filename)
-            except Exception as e:
-                app.logger.error(f"Supabase PFP upload error: {e}")
-                return jsonify({"error": "Failed to upload image"}), 500
-        else:
-            filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
-            file.save(filepath)
-            profile_pic_url = f"/static/uploads/{unique_filename}"
-
-    db = get_db()
-    try:
-        if profile_pic_url:
-            db.execute(
-                """UPDATE users SET age = ?, grade = ?, interest = ?, bio = ?, 
-                   github_user = ?, linkedin_url = ?, custom_link_1 = ?, custom_link_2 = ?, 
-                   custom_link_3 = ?, custom_link_4 = ?, custom_link_5 = ?, profile_pic = ? 
-                   WHERE id = ?""",
-                (age, grade, interest, bio, github_user, linkedin_url, 
-                 custom_link_1, custom_link_2, custom_link_3, custom_link_4, custom_link_5, 
-                 profile_pic_url, g.user["id"])
-            )
-        else:
-            db.execute(
-                """UPDATE users SET age = ?, grade = ?, interest = ?, bio = ?, 
-                   github_user = ?, linkedin_url = ?, custom_link_1 = ?, custom_link_2 = ?, 
-                   custom_link_3 = ?, custom_link_4 = ?, custom_link_5 = ? 
-                   WHERE id = ?""",
-                (age, grade, interest, bio, github_user, linkedin_url, 
-                 custom_link_1, custom_link_2, custom_link_3, custom_link_4, custom_link_5, 
-                 g.user["id"])
-            )
-        db.commit()
-    except Exception as e:
-        db.rollback()
-        app.logger.error(f"Profile update error: {e}")
-        return jsonify({"error": "Database error updating profile."}), 500
-
-    updated_user = db.execute("SELECT * FROM users WHERE id = ?", (g.user["id"],)).fetchone()
-    user_dict = sanitize_profile_links(dict(updated_user))
-    user_dict.pop("password_hash", None)
-
-    return jsonify({"success": True, "user": user_dict}), 200
-
-@app.route("/api/followers/<username>", methods=["GET"])
-def get_followers(username):
-    db = get_db()
-    target_user = db.execute("SELECT id FROM users WHERE username = ?", (username,)).fetchone()
-    if not target_user:
-        return jsonify({"error": "User not found"}), 404
-
-    followers = db.execute(
-        """SELECT u.id, u.username, u.profile_pic, u.bio 
-           FROM follows f 
-           JOIN users u ON f.follower_id = u.id 
-           WHERE f.following_id = ?""",
-        (target_user["id"],)
-    ).fetchall()
-
-    return jsonify([dict(row) for row in followers]), 200
-
-@app.route("/api/following/<username>", methods=["GET"])
-def get_following(username):
-    db = get_db()
-    target_user = db.execute("SELECT id FROM users WHERE username = ?", (username,)).fetchone()
-    if not target_user:
-        return jsonify({"error": "User not found"}), 404
-
-    following = db.execute(
-        """SELECT u.id, u.username, u.profile_pic, u.bio 
-           FROM follows f 
-           JOIN users u ON f.following_id = u.id 
-           WHERE f.follower_id = ?""",
-        (target_user["id"],)
-    ).fetchall()
-
-    return jsonify([dict(row) for row in following]), 200
-
 @app.route('/api/search', methods=['GET'])
 def search():
     query = request.args.get('q', '').strip()
@@ -578,61 +471,7 @@ def verify_email(token):
     db.commit()
     return redirect(f"{FRONTEND_URL}/login?verified=true")
 
-@app.route("/api/posts/<int:post_id>/like", methods=["POST"])
-def toggle_like(post_id):
-    if not g.get("user"):
-        return jsonify({"error": "Unauthorized"}), 401
-
-    db = get_db()
-    user_id = g.user["id"]
-    
-    existing_like = db.execute(
-        "SELECT * FROM likes WHERE user_id = ? AND post_id = ?", 
-        (user_id, post_id)
-    ).fetchone()
-
-    try:
-        if existing_like:
-            db.execute("DELETE FROM likes WHERE user_id = ? AND post_id = ?", (user_id, post_id))
-            liked = False
-        else:
-            db.execute("INSERT INTO likes (user_id, post_id) VALUES (?, ?)", (user_id, post_id))
-            liked = True
-        
-        db.commit()
-        return jsonify({"success": True, "liked": liked}), 200
-    except Exception as e:
-        db.rollback()
-        return jsonify({"error": str(e)}), 500
-
-@app.route("/api/posts", methods=["GET"])
-def get_posts():
-    db = get_db()
-    current_user_id = g.user["id"] if g.get("user") else 0
-    category = request.args.get('category')
-    
-    query = """
-        SELECT posts.*, users.username, users.profile_pic,
-               parent_posts.content AS parent_content,
-               parent_users.username AS parent_username,
-               (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id) AS like_count,
-               (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id AND likes.user_id = ?) AS user_liked
-        FROM posts 
-        JOIN users ON posts.user_id = users.id 
-        LEFT JOIN posts AS parent_posts ON posts.parent_id = parent_posts.id 
-        LEFT JOIN users AS parent_users ON parent_posts.user_id = parent_users.id 
-        WHERE posts.category != 'Events' AND posts.group_id IS NULL
-    """
-    params = [current_user_id]
-    
-    if category:
-        query += " AND posts.category = ?"
-        params.append(category)
-        
-    query += " ORDER BY posts.created_at DESC"
-    posts = db.execute(query, params).fetchall()
-    return jsonify([dict(row) for row in posts]), 200
-
+#Post related Endpoints
 @app.route("/api/posts/create", methods=["POST"])
 @login_required
 def create_post():
@@ -682,6 +521,156 @@ def create_post():
     db.commit()
     return jsonify({"success": True, "post_id": post_id}), 201
 
+@app.route("/api/posts", methods=["GET"])
+def get_posts():
+    db = get_db()
+    current_user_id = g.user["id"] if g.get("user") else 0
+    category = request.args.get('category')
+    
+    query = """
+        SELECT posts.*, users.username, users.profile_pic,
+               parent_posts.content AS parent_content,
+               parent_users.username AS parent_username,
+               (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id) AS like_count,
+               (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id AND likes.user_id = ?) AS user_liked
+        FROM posts 
+        JOIN users ON posts.user_id = users.id 
+        LEFT JOIN posts AS parent_posts ON posts.parent_id = parent_posts.id 
+        LEFT JOIN users AS parent_users ON parent_posts.user_id = parent_users.id 
+        WHERE posts.group_id IS NULL
+    """
+    params = [current_user_id]
+    
+    if category:
+        query += " AND posts.category = ?"
+        params.append(category)
+    else:
+        query += " AND posts.category != 'Events'"
+        
+    query += " ORDER BY posts.created_at DESC"
+    posts = db.execute(query, params).fetchall()
+    
+    return jsonify([dict(row) for row in posts]), 200
+
+@app.route("/api/posts/<int:post_id>", methods=["GET"])
+def api_get_single_post(post_id):
+    db = get_db()
+    current_user_id = g.user["id"] if g.get("user") else 0
+
+    try:
+        db.execute(
+            """
+            DELETE FROM posts 
+            WHERE event_time IS NOT NULL 
+              AND event_time != '' 
+              AND (
+                  datetime(event_time) < datetime('now')
+                  OR date(event_time) < date('now')
+              )
+            """
+        )
+        db.commit()
+    except Exception as e:
+        db.rollback()
+
+
+    post = db.execute(
+        """
+        SELECT posts.*, users.username, users.profile_pic,
+               (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id) AS like_count,
+               (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id AND likes.user_id = ?) AS user_liked
+        FROM posts 
+        JOIN users ON posts.user_id = users.id 
+        WHERE posts.id = ?
+        """, 
+        (current_user_id, post_id)
+    ).fetchone()
+    
+    if not post:
+        return jsonify({"error": "Event not found or has expired."}), 404
+        
+    post_dict = dict(post)
+    
+    comments_cursor = db.execute(
+        """
+        SELECT posts.*, users.username, users.profile_pic,
+               (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id) AS like_count,
+               (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id AND likes.user_id = ?) AS user_liked
+        FROM posts 
+        JOIN users ON posts.user_id = users.id 
+        WHERE posts.parent_id = ? OR posts.reply_to = ?
+        ORDER BY posts.created_at ASC
+        """,
+        (current_user_id, post_id, str(post_id))
+    ).fetchall()
+    
+    comments = [dict(row) for row in comments_cursor]
+    
+    return jsonify({
+        "post": post_dict,
+        "comments": comments
+    }), 200
+
+@app.route("/api/posts/<int:post_id>", methods=["PUT", "POST"])
+def api_update_post(post_id):
+    if not g.get("user"):
+        return jsonify({"error": "Unauthorized"}), 401
+        
+    db = get_db()
+    user_id = g.user["id"]
+    
+    post = db.execute("SELECT * FROM posts WHERE id = ?", (post_id,)).fetchone()
+    if not post:
+        return jsonify({"error": "Post not found"}), 404
+        
+    if post["user_id"] != user_id:
+        return jsonify({"error": "Permission denied"}), 403
+        
+    data = request.get_json()
+    new_content = data.get("content")
+    
+    if not new_content:
+        return jsonify({"error": "Content cannot be empty"}), 400
+        
+    try:
+        db.execute("UPDATE posts SET content = ? WHERE id = ?", (new_content, post_id))
+        db.commit()
+        return jsonify({"success": True, "message": "Post updated successfully"}), 200
+    except Exception as e:
+        db.rollback()
+        return jsonify({"error": str(e)}), 500
+ 
+@app.route("/api/posts/<int:post_id>/comments", methods=["PUT","POST"])
+def api_update_comment(post_id):
+    if not g.get("user"):
+        return jsonify({"error": "Unauthorized"}), 401
+        
+    db = get_db()
+    user_id = g.user["id"]
+    
+    post = db.execute("SELECT * FROM posts WHERE id = ?", (post_id,)).fetchone()
+    if not post:
+        return jsonify({"error": "Post not found"}), 404
+        
+    if post["user_id"] != user_id:
+        return jsonify({"error": "Permission denied"}), 403
+        
+    data = request.get_json(silent=True)
+    if not data or "content" not in data:
+        return jsonify({"error": "Invalid request: JSON body with 'content' is required"}), 400
+        
+    new_content = data.get("content").strip()
+    if not new_content:
+        return jsonify({"error": "Content cannot be empty"}), 400
+        
+    try:
+        db.execute("UPDATE posts SET content = ? WHERE id = ?", (new_content, post_id))
+        db.commit()
+        return jsonify({"success": True, "message": "Post updated successfully"}), 200
+    except Exception as e:
+        db.rollback()
+        # TODO: app.logger.error(f"Database error: {str(e)}")
+        return jsonify({"error": "An internal server error occurred"}), 500
 
 @app.route("/api/posts/<int:post_id>", methods=["GET"])
 @app.route("/api/post/<int:post_id>", methods=["GET"])
@@ -824,126 +813,6 @@ def api_edit_post(post_id):
     except Exception as e:
         db.rollback()
         return jsonify({"error": str(e)}), 500
- 
-@app.route("/api/posts/<int:post_id>", methods=["GET"])
-def api_get_single_post(post_id):
-    db = get_db()
-    current_user_id = g.user["id"] if g.get("user") else 0
-
-    try:
-        db.execute(
-            """
-            DELETE FROM posts 
-            WHERE event_time IS NOT NULL 
-              AND event_time != '' 
-              AND (
-                  datetime(event_time) < datetime('now')
-                  OR date(event_time) < date('now')
-              )
-            """
-        )
-        db.commit()
-    except Exception as e:
-        db.rollback()
-
-
-    post = db.execute(
-        """
-        SELECT posts.*, users.username, users.profile_pic,
-               (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id) AS like_count,
-               (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id AND likes.user_id = ?) AS user_liked
-        FROM posts 
-        JOIN users ON posts.user_id = users.id 
-        WHERE posts.id = ?
-        """, 
-        (current_user_id, post_id)
-    ).fetchone()
-    
-    if not post:
-        return jsonify({"error": "Event not found or has expired."}), 404
-        
-    post_dict = dict(post)
-    
-    comments_cursor = db.execute(
-        """
-        SELECT posts.*, users.username, users.profile_pic,
-               (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id) AS like_count,
-               (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id AND likes.user_id = ?) AS user_liked
-        FROM posts 
-        JOIN users ON posts.user_id = users.id 
-        WHERE posts.parent_id = ? OR posts.reply_to = ?
-        ORDER BY posts.created_at ASC
-        """,
-        (current_user_id, post_id, str(post_id))
-    ).fetchall()
-    
-    comments = [dict(row) for row in comments_cursor]
-    
-    return jsonify({
-        "post": post_dict,
-        "comments": comments
-    }), 200
-
-@app.route("/api/posts/<int:post_id>", methods=["PUT", "POST"])
-def api_update_post(post_id):
-    if not g.get("user"):
-        return jsonify({"error": "Unauthorized"}), 401
-        
-    db = get_db()
-    user_id = g.user["id"]
-    
-    post = db.execute("SELECT * FROM posts WHERE id = ?", (post_id,)).fetchone()
-    if not post:
-        return jsonify({"error": "Post not found"}), 404
-        
-    if post["user_id"] != user_id:
-        return jsonify({"error": "Permission denied"}), 403
-        
-    data = request.get_json()
-    new_content = data.get("content")
-    
-    if not new_content:
-        return jsonify({"error": "Content cannot be empty"}), 400
-        
-    try:
-        db.execute("UPDATE posts SET content = ? WHERE id = ?", (new_content, post_id))
-        db.commit()
-        return jsonify({"success": True, "message": "Post updated successfully"}), 200
-    except Exception as e:
-        db.rollback()
-        return jsonify({"error": str(e)}), 500
- 
-@app.route("/api/posts/<int:post_id>/comments", methods=["PUT","POST"])
-def api_update_comment(post_id):
-    if not g.get("user"):
-        return jsonify({"error": "Unauthorized"}), 401
-        
-    db = get_db()
-    user_id = g.user["id"]
-    
-    post = db.execute("SELECT * FROM posts WHERE id = ?", (post_id,)).fetchone()
-    if not post:
-        return jsonify({"error": "Post not found"}), 404
-        
-    if post["user_id"] != user_id:
-        return jsonify({"error": "Permission denied"}), 403
-        
-    data = request.get_json(silent=True)
-    if not data or "content" not in data:
-        return jsonify({"error": "Invalid request: JSON body with 'content' is required"}), 400
-        
-    new_content = data.get("content").strip()
-    if not new_content:
-        return jsonify({"error": "Content cannot be empty"}), 400
-        
-    try:
-        db.execute("UPDATE posts SET content = ? WHERE id = ?", (new_content, post_id))
-        db.commit()
-        return jsonify({"success": True, "message": "Post updated successfully"}), 200
-    except Exception as e:
-        db.rollback()
-        # TODO: app.logger.error(f"Database error: {str(e)}")
-        return jsonify({"error": "An internal server error occurred"}), 500
 
 @app.route("/api/posts/<int:post_id>/delete", methods=["POST", "DELETE"])
 @login_required
@@ -976,7 +845,47 @@ def api_delete_post(post_id):
     except Exception as e:
         db.rollback()
         return jsonify({"error": str(e)}), 500
-    
+  
+@app.route("/api/posts/<int:post_id>/like", methods=["POST"])
+@login_required
+def toggle_like(post_id):
+    db = get_db()
+    user_id = g.user["id"]
+
+    # 1. Check if the post exists and get the author's ID
+    post = db.execute("SELECT user_id FROM posts WHERE id = ?", (post_id,)).fetchone()
+    if not post:
+        return jsonify({"error": "Post not found"}), 404
+
+    # 2. Check if the user already liked the post
+    existing_like = db.execute(
+        "SELECT * FROM likes WHERE user_id = ? AND post_id = ?", 
+        (user_id, post_id)
+    ).fetchone()
+
+    if existing_like:
+        # UNLIKE: Remove the like and the associated notification
+        db.execute("DELETE FROM likes WHERE user_id = ? AND post_id = ?", (user_id, post_id))
+        db.execute(
+            "DELETE FROM notifications WHERE user_id = ? AND actor_id = ? AND type = 'like' AND post_id = ?", 
+            (post["user_id"], user_id, post_id)
+        )
+    else:
+        # LIKE: Insert the like
+        db.execute("INSERT INTO likes (user_id, post_id) VALUES (?, ?)", (user_id, post_id))
+        
+        # Trigger the notification (Make sure they aren't liking their own post)
+        if post["user_id"] != user_id:
+            db.execute(
+                "INSERT INTO notifications (user_id, actor_id, type, post_id) VALUES (?, ?, 'like', ?)",
+                (post["user_id"], user_id, post_id)
+            )
+            
+    db.commit()
+    return jsonify({"success": True}), 200
+
+   
+#Profile related API Endpoints 
 @app.route("/api/profile/<username>", methods=["GET"])
 def profile(username):
     db = get_db()
@@ -1015,16 +924,110 @@ def profile(username):
         "is_following": is_following
     }), 200
 
+@app.route("/api/profile/edit", methods=["POST"])
+@login_required
+def edit_profile():
+    data = request.form if request.form else (request.get_json(silent=True) or {})
+    
+    age_raw = data.get("age")
+    age = int(age_raw) if age_raw and str(age_raw).isdigit() else None
+    grade = data.get("grade", "").strip()
+    interest = data.get("interest", "").strip()
+    bio = data.get("bio", "").strip()
+    github_user = data.get("github_user", "").strip()
+    linkedin_url = data.get("linkedin_url", "").strip()
+    custom_link_1 = data.get("custom_link_1", "").strip()
+    custom_link_2 = data.get("custom_link_2", "").strip()
+    custom_link_3 = data.get("custom_link_3", "").strip()
+    custom_link_4 = data.get("custom_link_4", "").strip()
+    custom_link_5 = data.get("custom_link_5", "").strip()
+
+    file = request.files.get("profile_pic")
+    profile_pic_url = None
+
+    if file and file.filename != '' and allowed_pfp_file(file.filename):
+        filename = secure_filename(file.filename)
+        unique_filename = f"pfp_{g.user['id']}_{int(time.time())}_{filename}"
+        if supabase:
+            try:
+                supabase.storage.from_("uploads").upload(
+                    path=unique_filename, file=file.read(),
+                    file_options={"content-type": file.content_type, "upsert": "true"}
+                )
+                profile_pic_url = supabase.storage.from_("uploads").get_public_url(unique_filename)
+            except Exception as e:
+                app.logger.error(f"Supabase PFP upload error: {e}")
+                return jsonify({"error": "Failed to upload image"}), 500
+        else:
+            filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
+            file.save(filepath)
+            profile_pic_url = f"/static/uploads/{unique_filename}"
+
+    db = get_db()
+    try:
+        if profile_pic_url:
+            db.execute(
+                """UPDATE users SET age = ?, grade = ?, interest = ?, bio = ?, 
+                   github_user = ?, linkedin_url = ?, custom_link_1 = ?, custom_link_2 = ?, 
+                   custom_link_3 = ?, custom_link_4 = ?, custom_link_5 = ?, profile_pic = ? 
+                   WHERE id = ?""",
+                (age, grade, interest, bio, github_user, linkedin_url, 
+                 custom_link_1, custom_link_2, custom_link_3, custom_link_4, custom_link_5, 
+                 profile_pic_url, g.user["id"])
+            )
+        else:
+            db.execute(
+                """UPDATE users SET age = ?, grade = ?, interest = ?, bio = ?, 
+                   github_user = ?, linkedin_url = ?, custom_link_1 = ?, custom_link_2 = ?, 
+                   custom_link_3 = ?, custom_link_4 = ?, custom_link_5 = ? 
+                   WHERE id = ?""",
+                (age, grade, interest, bio, github_user, linkedin_url, 
+                 custom_link_1, custom_link_2, custom_link_3, custom_link_4, custom_link_5, 
+                 g.user["id"])
+            )
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        app.logger.error(f"Profile update error: {e}")
+        return jsonify({"error": "Database error updating profile."}), 500
+
+    updated_user = db.execute("SELECT * FROM users WHERE id = ?", (g.user["id"],)).fetchone()
+    user_dict = sanitize_profile_links(dict(updated_user))
+    user_dict.pop("password_hash", None)
+
+    return jsonify({"success": True, "user": user_dict}), 200
+
 @app.route("/api/follow/<int:user_id>", methods=["POST"])
 @login_required
 def follow(user_id):
     db = get_db()
-    if g.user["id"] == user_id: return jsonify({"error": "Cannot follow yourself"}), 400
+    if g.user["id"] == user_id: 
+        return jsonify({"error": "Cannot follow yourself"}), 400
+        
     try:
-        db.execute("INSERT INTO follows (follower_id, following_id, created_at) VALUES (?, ?, CURRENT_TIMESTAMP) ON CONFLICT DO NOTHING", (g.user["id"], user_id))
-        db.commit()
+        # Check if already following to avoid duplicate notifications
+        existing = db.execute(
+            "SELECT 1 FROM follows WHERE follower_id = ? AND following_id = ?", 
+            (g.user["id"], user_id)
+        ).fetchone()
+        
+        if not existing:
+            # Insert the follow record
+            db.execute(
+                "INSERT INTO follows (follower_id, following_id, created_at) VALUES (?, ?, CURRENT_TIMESTAMP)", 
+                (g.user["id"], user_id)
+            )
+            
+            # Trigger the notification
+            db.execute(
+                "INSERT INTO notifications (user_id, actor_id, type, post_id) VALUES (?, ?, 'follow', NULL)",
+                (user_id, g.user["id"])
+            )
+            db.commit()
+            
         return jsonify({"success": True}), 200
-    except Exception:
+    except Exception as e:
+        print(f"Follow error: {e}")
         return jsonify({"error": "Database error"}), 500
 
 @app.route("/api/unfollow/<int:user_id>", methods=["POST"])
@@ -1038,58 +1041,41 @@ def unfollow(user_id):
     except Exception:
         return jsonify({"error": "Database error"}), 500
 
-@app.route("/api/notifications", methods=["GET"])
-@login_required
-def get_notifications():
+@app.route("/api/followers/<username>", methods=["GET"])
+def get_followers(username):
     db = get_db()
-    notifs = db.execute(
-        """SELECT n.*, u.username as actor_username, p.content as post_content 
-           FROM notifications n JOIN users u ON n.actor_id = u.id LEFT JOIN posts p ON n.post_id = p.id
-           WHERE n.user_id = ? ORDER BY n.created_at DESC""", (g.user["id"],)
+    target_user = db.execute("SELECT id FROM users WHERE username = ?", (username,)).fetchone()
+    if not target_user:
+        return jsonify({"error": "User not found"}), 404
+
+    followers = db.execute(
+        """SELECT u.id, u.username, u.profile_pic, u.bio 
+           FROM follows f 
+           JOIN users u ON f.follower_id = u.id 
+           WHERE f.following_id = ?""",
+        (target_user["id"],)
     ).fetchall()
-    
-    db.execute("UPDATE notifications SET is_read = 1 WHERE user_id = ? AND is_read = 0", (g.user["id"],))
-    db.commit()
-    return jsonify([dict(n) for n in notifs]), 200
 
+    return jsonify([dict(row) for row in followers]), 200
 
-@app.route("/api/groups", methods=["GET"])
-def get_groups():
+@app.route("/api/following/<username>", methods=["GET"])
+def get_following(username):
     db = get_db()
-    groups = db.execute("SELECT g.*, u.username FROM groups g JOIN users u ON g.user_id = u.id ORDER BY g.created_at DESC").fetchall()
-    return jsonify([dict(g) for g in groups]), 200
+    target_user = db.execute("SELECT id FROM users WHERE username = ?", (username,)).fetchone()
+    if not target_user:
+        return jsonify({"error": "User not found"}), 404
 
-@app.route("/api/notifications", methods=["GET"])
-def api_get_notifications():
-    if not g.get("user"):
-        return jsonify({"error": "Unauthorized"}), 401
-    db = get_db()
-    user_id = g.user["id"]
-    
-    notifications = db.execute(
-        """
-        SELECT notifications.*, users.username AS actor_username, users.profile_pic AS actor_pic
-        FROM notifications
-        JOIN users ON notifications.actor_id = users.id
-        WHERE notifications.user_id = ?
-        ORDER BY notifications.created_at DESC
-        """,
-        (user_id,)
+    following = db.execute(
+        """SELECT u.id, u.username, u.profile_pic, u.bio 
+           FROM follows f 
+           JOIN users u ON f.following_id = u.id 
+           WHERE f.follower_id = ?""",
+        (target_user["id"],)
     ).fetchall()
-    
-    return jsonify([dict(row) for row in notifications]), 200
 
-@app.route("/api/notifications/read", methods=["POST"])
-def api_mark_notifications_read():
-    if not g.get("user"):
-        return jsonify({"error": "Unauthorized"}), 401
-    db = get_db()
-    user_id = g.user["id"]
-    
-    db.execute("UPDATE notifications SET is_read = 1 WHERE user_id = ?", (user_id,))
-    db.commit()
-    return jsonify({"success": True}), 200
+    return jsonify([dict(row) for row in following]), 200
 
+# Events API Endpoint
 @app.route("/api/events", methods=["GET"])
 def get_events():
     db = get_db()
@@ -1121,6 +1107,7 @@ def get_events():
     
     return jsonify([dict(row) for row in events]), 200
 
+# Education API Endpoint
 @app.route('/api/education', methods=['GET'])
 def get_education_extras():
     return jsonify({
@@ -1128,7 +1115,31 @@ def get_education_extras():
         "category": "STEMNet Greece Student Extra Vault",
         "total_categories": 7
     })
+  
+# Group API Endpoints  
+@app.route("/api/groups/create", methods=["POST"])
+@login_required
+def create_group():
+    db = get_db()
+    name = request.form.get("name", "").strip()
+    description = request.form.get("description", "").strip()
     
+    if not name:
+        return jsonify({"error": "Group name cannot be empty."}), 400
+        
+    cursor = db.execute(
+        "INSERT INTO groups (user_id, name, description) VALUES (?, ?, ?)",
+        (g.user["id"], name, description)
+    )
+    db.commit()
+    return jsonify({"success": True, "group_id": cursor.lastrowid}), 201
+
+@app.route("/api/groups", methods=["GET"])
+def get_groups():
+    db = get_db()
+    groups = db.execute("SELECT g.*, u.username FROM groups g JOIN users u ON g.user_id = u.id ORDER BY g.created_at DESC").fetchall()
+    return jsonify([dict(g) for g in groups]), 200
+
 @app.route("/api/groups/<int:group_id>", methods=["GET"])
 def get_group_details(group_id):
     db = get_db()
@@ -1156,22 +1167,47 @@ def get_group_details(group_id):
         "posts": [dict(p) for p in posts]
     }), 200
 
-@app.route("/api/groups/create", methods=["POST"])
+#Notification API Endpoints
+@app.route("/api/notifications", methods=["GET"])
 @login_required
-def create_group():
+def api_get_notifications():
     db = get_db()
-    name = request.form.get("name", "").strip()
-    description = request.form.get("description", "").strip()
     
-    if not name:
-        return jsonify({"error": "Group name cannot be empty."}), 400
-        
-    cursor = db.execute(
-        "INSERT INTO groups (user_id, name, description) VALUES (?, ?, ?)",
-        (g.user["id"], name, description)
+    # Safely fetch notifications, actors, and post content (if applicable)
+    notifications = db.execute(
+        """
+        SELECT n.*, u.username AS actor_username, u.profile_pic AS actor_pic, p.content AS post_content
+        FROM notifications n
+        JOIN users u ON n.actor_id = u.id
+        LEFT JOIN posts p ON n.post_id = p.id
+        WHERE n.user_id = ?
+        ORDER BY n.created_at DESC
+        """,
+        (g.user["id"],)
+    ).fetchall()
+    
+    return jsonify([dict(row) for row in notifications]), 200
+
+@app.route("/api/notifications/unread", methods=["GET"])
+@login_required
+def check_unread():
+    db = get_db()
+    count = db.execute(
+        "SELECT COUNT(*) as count FROM notifications WHERE user_id = ? AND is_read = 0", 
+        (g.user["id"],)
+    ).fetchone()
+    return jsonify({"has_unread": count["count"] > 0}), 200
+
+@app.route("/api/notifications/read", methods=["POST"])
+@login_required
+def mark_notifications_read():
+    db = get_db()
+    db.execute(
+        "UPDATE notifications SET is_read = 1 WHERE user_id = ? AND is_read = 0", 
+        (g.user["id"],)
     )
     db.commit()
-    return jsonify({"success": True, "group_id": cursor.lastrowid}), 201
+    return jsonify({"success": True}), 200
 
 # Error Handlers for API
 @app.errorhandler(404)
@@ -1181,11 +1217,11 @@ def not_found(e):
 @app.errorhandler(429)
 def ratelimit_handler(e):
     return jsonify({"error": "Rate limit exceeded"}), 429
-
 @app.errorhandler(500)
+
 def server_error(e):
     return jsonify({"error": "Internal Server Error"}), 500
 
-
+# Run the Flask app
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=80)
