@@ -770,7 +770,7 @@ def api_edit_post(post_id):
     if post["user_id"] != user_id:
         return jsonify({"error": "You do not have permission to edit this post."}), 403
         
-    # Extract form fields (FormData sends data via request.form)
+
     content = request.form.get("content", "").strip() or request.json.get("content", "").strip() if request.is_json else request.form.get("content", "").strip()
     category = request.form.get("category", "").strip() or (request.json.get("category", "").strip() if request.is_json else request.form.get("category", "").strip())
     
@@ -779,7 +779,7 @@ def api_edit_post(post_id):
     event_time = None
     event_location = None
     
-    # Handle category-specific fields safely for both Form data and JSON fallback
+
     if request.is_json:
         get_val = lambda key: request.json.get(key, "").strip()
     else:
@@ -1217,7 +1217,10 @@ def api_get_notifications():
     db = get_db()
     try:
         notifications = db.execute(
-            """SELECT n.*, u.username AS actor_username, u.profile_pic AS actor_pic, p.content AS post_content
+            """SELECT n.id, n.user_id, n.actor_id, n.type, n.post_id, n.is_read, n.created_at,
+                      COALESCE(u.username, n.actor_username) AS actor_username,
+                      u.profile_pic AS actor_pic,
+                      p.content AS post_content
                FROM notifications n
                LEFT JOIN users u ON u.id = n.actor_id
                LEFT JOIN posts p ON n.post_id = p.id
@@ -1229,7 +1232,7 @@ def api_get_notifications():
     except Exception as e:
         app.logger.error(f"Notifications fetch error: {e}")
         return jsonify({"error": "Failed to load notifications."}), 500
-
+ 
 @app.route("/api/notifications/unread", methods=["GET"])
 @login_required
 def check_unread():

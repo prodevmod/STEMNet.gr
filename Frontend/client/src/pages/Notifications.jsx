@@ -53,37 +53,48 @@ export default function Notifications({ currentUser, theme, toggleTheme, setHasU
                     </div>
                 ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '1rem' }}>
-                        {notifications.map((notif) => (
-                            <div 
-                                key={notif.id} 
-                                className="card" 
-                                style={{ 
-                                    display: 'flex', 
-                                    alignItems: 'center', 
-                                    justifyContent: 'space-between',
-                                    background: notif.is_read ? 'var(--card-bg)' : 'var(--border-color)',
-                                    padding: '1rem'
-                                }}
-                            >
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                                    <Link to={`/profile/${notif.actor_username}`} style={{ fontWeight: 'bold', color: 'var(--text-primary)', textDecoration: 'none' }}>
-                                        @{notif.actor_username}
-                                    </Link>
-                                    <span style={{ color: 'var(--text-secondary)' }}>
-                                        {notif.type === 'like' && 'liked your post.'}
-                                        {notif.type === 'reply' && 'replied to your post.'}
-                                        {notif.type === 'follow' && 'started following you.'}
-                                        {notif.type === 'new_post' && 'created a new post.'}
-                                        {notif.type === 'self_post' && 'Your post was successfully published!'}
-                                    </span>
+                        {notifications.map((notif) => {
+                            const hasActor = Boolean(notif.actor_username);
+                            const actorLabel = hasActor ? `@${notif.actor_username}` : 'Someone';
+
+                            return (
+                                <div 
+                                    key={notif.id} 
+                                    className="card" 
+                                    style={{ 
+                                        display: 'flex', 
+                                        alignItems: 'center', 
+                                        justifyContent: 'space-between',
+                                        background: notif.is_read ? 'var(--card-bg)' : 'var(--border-color)',
+                                        padding: '1rem'
+                                    }}
+                                >
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                        {hasActor ? (
+                                            <Link to={`/profile/${notif.actor_username}`} style={{ fontWeight: 'bold', color: 'var(--text-primary)', textDecoration: 'none' }}>
+                                                {actorLabel}
+                                            </Link>
+                                        ) : (
+                                            <span style={{ fontWeight: 'bold', color: 'var(--text-primary)' }}>
+                                                {actorLabel}
+                                            </span>
+                                        )}
+                                        <span style={{ color: 'var(--text-secondary)' }}>
+                                            {notif.type === 'like' && 'liked your post.'}
+                                            {notif.type === 'reply' && 'replied to your post.'}
+                                            {notif.type === 'follow' && 'started following you.'}
+                                            {notif.type === 'new_post' && 'created a new post.'}
+                                            {notif.type === 'self_post' && 'Your post was successfully published!'}
+                                        </span>
+                                    </div>
+                                    {notif.post_id && (
+                                        <Link to={`/post/${notif.post_id}`} className="btn btn-primary" style={{ fontSize: '0.85rem', textDecoration: 'none', padding: '0.3rem 0.6rem' }}>
+                                            View
+                                        </Link>
+                                    )}
                                 </div>
-                                {notif.post_id && (
-                                    <Link to={`/post/${notif.post_id}`} className="btn btn-primary" style={{ fontSize: '0.85rem', textDecoration: 'none', padding: '0.3rem 0.6rem' }}>
-                                        View
-                                    </Link>
-                                )}
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 )}
             </main>
