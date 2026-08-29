@@ -302,12 +302,14 @@ export default function PostThread({ currentUser, setCurrentUser, theme, toggleT
                     marginBottom: '0.75rem',
                 }}
             >
+                {/* Header: Username on Left, Date pushed to Far Right */}
                 <div
                     style={{
                         display: 'flex',
                         justify: 'space-between',
                         alignItems: 'center',
                         marginBottom: '0.5rem',
+                        gap: '1rem',
                     }}
                 >
                     <Link
@@ -322,7 +324,9 @@ export default function PostThread({ currentUser, setCurrentUser, theme, toggleT
                         @{comment.username}
                     </Link>
                     {comment.created_at && (
-                        <small style={{ color: 'gray' }}>{comment.created_at}</small>
+                        <small style={{ color: 'gray', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>
+                            {comment.created_at}
+                        </small>
                     )}
                 </div>
 
@@ -348,13 +352,13 @@ export default function PostThread({ currentUser, setCurrentUser, theme, toggleT
                     </div>
                 )}
 
-                {/* Comment Actions: Left (Like & Reply), Right (Edit & Delete for Owner) */}
+                {/* Bottom Bar: Like & Reply on Left | Edit & Delete on Right */}
                 <div
                     style={{
                         display: 'flex',
                         justify: 'space-between',
                         alignItems: 'center',
-                        marginTop: '0.5rem',
+                        marginTop: '0.75rem',
                     }}
                 >
                     <div style={{ display: 'flex', gap: '1.25rem', alignItems: 'center' }}>
@@ -552,18 +556,26 @@ export default function PostThread({ currentUser, setCurrentUser, theme, toggleT
 
                 {parent && (
                     <div className="card" style={{ padding: '1rem', opacity: 0.8, marginBottom: '0.75rem', borderLeft: '3px solid var(--primary-color)' }}>
-                        <Link to={`/profile/${parent.username}`} style={{ fontWeight: 'bold', color: 'var(--primary-color)', textDecoration: 'none' }}>@{parent.username}</Link>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <Link to={`/profile/${parent.username}`} style={{ fontWeight: 'bold', color: 'var(--primary-color)', textDecoration: 'none' }}>@{parent.username}</Link>
+                            {parent.created_at && <small style={{ color: 'gray', fontSize: '0.8rem' }}>{parent.created_at}</small>}
+                        </div>
                         <p style={{ margin: '0.5rem 0 0', color: theme === 'dark' ? '#f3f4f6' : '#1e293b' }}>{renderTextWithLinks(parent.content)}</p>
                     </div>
                 )}
 
                 {/* Main Post Card */}
                 <div className="card" style={{ padding: '1.25rem', backgroundColor: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: '8px', marginBottom: '1.5rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' }}>
+                    {/* Main Post Header */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', gap: '1rem' }}>
                         <Link to={`/profile/${post.username}`} style={{ fontWeight: 'bold', color: 'var(--primary-color)', textDecoration: 'none' }}>
                             @{post.username}
                         </Link>
+                        {post.created_at && (
+                            <small style={{ color: 'gray', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>{post.created_at}</small>
+                        )}
                     </div>
+
                     {post.content && <p style={{ whiteSpace: 'pre-line', wordBreak: 'break-word', color: theme === 'dark' ? '#f3f4f6' : '#1e293b' }}>{renderTextWithLinks(post.content)}</p>}
                     
                     {postImage && (
@@ -572,7 +584,7 @@ export default function PostThread({ currentUser, setCurrentUser, theme, toggleT
                         </div>
                     )}
 
-                    {/* Main Post Action Bar: Left (Like & Reply), Right (Edit & Delete for Owner) */}
+                    {/* Main Post Bottom Bar */}
                     <div
                         style={{
                             display: 'flex',
@@ -669,7 +681,7 @@ export default function PostThread({ currentUser, setCurrentUser, theme, toggleT
                     </div>
                 </div>
 
-                {/* Optional Top-Level Reply Form (toggled via Reply button) */}
+                {/* Main Post Reply Input (toggled via Reply button) */}
                 {showMainReplyForm && (
                     <form onSubmit={(e) => handleCreateComment(e)} style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>
                         <input
