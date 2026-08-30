@@ -1,10 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 
-// Import your SVGs here (Ensure these filenames match your actual files in src/assets/)
-import bellIcon from '../assets/bell.svg';
-import notificationsOnIcon from '../assets/notification_on.svg';
-
 export default function Navbar({ currentUser, setCurrentUser, theme, toggleTheme, hasUnreadNotifications }) {
     const navigate = useNavigate();
     const location = useLocation();
@@ -88,13 +84,13 @@ export default function Navbar({ currentUser, setCurrentUser, theme, toggleTheme
                             <Link to="/groups" title="Groups" style={{ color: lightGreen, display: 'flex', alignItems: 'center' }}><GroupIcon strokeColor={lightGreen} /></Link>
                             <Link to="/events" title="Events" style={{ color: lightGreen, display: 'flex', alignItems: 'center' }}><EventsIcon strokeColor={lightGreen} /></Link>
                             
-                            {/* Dynamic Notification Icon */}
-                            <Link to="/notifications" title="Notifications" style={{ color: lightGreen, display: 'flex', alignItems: 'center' }}>
-                                <img 
-                                    src={hasUnreadNotifications ? notificationsOnIcon : bellIcon} 
-                                    alt="Notifications" 
-                                    style={{ width: '22px', height: '22px' }} 
-                                />
+                            {/* Dynamic Notification Icon (inline SVG, no external asset dependency) */}
+                            <Link to="/notifications" title="Notifications" style={{ color: lightGreen, display: 'flex', alignItems: 'center', position: 'relative' }}>
+                                {hasUnreadNotifications ? (
+                                    <BellFilledIcon strokeColor={lightGreen} />
+                                ) : (
+                                    <BellOutlineIcon strokeColor={lightGreen} />
+                                )}
                             </Link>
                             
                             <Link to={`/profile/${currentUser.username}`} title="Profile" style={{ color: lightGreen, display: 'flex', alignItems: 'center' }}><ProfileIcon strokeColor={lightGreen} /></Link>
@@ -156,12 +152,12 @@ export default function Navbar({ currentUser, setCurrentUser, theme, toggleTheme
                                     
                                     {/* Mobile Dynamic Notification Icon */}
                                     <Link to="/notifications" style={mobileLinkStyle(lightGreen)}>
-                                        <img 
-                                            src={hasUnreadNotifications ? notificationsOnIcon : bellIcon} 
-                                            alt="Notifications" 
-                                            style={{ width: '22px', height: '22px' }} 
-                                        />
-                                        <span>Notifications</span>
+                                        {hasUnreadNotifications ? (
+                                            <BellFilledIcon strokeColor={lightGreen} />
+                                        ) : (
+                                            <BellOutlineIcon strokeColor={lightGreen} />
+                                        )}
+                                        <span>Notifications{hasUnreadNotifications ? ' (New)' : ''}</span>
                                     </Link>
                                     
                                     <Link to={`/profile/${currentUser.username}`} style={mobileLinkStyle(lightGreen)}><ProfileIcon strokeColor={lightGreen} /> <span>Profile</span></Link>
@@ -282,5 +278,36 @@ const LogoutIcon = ({ strokeColor }) => (
         <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
         <polyline points="16 17 21 12 16 7"></polyline>
         <line x1="21" y1="12" x2="9" y2="12"></line>
+    </svg>
+);
+
+
+const BellOutlineIcon = ({ strokeColor }) => (
+    <svg width="22" height="22" viewBox="0 0 24 24" style={{ stroke: strokeColor, fill: 'none' }} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path>
+        <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+    </svg>
+);
+
+
+const BellFilledIcon = ({ strokeColor }) => (
+    <svg width="22" height="22" viewBox="0 0 24 24" style={{ overflow: 'visible' }}>
+        <path
+            d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"
+            fill={strokeColor}
+            stroke={strokeColor}
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+        />
+        <path
+            d="M13.73 21a2 2 0 0 1-3.46 0"
+            fill="none"
+            stroke={strokeColor}
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+        />
+        <circle cx="18.5" cy="6" r="4.5" fill="#ef4444" stroke="#000000" strokeWidth="1" />
     </svg>
 );
