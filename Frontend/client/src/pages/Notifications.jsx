@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 
-export default function Notifications({ currentUser, theme, toggleTheme, setHasUnreadNotifications }) {
+export default function Notifications({ currentUser, setCurrentUser, theme, toggleTheme, hasUnreadNotifications, setHasUnreadNotifications }) {
     const [notifications, setNotifications] = useState([]);
     const [loading, setLoading] = useState(true);
 
