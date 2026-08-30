@@ -482,22 +482,14 @@ export default function EventDetails({ currentUser, setCurrentUser, theme, toggl
 
   return (
     <div>
-      <Navbar currentUser={currentUser} setCurrentUser={setCurrentUser} theme={theme} toggleTheme={toggleTheme} hasUnreadNotifications={hasUnreadNotifications} />
-      <main className="app-main-container" style={{ maxWidth: '800px', margin: '2rem auto', padding: '0 1rem' }}>
-        <button
-          onClick={() => navigate(-1)}
-          style={{
-            background: 'none',
-            border: 'none',
-            color: theme === 'dark' ? '#ccff00' : '#000000',
-            cursor: 'pointer',
-            marginBottom: '1rem',
-            fontWeight: 'bold',
-          }}
-        >
-          ← Back to Events
-        </button>
-
+        <Navbar currentUser={currentUser} setCurrentUser={setCurrentUser} theme={theme} toggleTheme={toggleTheme} hasUnreadNotifications={hasUnreadNotifications} />
+          <main className="app-main-container" style={{ maxWidth: '800px', margin: '2rem auto', padding: '0 1rem' }}>
+            <button
+              onClick={() => navigate(-1)}
+              className="back-nav-btn"
+            >
+              ← Back to Events
+            </button>
         {loading ? (
           <div
             className="card"

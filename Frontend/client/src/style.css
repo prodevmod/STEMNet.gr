@@ -972,3 +972,23 @@ button.btn-primary img,
     height: 0 !important;
     overflow: hidden !important;
 }
+.back-nav-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    margin-bottom: 1rem;
+    font-weight: bold;
+    color: #000000; /* Black for light mode */
+    font-size: 1rem;
+    transition: color 0.2s ease, transform 0.1s ease;
+}
+
+/* Hover effect (Optional but recommended) */
+.back-nav-btn:hover {
+    transform: translateX(-2px);
+}
+
+/* Dark Mode Styling */
+[data-theme='dark'] .back-nav-btn {
+    color: #ccff00; /* Neon green for dark mode */
+}
