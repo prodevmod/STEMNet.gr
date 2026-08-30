@@ -35,23 +35,18 @@ SUPABASE_URL = os.environ.get("SUPABASE_URL")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY) if SUPABASE_URL and SUPABASE_KEY else None
 
-# Frontend URL for Redirects (e.g., Email Verification)
 FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:3000")
 
-# Path Configuration
 BASE_DIR = Path(__file__).resolve().parent
 DATABASE = BASE_DIR / "project.db"
 SCHEMA = BASE_DIR / "schema.sql"
 
-# Flask App Initialization
 app = Flask(__name__)
-# Enable CORS for React integration, allowing credentials (cookies/sessions) to be passed
 CORS(app, supports_credentials=True, origins=[FRONTEND_URL, "http://127.0.0.1:3000"])
 
 app.config["SESSION_PERMANENT"] = False
 app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=30)
 
-# Security Configuration
 if not app.debug:
     app.config.update(
         SESSION_COOKIE_SECURE=True,
@@ -60,15 +55,13 @@ if not app.debug:
     )
 app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "fallback-dev-key-change-in-prod")
 
-# Blocked Domains for Security
 BLOCKED_DOMAINS = {
-    "iplogger.org", "iplogger.com", "iplogger.ru", "2no.co", "yip.su", 
+    "iplogger.org", "iplogger.com", "iplogger.ru", "2no.co", "yip.su",
     "grabify.link", "blasze.com", "cest.la", "spotlogger.com", "iplogger.co",
-    "pornhub.com", "xvideos.com", "xnxx.com", "stripchat.com", "cam4.com", 
+    "pornhub.com", "xvideos.com", "xnxx.com", "stripchat.com", "cam4.com",
     "redtube.com", "youporngay.com", "hentaihaven.xxx"
 }
 
-# File Upload Configuration (Configured for up to 36 MB and GIF/multimedia support)
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'mp4', 'webm', 'webp'}
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
 app.config['MAX_CONTENT_LENGTH'] = 36 * 1024 * 1024
@@ -80,14 +73,12 @@ def allowed_pfp_file(filename):
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-# Database Configuration
 db_url = os.environ.get("DATABASE_URL", "sqlite:///app.db")
 if db_url.startswith("postgres://"):
     db_url = db_url.replace("postgres://", "postgresql://", 1)
 app.config["SQLALCHEMY_DATABASE_URI"] = db_url
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
-# Rate Limiting Configuration
 limiter = Limiter(
     app=app,
     key_func=get_remote_address,
@@ -114,7 +105,6 @@ def verify_recaptcha(token):
         app.logger.error(f"reCAPTCHA verification error: {e}")
         return False
 
-# Utility Functions for Email Verification
 def get_serializer():
     return URLSafeTimedSerializer(app.secret_key)
 
@@ -185,13 +175,13 @@ def send_verification_email(user_email, token):
 def sanitize_profile_links(user):
     if not user: return None
     user_dict = dict(user)
-    
+
     github_val = user_dict.get("github_user")
     if github_val:
         github_val = github_val.strip()
         if not github_val.startswith("http"):
             user_dict["github_user"] = f"https://github.com/{github_val}"
-    
+
     link_keys = ["linkedin_url", "custom_link_1", "custom_link_2", "custom_link_3", "custom_link_4", "custom_link_5"]
     for link_key in link_keys:
         url = user_dict.get(link_key)
@@ -203,7 +193,38 @@ def sanitize_profile_links(user):
                 user_dict[link_key] = url
     return user_dict
 
-# Database Wrappers
+def remove_or_softdelete_post(db, post_id):
+    """Hard-deletes a post if it has no replies. If it has replies, soft-deletes
+    it instead: content is replaced with a tombstone message and the row stays
+    in place so replies can still resolve their parent's username/content
+    (rendered as a 'this post has been deleted' quote instead of breaking)."""
+    child_count_row = db.execute(
+        "SELECT COUNT(*) as c FROM posts WHERE parent_id = ?", (post_id,)
+    ).fetchone()
+    has_children = child_count_row and child_count_row["c"] > 0
+
+    if has_children:
+        db.execute("DELETE FROM likes WHERE post_id = ?", (post_id,))
+        db.execute("DELETE FROM notifications WHERE post_id = ?", (post_id,))
+        db.execute(
+            """UPDATE posts
+               SET content = 'This post has been deleted.',
+                   media_path = NULL,
+                   github_link = NULL,
+                   event_type = NULL,
+                   event_time = NULL,
+                   event_location = NULL,
+                   is_deleted = 1
+               WHERE id = ?""",
+            (post_id,)
+        )
+        return False
+    else:
+        db.execute("DELETE FROM likes WHERE post_id = ?", (post_id,))
+        db.execute("DELETE FROM notifications WHERE post_id = ?", (post_id,))
+        db.execute("DELETE FROM posts WHERE id = ?", (post_id,))
+        return True
+
 class PostgresCursorWrapper:
     def __init__(self, cursor):
         self._cursor = cursor
@@ -213,7 +234,7 @@ class PostgresCursorWrapper:
         postgres_query = query.replace("?", "%s")
         is_insert = postgres_query.strip().upper().startswith("INSERT")
         has_returning = "RETURNING" in postgres_query.upper()
-        
+
         if is_insert and not has_returning:
             postgres_query = postgres_query.rstrip().rstrip(";") + " RETURNING id;"
             self._cursor.execute(postgres_query, params)
@@ -254,7 +275,6 @@ def get_db():
             g.db = connection
     return g.db
 
-#Before and After Request Handlers
 @app.teardown_appcontext
 def close_db(exception):
     db = g.pop("db", None)
@@ -289,6 +309,7 @@ def upgrade_database():
             ("posts", "event_time TEXT"),
             ("posts", "event_location TEXT"),
             ("posts", "group_id INTEGER"),
+            ("posts", "is_deleted INTEGER DEFAULT 0"),
             ("users", "failed_attempts INTEGER DEFAULT 0"),
             ("users", "locked_until REAL DEFAULT 0"),
             ("notifications", "user_id INTEGER"),
@@ -335,7 +356,6 @@ def login_required(view):
         return view(*args, **kwargs)
     return wrapped_view
 
-#Authentication Endpoints
 @app.route("/api/auth/me", methods=["GET"])
 def get_current_user():
     if g.get("user"):
@@ -354,8 +374,8 @@ def login():
         return jsonify({"error": "reCAPTCHA verification failed. Please try again."}), 400
 
     identifier = (
-        data.get("username_or_email") or 
-        data.get("username") or 
+        data.get("username_or_email") or
+        data.get("username") or
         data.get("email") or ""
     ).strip()
     password = data.get("password", "")
@@ -366,7 +386,7 @@ def login():
 
     db = get_db()
     user = db.execute(
-        "SELECT * FROM users WHERE username = ? OR email = ?", 
+        "SELECT * FROM users WHERE username = ? OR email = ?",
         (identifier, identifier)
     ).fetchone()
 
@@ -383,7 +403,7 @@ def login():
         failed_attempts = user_dict.get("failed_attempts", 0) + 1
         new_locked_until = current_time + 300 if failed_attempts >= 5 else 0
         db.execute(
-            "UPDATE users SET failed_attempts = ?, locked_until = ? WHERE id = ?", 
+            "UPDATE users SET failed_attempts = ?, locked_until = ? WHERE id = ?",
             (failed_attempts, new_locked_until, user_dict["id"])
         )
         db.commit()
@@ -393,7 +413,7 @@ def login():
         return jsonify({"error": "Email not verified.", "needs_verification": True}), 403
 
     db.execute(
-        "UPDATE users SET failed_attempts = 0, locked_until = 0 WHERE id = ?", 
+        "UPDATE users SET failed_attempts = 0, locked_until = 0 WHERE id = ?",
         (user_dict["id"],)
     )
     db.commit()
@@ -401,7 +421,7 @@ def login():
     session.clear()
     session.permanent = bool(remember)
     session["user_id"] = user_dict["id"]
-    
+
     user_dict.pop("password_hash", None)
     return jsonify({"success": True, "user": sanitize_profile_links(user_dict)}), 200
 
@@ -427,10 +447,10 @@ def register():
         return jsonify({"error": "Passwords do not match."}), 400
     if len(password) < 8 or not any(c.isdigit() for c in password) or not any(not c.isalnum() for c in password):
         return jsonify({"error": "Password does not meet complexity requirements."}), 400
-        
+
     try:
         age = int(age_str)
-        if age < 10 or age > 100: 
+        if age < 10 or age > 100:
             return jsonify({"error": "Please enter a realistic age."}), 400
     except ValueError:
         return jsonify({"error": "Age must be a valid number."}), 400
@@ -439,9 +459,9 @@ def register():
     existing_user = db.execute("SELECT username, email FROM users WHERE username = ? OR email = ?", (username, email)).fetchone()
 
     if existing_user:
-        if existing_user["email"] == email: 
+        if existing_user["email"] == email:
             return jsonify({"error": "Email already registered."}), 400
-        elif existing_user["username"] == username: 
+        elif existing_user["username"] == username:
             return jsonify({"error": "Username taken."}), 400
 
     try:
@@ -467,11 +487,11 @@ def verify_email(token):
     user = db.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
     if not user:
         return redirect(f"{FRONTEND_URL}/login?error=user_not_found")
-        
+
     db.execute("UPDATE users SET is_verified = 1 WHERE email = ?", (email,))
     db.commit()
     return redirect(f"{FRONTEND_URL}/login?verified=true")
- 
+
 @app.route("/api/logout", methods=["POST"])
 def logout():
     session.clear()
@@ -480,28 +500,28 @@ def logout():
 @app.route('/api/search', methods=['GET'])
 def search():
     query = request.args.get('q', '').strip()
-    
+
     if not query:
         return jsonify({"posts": [], "groups": [], "users": []}), 200
 
     try:
         search_term = f"%{query}%"
         db = get_db()
-        
-        # Get current user id from session if logged in
+
         current_user_id = session.get('user_id', 0)
-        
+
         posts = db.execute('''
             SELECT posts.*, users.username, users.profile_pic,
                    (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id) as like_count,
                    (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id AND likes.user_id = ?) as user_liked
             FROM posts
             JOIN users ON posts.user_id = users.id
-            WHERE posts.content LIKE ? OR posts.category LIKE ?
+            WHERE (posts.content LIKE ? OR posts.category LIKE ?)
+              AND (posts.is_deleted IS NULL OR posts.is_deleted = 0)
             ORDER BY posts.created_at DESC
             LIMIT 10
         ''', (current_user_id, search_term, search_term)).fetchall()
-        
+
         groups = db.execute('''
             SELECT groups.*, users.username AS owner_username
             FROM groups
@@ -510,14 +530,14 @@ def search():
             ORDER BY groups.created_at DESC
             LIMIT 10
         ''', (search_term, search_term)).fetchall()
-        
+
         users = db.execute('''
             SELECT id, username, profile_pic, bio, interest
             FROM users
             WHERE username LIKE ? OR bio LIKE ? OR interest LIKE ?
             LIMIT 10
         ''', (search_term, search_term, search_term)).fetchall()
-        
+
         return jsonify({
             "posts": [dict(p) for p in posts],
             "groups": [dict(g) for g in groups],
@@ -527,8 +547,7 @@ def search():
     except Exception as e:
         print(f"Search error: {e}")
         return jsonify({'error': 'An error occurred while searching'}), 500
-    
-#Post related Endpoints
+
 @app.route("/api/posts/create", methods=["POST"])
 @login_required
 def create_post():
@@ -612,30 +631,31 @@ def get_posts():
     db = get_db()
     current_user_id = g.user["id"] if g.get("user") else 0
     category = request.args.get('category')
-    
+
     query = """
         SELECT posts.*, users.username, users.profile_pic,
                parent_posts.content AS parent_content,
                parent_users.username AS parent_username,
                (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id) AS like_count,
                (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id AND likes.user_id = ?) AS user_liked
-        FROM posts 
-        JOIN users ON posts.user_id = users.id 
-        LEFT JOIN posts AS parent_posts ON posts.parent_id = parent_posts.id 
-        LEFT JOIN users AS parent_users ON parent_posts.user_id = parent_users.id 
+        FROM posts
+        JOIN users ON posts.user_id = users.id
+        LEFT JOIN posts AS parent_posts ON posts.parent_id = parent_posts.id
+        LEFT JOIN users AS parent_users ON parent_posts.user_id = parent_users.id
         WHERE posts.group_id IS NULL
+          AND (posts.is_deleted IS NULL OR posts.is_deleted = 0)
     """
     params = [current_user_id]
-    
+
     if category:
         query += " AND posts.category = ?"
         params.append(category)
     else:
         query += " AND posts.category != 'Events'"
-        
+
     query += " ORDER BY posts.created_at DESC"
     posts = db.execute(query, params).fetchall()
-    
+
     return jsonify([dict(row) for row in posts]), 200
 
 @app.route("/api/posts/<int:post_id>", methods=["GET"])
@@ -648,33 +668,33 @@ def api_get_single_post(post_id):
         SELECT posts.*, users.username, users.profile_pic,
                (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id) AS like_count,
                (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id AND likes.user_id = ?) AS user_liked
-        FROM posts 
-        JOIN users ON posts.user_id = users.id 
+        FROM posts
+        JOIN users ON posts.user_id = users.id
         WHERE posts.id = ?
-        """, 
+        """,
         (current_user_id, post_id)
     ).fetchone()
-    
+
     if not post:
         return jsonify({"error": "Post not found."}), 404
-        
+
     post_dict = dict(post)
-    
+
     comments_cursor = db.execute(
         """
         SELECT posts.*, users.username, users.profile_pic,
                (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id) AS like_count,
                (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id AND likes.user_id = ?) AS user_liked
-        FROM posts 
-        JOIN users ON posts.user_id = users.id 
+        FROM posts
+        JOIN users ON posts.user_id = users.id
         WHERE posts.parent_id = ?
         ORDER BY posts.created_at ASC
         """,
         (current_user_id, post_id)
     ).fetchall()
-    
+
     comments = [dict(row) for row in comments_cursor]
-    
+
     return jsonify({
         "post": post_dict,
         "comments": comments
@@ -684,23 +704,23 @@ def api_get_single_post(post_id):
 def api_update_post(post_id):
     if not g.get("user"):
         return jsonify({"error": "Unauthorized"}), 401
-        
+
     db = get_db()
     user_id = g.user["id"]
-    
+
     post = db.execute("SELECT * FROM posts WHERE id = ?", (post_id,)).fetchone()
     if not post:
         return jsonify({"error": "Post not found"}), 404
-        
+
     if post["user_id"] != user_id:
         return jsonify({"error": "Permission denied"}), 403
-        
+
     data = request.get_json()
     new_content = data.get("content")
-    
+
     if not new_content:
         return jsonify({"error": "Content cannot be empty"}), 400
-        
+
     try:
         db.execute("UPDATE posts SET content = ? WHERE id = ?", (new_content, post_id))
         db.commit()
@@ -708,39 +728,38 @@ def api_update_post(post_id):
     except Exception as e:
         db.rollback()
         return jsonify({"error": str(e)}), 500
- 
+
 @app.route("/api/posts/<int:post_id>/comments", methods=["PUT","POST"])
 @app.route("/api/post/<int:post_id>/comments", methods=["PUT","POST"])
 @login_required
 def api_update_comment(post_id):
     if not g.get("user"):
         return jsonify({"error": "Unauthorized"}), 401
-        
+
     db = get_db()
     user_id = g.user["id"]
-    
+
     post = db.execute("SELECT * FROM posts WHERE id = ?", (post_id,)).fetchone()
     if not post:
         return jsonify({"error": "Post not found"}), 404
-        
+
     if post["user_id"] != user_id:
         return jsonify({"error": "Permission denied"}), 403
-        
+
     data = request.get_json(silent=True)
     if not data or "content" not in data:
         return jsonify({"error": "Invalid request: JSON body with 'content' is required"}), 400
-        
+
     new_content = data.get("content").strip()
     if not new_content:
         return jsonify({"error": "Content cannot be empty"}), 400
-        
+
     try:
         db.execute("UPDATE posts SET content = ? WHERE id = ?", (new_content, post_id))
         db.commit()
         return jsonify({"success": True, "message": "Post updated successfully"}), 200
     except Exception as e:
         db.rollback()
-        # TODO: app.logger.error(f"Database error: {str(e)}")
         return jsonify({"error": "An internal server error occurred"}), 500
 
 @app.route("/api/posts/<int:post_id>", methods=["GET"])
@@ -749,26 +768,24 @@ def api_update_comment(post_id):
 def api_get_post_thread(post_id):
     db = get_db()
     current_user_id = g.user["id"] if g.get("user") else 0
-    
-    # Fetch main post
+
     post = db.execute(
         """
         SELECT posts.*, users.username, users.profile_pic,
                (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id) AS like_count,
                (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id AND likes.user_id = ?) AS user_liked
-        FROM posts 
-        JOIN users ON posts.user_id = users.id 
+        FROM posts
+        JOIN users ON posts.user_id = users.id
         WHERE posts.id = ?
-        """, 
+        """,
         (current_user_id, post_id)
     ).fetchone()
-    
+
     if not post:
         return jsonify({"error": "Post not found"}), 404
-        
+
     post_dict = dict(post)
-    
-    # Fetch parent post if any
+
     parent_post = None
     if post_dict.get("parent_id"):
         parent = db.execute(
@@ -776,60 +793,56 @@ def api_get_post_thread(post_id):
             SELECT posts.*, users.username, users.profile_pic,
                    (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id) AS like_count,
                    (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id AND likes.user_id = ?) AS user_liked
-            FROM posts 
-            JOIN users ON posts.user_id = users.id 
+            FROM posts
+            JOIN users ON posts.user_id = users.id
             WHERE posts.id = ?
-            """, 
+            """,
             (current_user_id, post_dict["parent_id"])
         ).fetchone()
         if parent:
             parent_post = dict(parent)
-            
-    # Fetch replies
+
     replies_cursor = db.execute(
         """
         SELECT posts.*, users.username, users.profile_pic,
                (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id) AS like_count,
                (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id AND likes.user_id = ?) AS user_liked
-        FROM posts 
-        JOIN users ON posts.user_id = users.id 
+        FROM posts
+        JOIN users ON posts.user_id = users.id
         WHERE posts.parent_id = ?
         ORDER BY posts.created_at ASC
         """,
         (current_user_id, post_id)
     ).fetchall()
-    
+
     replies = [dict(row) for row in replies_cursor]
-    
+
     return jsonify({
         "post": post_dict,
         "parent": parent_post,
         "replies": replies
     }), 200
- 
 
 @app.route("/api/posts/<int:post_id>/edit", methods=["POST", "PUT"])
 @login_required
 def api_edit_post(post_id):
     db = get_db()
     user_id = g.user["id"]
-    
+
     post = db.execute("SELECT * FROM posts WHERE id = ?", (post_id,)).fetchone()
     if not post:
         return jsonify({"error": "Post not found"}), 404
-    
+
     if post["user_id"] != user_id:
         return jsonify({"error": "You do not have permission to edit this post."}), 403
-        
 
     content = request.form.get("content", "").strip() or request.json.get("content", "").strip() if request.is_json else request.form.get("content", "").strip()
     category = request.form.get("category", "").strip() or (request.json.get("category", "").strip() if request.is_json else request.form.get("category", "").strip())
-    
+
     github_link = None
     event_type = None
     event_time = None
     event_location = None
-    
 
     if request.is_json:
         get_val = lambda key: request.json.get(key, "").strip()
@@ -848,29 +861,26 @@ def api_edit_post(post_id):
         if category == "Other":
             custom_category = get_val("custom_category")
             category = custom_category if custom_category else "Other"
-            
+
     if not content:
         return jsonify({"error": "Post content cannot be empty."}), 400
-        
-    media_path = post["media_path"] 
-    
+
+    media_path = post["media_path"]
+
     if "image" in request.files:
         file = request.files["image"]
         if file and file.filename != "" and allowed_file(file.filename):
             filename = secure_filename(file.filename)
-
             upload_folder = app.config.get("UPLOAD_FOLDER", "static/uploads")
             os.makedirs(upload_folder, exist_ok=True)
-            
             file_path = os.path.join(upload_folder, filename)
             file.save(file_path)
-            
             media_path = f"uploads/{filename}"
 
     try:
         db.execute(
             """
-            UPDATE posts 
+            UPDATE posts
             SET content = ?, category = ?, github_link = ?, event_type = ?, event_time = ?, event_location = ?, media_path = ?
             WHERE id = ?
             """,
@@ -887,78 +897,68 @@ def api_edit_post(post_id):
 def api_delete_post(post_id):
     db = get_db()
     user_id = g.user["id"]
-    
+
     post = db.execute("SELECT * FROM posts WHERE id = ?", (post_id,)).fetchone()
     if not post:
         return jsonify({"error": "Post not found"}), 404
-        
+
     if post["user_id"] != user_id:
         return jsonify({"error": "You do not have permission to delete this post."}), 403
-        
+
     try:
-        # Clean up associated database entries (matching your reference logic)
-        db.execute("DELETE FROM likes WHERE post_id = ?", (post_id,))
-        db.execute("DELETE FROM notifications WHERE post_id = ?", (post_id,))
-        db.execute("DELETE FROM posts WHERE id = ?", (post_id,))
+        hard_deleted = remove_or_softdelete_post(db, post_id)
         db.commit()
 
-        # Remove physical media file if it exists
-        if post["media_path"]:
+        if hard_deleted and post["media_path"]:
             file_name = post["media_path"].replace("uploads/", "")
             file_path = os.path.join(app.config['UPLOAD_FOLDER'], file_name)
             if os.path.exists(file_path):
                 os.remove(file_path)
-                
+
         return jsonify({"success": True, "message": "Post deleted successfully."}), 200
     except Exception as e:
         db.rollback()
+        app.logger.error(f"Delete post error: {e}")
         return jsonify({"error": str(e)}), 500
-  
+
 @app.route("/api/posts/<int:post_id>/like", methods=["POST"])
 @login_required
 def toggle_like(post_id):
     db = get_db()
     user_id = g.user["id"]
 
-    # 1. Check if the post exists and get the author's ID
     post = db.execute("SELECT user_id FROM posts WHERE id = ?", (post_id,)).fetchone()
     if not post:
         return jsonify({"error": "Post not found"}), 404
 
-    # 2. Check if the user already liked the post
     existing_like = db.execute(
-        "SELECT * FROM likes WHERE user_id = ? AND post_id = ?", 
+        "SELECT * FROM likes WHERE user_id = ? AND post_id = ?",
         (user_id, post_id)
     ).fetchone()
 
     if existing_like:
-        # UNLIKE: Remove the like and the associated notification
         db.execute("DELETE FROM likes WHERE user_id = ? AND post_id = ?", (user_id, post_id))
         db.execute(
-            "DELETE FROM notifications WHERE user_id = ? AND actor_id = ? AND type = 'like' AND post_id = ?", 
+            "DELETE FROM notifications WHERE user_id = ? AND actor_id = ? AND type = 'like' AND post_id = ?",
             (post["user_id"], user_id, post_id)
         )
     else:
-        # LIKE: Insert the like
         db.execute("INSERT INTO likes (user_id, post_id) VALUES (?, ?)", (user_id, post_id))
-        
-        # Trigger the notification (Make sure they aren't liking their own post)
+
         if post["user_id"] != user_id:
             db.execute(
                 "INSERT INTO notifications (user_id, actor_id, type, post_id) VALUES (?, ?, 'like', ?)",
                 (post["user_id"], user_id, post_id)
             )
-            
+
     db.commit()
     return jsonify({"success": True}), 200
 
-   
-#Profile related API Endpoints 
 @app.route("/api/profile/<username>", methods=["GET"])
 def profile(username):
     db = get_db()
     current_user_id = g.user["id"] if g.get("user") else 0
-    
+
     raw_user = db.execute("SELECT * FROM users WHERE username = ?", (username,)).fetchone()
     if not raw_user: return jsonify({"error": "User not found"}), 404
 
@@ -966,17 +966,24 @@ def profile(username):
     profile_user.pop("password_hash", None)
 
     posts = db.execute(
-        """SELECT posts.*, users.username,
+        """SELECT posts.*, users.username, users.profile_pic,
+               parent_posts.content AS parent_content,
+               parent_users.username AS parent_username,
                (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id) AS like_count,
                (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id AND likes.user_id = ?) AS user_liked
-           FROM posts JOIN users ON posts.user_id = users.id 
-           WHERE posts.user_id = ? ORDER BY posts.created_at DESC""",
+           FROM posts
+           JOIN users ON posts.user_id = users.id
+           LEFT JOIN posts AS parent_posts ON posts.parent_id = parent_posts.id
+           LEFT JOIN users AS parent_users ON parent_posts.user_id = parent_users.id
+           WHERE posts.user_id = ?
+             AND (posts.is_deleted IS NULL OR posts.is_deleted = 0)
+           ORDER BY posts.created_at DESC""",
         (current_user_id, profile_user["id"])
     ).fetchall()
 
     f_row = db.execute("SELECT COUNT(*) as c FROM follows WHERE following_id = ?", (profile_user["id"],)).fetchone()
     followers_count = f_row["c"] if f_row else 0
-    
+
     fw_row = db.execute("SELECT COUNT(*) as c FROM follows WHERE follower_id = ?", (profile_user["id"],)).fetchone()
     following_count = fw_row["c"] if fw_row else 0
 
@@ -996,7 +1003,7 @@ def profile(username):
 @login_required
 def edit_profile():
     data = request.form if request.form else (request.get_json(silent=True) or {})
-    
+
     age_raw = data.get("age")
     age = int(age_raw) if age_raw and str(age_raw).isdigit() else None
     grade = data.get("grade", "").strip()
@@ -1035,22 +1042,22 @@ def edit_profile():
     try:
         if profile_pic_url:
             db.execute(
-                """UPDATE users SET age = ?, grade = ?, interest = ?, bio = ?, 
-                   github_user = ?, linkedin_url = ?, custom_link_1 = ?, custom_link_2 = ?, 
-                   custom_link_3 = ?, custom_link_4 = ?, custom_link_5 = ?, profile_pic = ? 
+                """UPDATE users SET age = ?, grade = ?, interest = ?, bio = ?,
+                   github_user = ?, linkedin_url = ?, custom_link_1 = ?, custom_link_2 = ?,
+                   custom_link_3 = ?, custom_link_4 = ?, custom_link_5 = ?, profile_pic = ?
                    WHERE id = ?""",
-                (age, grade, interest, bio, github_user, linkedin_url, 
-                 custom_link_1, custom_link_2, custom_link_3, custom_link_4, custom_link_5, 
+                (age, grade, interest, bio, github_user, linkedin_url,
+                 custom_link_1, custom_link_2, custom_link_3, custom_link_4, custom_link_5,
                  profile_pic_url, g.user["id"])
             )
         else:
             db.execute(
-                """UPDATE users SET age = ?, grade = ?, interest = ?, bio = ?, 
-                   github_user = ?, linkedin_url = ?, custom_link_1 = ?, custom_link_2 = ?, 
-                   custom_link_3 = ?, custom_link_4 = ?, custom_link_5 = ? 
+                """UPDATE users SET age = ?, grade = ?, interest = ?, bio = ?,
+                   github_user = ?, linkedin_url = ?, custom_link_1 = ?, custom_link_2 = ?,
+                   custom_link_3 = ?, custom_link_4 = ?, custom_link_5 = ?
                    WHERE id = ?""",
-                (age, grade, interest, bio, github_user, linkedin_url, 
-                 custom_link_1, custom_link_2, custom_link_3, custom_link_4, custom_link_5, 
+                (age, grade, interest, bio, github_user, linkedin_url,
+                 custom_link_1, custom_link_2, custom_link_3, custom_link_4, custom_link_5,
                  g.user["id"])
             )
         db.commit()
@@ -1069,30 +1076,27 @@ def edit_profile():
 @login_required
 def follow(user_id):
     db = get_db()
-    if g.user["id"] == user_id: 
+    if g.user["id"] == user_id:
         return jsonify({"error": "Cannot follow yourself"}), 400
-        
+
     try:
-        # Check if already following to avoid duplicate notifications
         existing = db.execute(
-            "SELECT 1 FROM follows WHERE follower_id = ? AND following_id = ?", 
+            "SELECT 1 FROM follows WHERE follower_id = ? AND following_id = ?",
             (g.user["id"], user_id)
         ).fetchone()
-        
+
         if not existing:
-            # Insert the follow record
             db.execute(
-                "INSERT INTO follows (follower_id, following_id, created_at) VALUES (?, ?, CURRENT_TIMESTAMP)", 
+                "INSERT INTO follows (follower_id, following_id, created_at) VALUES (?, ?, CURRENT_TIMESTAMP)",
                 (g.user["id"], user_id)
             )
-            
-            # Trigger the notification
+
             db.execute(
                 "INSERT INTO notifications (user_id, actor_id, type, post_id) VALUES (?, ?, 'follow', NULL)",
                 (user_id, g.user["id"])
             )
             db.commit()
-            
+
         return jsonify({"success": True}), 200
     except Exception as e:
         print(f"Follow error: {e}")
@@ -1117,9 +1121,9 @@ def get_followers(username):
         return jsonify({"error": "User not found"}), 404
 
     followers = db.execute(
-        """SELECT u.id, u.username, u.profile_pic, u.bio 
-           FROM follows f 
-           JOIN users u ON f.follower_id = u.id 
+        """SELECT u.id, u.username, u.profile_pic, u.bio
+           FROM follows f
+           JOIN users u ON f.follower_id = u.id
            WHERE f.following_id = ?""",
         (target_user["id"],)
     ).fetchall()
@@ -1134,45 +1138,44 @@ def get_following(username):
         return jsonify({"error": "User not found"}), 404
 
     following = db.execute(
-        """SELECT u.id, u.username, u.profile_pic, u.bio 
-           FROM follows f 
-           JOIN users u ON f.following_id = u.id 
+        """SELECT u.id, u.username, u.profile_pic, u.bio
+           FROM follows f
+           JOIN users u ON f.following_id = u.id
            WHERE f.follower_id = ?""",
         (target_user["id"],)
     ).fetchall()
 
     return jsonify([dict(row) for row in following]), 200
 
-# Events API Endpoints
 @app.route("/api/events", methods=["GET"])
 def get_events():
     db = get_db()
     user_id = session.get("user_id")
-    
-    if user_id:
 
+    if user_id:
         events = db.execute(
-            """SELECT posts.*, users.username, 
+            """SELECT posts.*, users.username,
                (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id) as like_count,
                EXISTS(SELECT 1 FROM likes WHERE likes.post_id = posts.id AND likes.user_id = ?) as user_liked
-               FROM posts 
-               JOIN users ON posts.user_id = users.id 
+               FROM posts
+               JOIN users ON posts.user_id = users.id
                WHERE posts.category = 'Events'
+                 AND (posts.is_deleted IS NULL OR posts.is_deleted = 0)
                ORDER BY posts.event_time ASC""",
             (user_id,)
         ).fetchall()
     else:
-
         events = db.execute(
-            """SELECT posts.*, users.username, 
+            """SELECT posts.*, users.username,
                (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id) as like_count,
                0 as user_liked
-               FROM posts 
-               JOIN users ON posts.user_id = users.id 
+               FROM posts
+               JOIN users ON posts.user_id = users.id
                WHERE posts.category = 'Events'
+                 AND (posts.is_deleted IS NULL OR posts.is_deleted = 0)
                ORDER BY posts.event_time ASC"""
         ).fetchall()
-    
+
     return jsonify([dict(row) for row in events]), 200
 
 @app.route("/api/cron/cleanup-events", methods=["POST"])
@@ -1204,51 +1207,17 @@ def api_cleanup_events():
             ).fetchall()
 
         expired_ids = [row["id"] for row in expired_rows]
-        deleted_count = 0
 
         for event_id in expired_ids:
-            if is_postgres:
-                descendant_rows = db.execute(
-                    """
-                    WITH RECURSIVE descendants AS (
-                        SELECT id FROM posts WHERE id = ?
-                        UNION ALL
-                        SELECT p.id FROM posts p
-                        JOIN descendants d ON p.parent_id = d.id
-                    )
-                    SELECT id FROM descendants
-                    """,
-                    (event_id,)
-                ).fetchall()
-                descendant_ids = [row["id"] for row in descendant_rows]
-            else:
-                descendant_ids = [event_id]
-                frontier = [event_id]
-                while frontier:
-                    placeholders = ",".join("?" * len(frontier))
-                    children = db.execute(
-                        f"SELECT id FROM posts WHERE parent_id IN ({placeholders})",
-                        tuple(frontier)
-                    ).fetchall()
-                    child_ids = [row["id"] for row in children]
-                    descendant_ids.extend(child_ids)
-                    frontier = child_ids
-
-            for pid in descendant_ids:
-                db.execute("DELETE FROM likes WHERE post_id = ?", (pid,))
-                db.execute("DELETE FROM notifications WHERE post_id = ?", (pid,))
-
-            db.execute("DELETE FROM posts WHERE id = ?", (event_id,))
-            deleted_count += 1
+            remove_or_softdelete_post(db, event_id)
 
         db.commit()
-        return jsonify({"message": "Expired events cleaned up.", "deleted": deleted_count}), 200
+        return jsonify({"message": "Expired events cleaned up.", "processed": len(expired_ids)}), 200
     except Exception as e:
         db.rollback()
         app.logger.error(f"Event cleanup error: {e}")
         return jsonify({"error": "Failed to clean up events."}), 500
-    
-# Education API Endpoint
+
 @app.route('/api/education', methods=['GET'])
 def get_education_extras():
     return jsonify({
@@ -1256,18 +1225,17 @@ def get_education_extras():
         "category": "STEMNet Greece Student Extra Vault",
         "total_categories": 7
     })
-  
-# Group API Endpoints  
+
 @app.route("/api/groups/create", methods=["POST"])
 @login_required
 def create_group():
     db = get_db()
     name = request.form.get("name", "").strip()
     description = request.form.get("description", "").strip()
-    
+
     if not name:
         return jsonify({"error": "Group name cannot be empty."}), 400
-        
+
     cursor = db.execute(
         "INSERT INTO groups (user_id, name, description) VALUES (?, ?, ?)",
         (g.user["id"], name, description)
@@ -1287,28 +1255,27 @@ def get_group_details(group_id):
     group = db.execute("SELECT groups.*, users.username AS creator_username FROM groups JOIN users ON groups.user_id = users.id WHERE groups.id = ?", (group_id,)).fetchone()
     if not group:
         return jsonify({"error": "Group not found"}), 404
-        
-    # Fetch posts/discussions belonging specifically to this group
+
     current_user_id = g.user["id"] if g.get("user") else 0
     posts = db.execute(
         """
         SELECT posts.*, users.username, users.profile_pic,
                (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id) AS like_count,
                (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id AND likes.user_id = ?) AS user_liked
-        FROM posts 
-        JOIN users ON posts.user_id = users.id 
+        FROM posts
+        JOIN users ON posts.user_id = users.id
         WHERE posts.group_id = ?
+          AND (posts.is_deleted IS NULL OR posts.is_deleted = 0)
         ORDER BY posts.created_at DESC
         """,
         (current_user_id, group_id)
     ).fetchall()
-    
+
     return jsonify({
         "group": dict(group),
         "posts": [dict(p) for p in posts]
     }), 200
 
-#Notification API Endpoints
 @app.route("/api/notifications", methods=["GET"])
 @login_required
 def api_get_notifications():
@@ -1330,7 +1297,7 @@ def api_get_notifications():
     except Exception as e:
         app.logger.error(f"Notifications fetch error: {e}")
         return jsonify({"error": "Failed to load notifications."}), 500
- 
+
 @app.route("/api/notifications/unread", methods=["GET"])
 @login_required
 def check_unread():
@@ -1361,7 +1328,6 @@ def mark_notifications_read():
         app.logger.error(f"Mark read error: {e}")
         return jsonify({"error": "Failed to update notifications."}), 500
 
-# Error Handlers for API
 @app.errorhandler(404)
 def not_found(e):
     return jsonify({"error": "Not Found"}), 404
@@ -1374,6 +1340,5 @@ def ratelimit_handler(e):
 def server_error(e):
     return jsonify({"error": "Internal Server Error"}), 500
 
-# Run the Flask app
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=80)
