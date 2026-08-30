@@ -42,7 +42,7 @@ export default function Notifications({ currentUser, theme, toggleTheme, setHasU
 
     return (
         <div>
-            <Navbar currentUser={currentUser} theme={theme} toggleTheme={toggleTheme} setHasUnreadNotifications={setHasUnreadNotifications} />
+            <Navbar currentUser={currentUser} setCurrentUser={setCurrentUser} theme={theme} toggleTheme={toggleTheme} hasUnreadNotifications={hasUnreadNotifications} />
             <main className="app-main-container" style={{ maxWidth: '700px', margin: '2rem auto', padding: '0 1rem' }}>
                 <h2 style={{ color: '#ccff00' }}>Notifications</h2>
                 {loading ? (
