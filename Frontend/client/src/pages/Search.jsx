@@ -43,25 +43,15 @@ const SafeImage = ({ src, alt, className, width, height, onClick, style }) => {
     );
 };
 
-export default function Search({ currentUser }) {
+export default function Search({ currentUser, setCurrentUser, theme, toggleTheme, hasUnreadNotifications }) {
     const [searchParams, setSearchParams] = useSearchParams();
     const queryParam = searchParams.get('q') || '';
     
     const [searchQuery, setSearchQuery] = useState(queryParam);
     const [results, setResults] = useState({ posts: [], groups: [], users: [] });
     const [loading, setLoading] = useState(false);
-    const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
     
     const navigate = useNavigate();
-
-    useEffect(() => {
-        document.documentElement.setAttribute('data-theme', theme);
-        localStorage.setItem('theme', theme);
-    }, [theme]);
-
-    const toggleTheme = () => {
-        setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
-    };
 
     useEffect(() => {
         if (!queryParam.trim()) {
