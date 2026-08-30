@@ -45,7 +45,7 @@ const SafeImage = ({ src, alt, className, width, height, onClick, style, id }) =
   );
 };
 
-export default function Events<({ currentUser, setCurrentUser, theme, toggleTheme, hasUnreadNotifications }) {
+export default function Events({ currentUser, setCurrentUser, theme, toggleTheme, hasUnreadNotifications }) {
     const [posts, setPosts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [replyPostId, setReplyPostId] = useState(null);

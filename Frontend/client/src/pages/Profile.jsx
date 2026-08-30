@@ -55,7 +55,7 @@ const SafeImage = ({ src, alt, className, style, onClick }) => {
     );
 };
 
-export default function Profile<({ currentUser, setCurrentUser, theme, toggleTheme, hasUnreadNotifications }) {
+export default function Profile({ currentUser, setCurrentUser, theme, toggleTheme, hasUnreadNotifications }) {
     const { username } = useParams();
     const navigate = useNavigate();
 

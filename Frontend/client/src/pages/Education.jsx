@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 
-export default function Education<({ currentUser, setCurrentUser, theme, toggleTheme, hasUnreadNotifications }) {
+export default function Education({ currentUser, setCurrentUser, theme, toggleTheme, hasUnreadNotifications }) {
   // SVG Icons for section headers with dynamic theme-aware coloring
   const iconColor = theme === 'dark' ? '#ccff00' : '#15803d';
 

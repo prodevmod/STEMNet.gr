@@ -155,7 +155,7 @@ const renderTextWithLinks = (text) => {
 // ==========================================
 // MAIN COMPONENT
 // ==========================================
-export default function EventDetails<({ currentUser, setCurrentUser, theme, toggleTheme, hasUnreadNotifications }) {
+export default function EventDetails({ currentUser, setCurrentUser, theme, toggleTheme, hasUnreadNotifications }) {
   const params = useParams();
   const postId = params.postId || params.id;
   const navigate = useNavigate();

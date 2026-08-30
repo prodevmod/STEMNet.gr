@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 
-export default function CreatePost<({ currentUser, setCurrentUser, theme, toggleTheme, hasUnreadNotifications }) {
+export default function CreatePost({ currentUser, setCurrentUser, theme, toggleTheme, hasUnreadNotifications }) {
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
 

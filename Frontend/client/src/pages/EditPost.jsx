@@ -18,7 +18,7 @@ const getPostImage = (item) => {
     return resolveImageUrl(raw);
 };
 
-function EditPost<({ currentUser, setCurrentUser, theme, toggleTheme, hasUnreadNotifications }) {
+function EditPost({ currentUser, setCurrentUser, theme, toggleTheme, hasUnreadNotifications }) {
   const { postId } = useParams();
   const navigate = useNavigate();
   

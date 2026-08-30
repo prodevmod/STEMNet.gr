@@ -75,7 +75,7 @@ const renderTextWithLinks = (text) => {
 // ==========================================
 // MAIN COMPONENT
 // ==========================================
-export default function PostThread<({ currentUser, setCurrentUser, theme, toggleTheme, hasUnreadNotifications }) {
+export default function PostThread({ currentUser, setCurrentUser, theme, toggleTheme, hasUnreadNotifications }) {
     const params = useParams();
     const postId = params.postId || params.id;
     

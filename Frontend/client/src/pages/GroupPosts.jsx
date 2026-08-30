@@ -43,7 +43,7 @@ const SafeImage = ({ src, alt, className, width, height, onClick, style }) => {
   );
 };
 
-export default function GroupPosts<({ currentUser, setCurrentUser, theme, toggleTheme, hasUnreadNotifications }) {
+export default function GroupPosts({ currentUser, setCurrentUser, theme, toggleTheme, hasUnreadNotifications }) {
   const { groupId } = useParams();
   const navigate = useNavigate();
 

@@ -28,7 +28,7 @@ const SafeImage = ({ src, alt, className, style }) => {
     return <img src={src} alt={alt} className={className} style={style} onError={() => setError(true)} me />;
 };
 
-export default function Followers<({ currentUser, setCurrentUser, theme, toggleTheme, hasUnreadNotifications }) {
+export default function Followers({ currentUser, setCurrentUser, theme, toggleTheme, hasUnreadNotifications }) {
     const { username } = useParams();
     const [followers, setFollowers] = useState([]);
     const [loading, setLoading] = useState(true);

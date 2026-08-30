@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 
-export default function Groups<({ currentUser, setCurrentUser, theme, toggleTheme, hasUnreadNotifications }) {
+export default function Groups({ currentUser, setCurrentUser, theme, toggleTheme, hasUnreadNotifications }) {
   const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(true);
 

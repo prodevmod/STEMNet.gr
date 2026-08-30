@@ -37,7 +37,7 @@ const SafeAvatar = ({ src, username }) => {
     );
 };
 
-export default function Following<({ currentUser, setCurrentUser, theme, toggleTheme, hasUnreadNotifications }) {
+export default function Following({ currentUser, setCurrentUser, theme, toggleTheme, hasUnreadNotifications }) {
     const { username } = useParams();
     const [followingList, setFollowingList] = useState([]);
     const [loading, setLoading] = useState(true);

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 
-export default function CreateGroup<({ currentUser, setCurrentUser, theme, toggleTheme, hasUnreadNotifications }) {
+export default function CreateGroup({ currentUser, setCurrentUser, theme, toggleTheme, hasUnreadNotifications }) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [submitting, setSubmitting] = useState(false);
