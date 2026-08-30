@@ -217,45 +217,27 @@ export default function Profile({ currentUser, setCurrentUser, theme, toggleThem
         const text = (commentInputs[postId] || '').trim();
         if (!text) return;
 
+        const formData = new FormData();
+        formData.append('content', text);
+        formData.append('reply_to', postId);
+
         try {
-            let res = await fetch(`/api/post/${postId}/comments`, {
+            const res = await fetch('/api/posts/create', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                body: formData,
                 credentials: 'include',
-                body: JSON.stringify({ content: text }),
             });
 
-            if (res.status === 404) {
-                res = await fetch(`/api/posts/${postId}/comments`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify({ content: text }),
-                });
-            }
-
             if (res.ok) {
-                const newCommentData = await res.json();
-                setPosts((prevPosts) =>
-                    prevPosts.map((post) => {
-                        if (post.id === postId) {
-                            const currentComments = post.comments || [];
-                            return {
-                                ...post,
-                                comments: [...currentComments, newCommentData.comment || newCommentData],
-                            };
-                        }
-                        return post;
-                    })
-                );
                 setCommentInputs((prev) => ({ ...prev, [postId]: '' }));
+                fetchProfile();
             }
         } catch (err) {
             console.error('Error submitting comment:', err);
         }
     };
-
-    const handleSaveProfile = async (e) => {
+   
+const handleSaveProfile = async (e) => {
         e.preventDefault();
         setSaveError('');
 

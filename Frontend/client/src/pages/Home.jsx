@@ -169,42 +169,21 @@ export default function Home({ currentUser, setCurrentUser, theme, toggleTheme }
         const text = (commentInputs[postId] || '').trim();
         if (!text) return;
 
+        const formData = new FormData();
+        formData.append('content', text);
+        formData.append('reply_to', postId);
+
         try {
-            const res = await fetch(`/api/posts/${postId}/comments`, {
+            const res = await fetch('/api/posts/create', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                body: formData,
                 credentials: 'include',
-                body: JSON.stringify({ content: text }),
             });
 
             if (res.ok) {
-                const data = await res.json();
-                const rawComment = data.comment || data;
-                
-                const newReplyPost = {
-                    ...rawComment,
-                    id: rawComment.id || Date.now(),
-                    content: rawComment.content || text,
-                    username: rawComment.username || currentUser?.username || 'user',
-                    profile_pic: rawComment.profile_pic || currentUser?.profile_pic || '',
-                    created_at: new Date().toISOString(),
-                    like_count: 0,
-                    comment_count: 0,
-                    parent_username: parentPost.username,
-                    parent_content: parentPost.content
-                };
-                
-                setPosts((prevPosts) => {
-                    const updatedPosts = prevPosts.map(p => 
-                        p.id === postId 
-                            ? { ...p, comment_count: (Number(p.comment_count) || 0) + 1 } 
-                            : p
-                    );
-                    return [newReplyPost, ...updatedPosts];
-                });
-
                 setCommentInputs((prev) => ({ ...prev, [postId]: '' }));
                 setActiveCommentPostId(null);
+                fetchPosts();
             }
         } catch (err) {
             console.error('Error submitting comment:', err);
