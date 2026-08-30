@@ -2,9 +2,6 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 
-// ==========================================
-// SCRATCH-BUILT SVG ICONS
-// ==========================================
 export const LikeIcon = ({ width = 18, height = 18, className = '', style = {} }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -58,17 +55,12 @@ export const ReplyIcon = ({ width = 18, height = 18, className = '', style = {} 
     className={className}
     style={{ color: 'inherit', ...style }}
   >
-    {/* Slightly bigger chat bubble */}
     <path d="M23 18a2 2 0 0 1-2 2H6l-4 3V3a2 2 0 0 1 2-2h17a2 2 0 0 1 2 2z" />
-    {/* Code Brackets: < and > shifted a bit more to the left */}
     <path d="M9.5 8l-3 3 3 3" />
     <path d="M15.5 8l3 3-3 3" />
   </svg>
 );
 
-// ==========================================
-// SAFE IMAGE COMPONENT (For general media uploads)
-// ==========================================
 const SafeImage = ({ src, alt, className, width, height, onClick, style, id }) => {
   const [error, setError] = useState(false);
   const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
@@ -114,9 +106,6 @@ const SafeImage = ({ src, alt, className, width, height, onClick, style, id }) =
   );
 };
 
-// ==========================================
-// UTILS
-// ==========================================
 const buildCommentTree = (rawComments, mainPostId) => {
   if (!Array.isArray(rawComments)) return [];
 
@@ -152,9 +141,6 @@ const renderTextWithLinks = (text) => {
   return text;
 };
 
-// ==========================================
-// MAIN COMPONENT
-// ==========================================
 export default function EventDetails({ currentUser, setCurrentUser, theme, toggleTheme, hasUnreadNotifications }) {
   const params = useParams();
   const postId = params.postId || params.id;
@@ -184,12 +170,12 @@ export default function EventDetails({ currentUser, setCurrentUser, theme, toggl
       setLoading(true);
       setError(null);
       const res = await fetch(`/api/posts/${postId}`, { credentials: 'include' });
-      
+
       if (res.status === 429) {
         throw new Error('Rate limit reached. Please wait a few seconds and refresh.');
       }
       if (!res.ok) throw new Error('Post not found');
-      
+
       const data = await res.json();
       const fetchedPost = data.post || data;
       const fetchedComments = data.comments || data.post?.comments || data.replies || [];
@@ -228,13 +214,13 @@ export default function EventDetails({ currentUser, setCurrentUser, theme, toggl
     }));
 
     try {
-      const response = await fetch(`/api/posts/${postId}/like`, { 
-        method: 'POST', 
-        credentials: 'include' 
+      const response = await fetch(`/api/posts/${postId}/like`, {
+        method: 'POST',
+        credentials: 'include'
       });
-      
+
       if (!response.ok) throw new Error('Failed to toggle like');
-      
+
       const data = await response.json();
       const serverCount = data.count ?? data.like_count ?? optimisticCount;
       const serverLiked = data.liked ?? data.user_liked ?? newLikedState;
@@ -294,7 +280,7 @@ export default function EventDetails({ currentUser, setCurrentUser, theme, toggl
 
   const handleCreateComment = async (e, parentId = null) => {
     if (e) e.preventDefault();
-    
+
     if (!currentUser) {
       alert('Please log in to reply.');
       return;
@@ -366,7 +352,7 @@ export default function EventDetails({ currentUser, setCurrentUser, theme, toggl
         </Link>
         <small style={{ color: 'gray' }}>{comment.created_at}</small>
       </div>
-      
+
       <p style={{
         margin: 0,
         whiteSpace: 'pre-line',
@@ -377,8 +363,7 @@ export default function EventDetails({ currentUser, setCurrentUser, theme, toggl
       }}>
         {renderTextWithLinks(comment.content)}
       </p>
-      
-      {/* Comment Actions Bar */}
+
       <div style={{
         display: 'flex',
         gap: '1.25rem',
@@ -504,7 +489,7 @@ export default function EventDetails({ currentUser, setCurrentUser, theme, toggl
           style={{
             background: 'none',
             border: 'none',
-            color: 'var(--primary-color, #ccff00)',
+            color: theme === 'dark' ? '#ccff00' : '#000000',
             cursor: 'pointer',
             marginBottom: '1rem',
             fontWeight: 'bold',
@@ -629,7 +614,6 @@ export default function EventDetails({ currentUser, setCurrentUser, theme, toggl
                 </div>
               )}
 
-              {/* Main Post Action Bar */}
               <div
                 style={{
                   display: 'flex',
@@ -666,7 +650,6 @@ export default function EventDetails({ currentUser, setCurrentUser, theme, toggl
               </div>
             </div>
 
-            {/* Top-Level Reply Form */}
             <div
               style={{
                 background: 'var(--card-bg, #fff)',
@@ -716,7 +699,6 @@ export default function EventDetails({ currentUser, setCurrentUser, theme, toggl
               </form>
             </div>
 
-            {/* Replies Section */}
             <div className="comments-section">
               {comments.length === 0 ? (
                 <p style={{ textAlign: 'center', color: '#64748b', margin: '2rem 0' }}>
