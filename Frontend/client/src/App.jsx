@@ -19,7 +19,7 @@ import Groups from './pages/Groups';
 import GroupPosts from './pages/GroupPosts';
 import Education from './pages/Education';
 import CreateGroup from './pages/CreateGroup';
-import './style.css'; 
+import './style.css';
 
 const API_BASE = import.meta.env.VITE_API_URL || '';
 
@@ -58,11 +58,10 @@ function App() {
     }
     const checkUnread = async () => {
       try {
-        const res = await fetch(`${API_BASE}/api/notifications`, { credentials: 'include' });
+        const res = await fetch(`${API_BASE}/api/notifications/unread`, { credentials: 'include' });
         if (res.ok) {
           const data = await res.json();
-          const unread = data.some((n) => !n.is_read);
-          setHasUnreadNotifications(unread);
+          setHasUnreadNotifications(Boolean(data.has_unread));
         }
       } catch (err) {
         console.error('Failed to check notifications:', err);
@@ -85,17 +84,17 @@ function App() {
           <Route path="/register" element={<Register theme={theme} toggleTheme={toggleTheme} />} />
           <Route path="/login" element={<Login setCurrentUser={setCurrentUser} theme={theme} toggleTheme={toggleTheme} />} />
           <Route path="/search" element={<Search currentUser={currentUser} setCurrentUser={setCurrentUser} theme={theme} toggleTheme={toggleTheme} hasUnreadNotifications={hasUnreadNotifications} />} />
-          <Route path="/notifications" element={<Notifications currentUser={currentUser} setCurrentUser={setCurrentUser} theme={theme} toggleTheme={toggleTheme} hasUnreadNotifications={hasUnreadNotifications} />} />
+          <Route path="/notifications" element={<Notifications currentUser={currentUser} setCurrentUser={setCurrentUser} theme={theme} toggleTheme={toggleTheme} hasUnreadNotifications={hasUnreadNotifications} setHasUnreadNotifications={setHasUnreadNotifications} />} />
           <Route path="/profile/:username" element={<Profile currentUser={currentUser} setCurrentUser={setCurrentUser} theme={theme} toggleTheme={toggleTheme} hasUnreadNotifications={hasUnreadNotifications} />} />
           <Route path="/followers/:username" element={<Followers currentUser={currentUser} setCurrentUser={setCurrentUser} theme={theme} toggleTheme={toggleTheme} hasUnreadNotifications={hasUnreadNotifications} />} />
           <Route path="/following/:username" element={<Following currentUser={currentUser} setCurrentUser={setCurrentUser} theme={theme} toggleTheme={toggleTheme} hasUnreadNotifications={hasUnreadNotifications} />} />
-          
+
           <Route path="/groups" element={<Groups currentUser={currentUser} setCurrentUser={setCurrentUser} theme={theme} toggleTheme={toggleTheme} hasUnreadNotifications={hasUnreadNotifications} />} />
           <Route path="/groups/:groupId" element={<GroupPosts currentUser={currentUser} setCurrentUser={setCurrentUser} theme={theme} toggleTheme={toggleTheme} hasUnreadNotifications={hasUnreadNotifications} />} />
           <Route path="/education" element={<Education currentUser={currentUser} setCurrentUser={setCurrentUser} theme={theme} toggleTheme={toggleTheme} hasUnreadNotifications={hasUnreadNotifications} />} />
 
           <Route path="/create-post" element={<CreatePost currentUser={currentUser} setCurrentUser={setCurrentUser} theme={theme} toggleTheme={toggleTheme} hasUnreadNotifications={hasUnreadNotifications} />} />
-          <Route path="/post/edit/:postId" element={<EditPost currentUser={currentUser} setCurrentUser={setCurrentUser} theme={theme} toggleTheme={toggleTheme} hasUnreadNotifications={hasUnreadNotifications} />} />    
+          <Route path="/post/edit/:postId" element={<EditPost currentUser={currentUser} setCurrentUser={setCurrentUser} theme={theme} toggleTheme={toggleTheme} hasUnreadNotifications={hasUnreadNotifications} />} />
           <Route path="/post/:id" element={<PostThread currentUser={currentUser} setCurrentUser={setCurrentUser} theme={theme} toggleTheme={toggleTheme} hasUnreadNotifications={hasUnreadNotifications} />} />
           <Route path="/posts/:postId" element={<EventDetails currentUser={currentUser} setCurrentUser={setCurrentUser} theme={theme} toggleTheme={toggleTheme} hasUnreadNotifications={hasUnreadNotifications} />} />
 
