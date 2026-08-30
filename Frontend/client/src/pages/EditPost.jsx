@@ -18,7 +18,7 @@ const getPostImage = (item) => {
     return resolveImageUrl(raw);
 };
 
-function EditPost({ currentUser, theme, toggleTheme }) {
+function EditPost<({ currentUser, setCurrentUser, theme, toggleTheme, hasUnreadNotifications }) {
   const { postId } = useParams();
   const navigate = useNavigate();
   
@@ -123,7 +123,7 @@ function EditPost({ currentUser, theme, toggleTheme }) {
 
   return (
     <>
-      <Navbar currentUser={currentUser} theme={theme} toggleTheme={toggleTheme} />
+      <Navbar currentUser={currentUser} setCurrentUser={setCurrentUser} theme={theme} toggleTheme={toggleTheme} hasUnreadNotifications={hasUnreadNotifications} />
       <main className="app-main-container">
         <div className="card" style={{ maxWidth: '600px', margin: '0 auto' }}>
           <h2>Edit Post</h2>

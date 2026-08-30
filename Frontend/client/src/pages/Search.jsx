@@ -141,7 +141,7 @@ export default function Search({ currentUser }) {
 
     return (
         <>
-            <Navbar currentUser={currentUser} theme={theme} toggleTheme={toggleTheme} />
+            <Navbar currentUser={currentUser} setCurrentUser={setCurrentUser} theme={theme} toggleTheme={toggleTheme} hasUnreadNotifications={hasUnreadNotifications} />
 
             <main className="app-main-container">
                 {/* SEARCH FORM SECTION */}

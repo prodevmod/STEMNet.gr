@@ -28,7 +28,7 @@ const SafeImage = ({ src, alt, className, style }) => {
     return <img src={src} alt={alt} className={className} style={style} onError={() => setError(true)} me />;
 };
 
-export default function Followers({ currentUser, setCurrentUser, theme, toggleTheme }) {
+export default function Followers<({ currentUser, setCurrentUser, theme, toggleTheme, hasUnreadNotifications }) {
     const { username } = useParams();
     const [followers, setFollowers] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -46,7 +46,7 @@ export default function Followers({ currentUser, setCurrentUser, theme, toggleTh
 
     return (
         <>
-            <Navbar currentUser={currentUser} setCurrentUser={setCurrentUser} theme={theme} toggleTheme={toggleTheme} />
+            <Navbar currentUser={currentUser} setCurrentUser={setCurrentUser} theme={theme} toggleTheme={toggleTheme} hasUnreadNotifications={hasUnreadNotifications} />
             <main style={{ maxWidth: '800px', margin: '0 auto', padding: '1.5rem 1rem' }}>
                 <div className="card" style={{ marginBottom: '1.5rem', padding: '1.25rem' }}>
                     <h2 style={{ margin: 0, fontSize: '1.4rem' }}>People following @{username}</h2>

@@ -37,7 +37,7 @@ const SafeAvatar = ({ src, username }) => {
     );
 };
 
-export default function Following({ currentUser, setCurrentUser, theme, toggleTheme }) {
+export default function Following<({ currentUser, setCurrentUser, theme, toggleTheme, hasUnreadNotifications }) {
     const { username } = useParams();
     const [followingList, setFollowingList] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -70,7 +70,7 @@ export default function Following({ currentUser, setCurrentUser, theme, toggleTh
 
     return (
         <>
-            <Navbar currentUser={currentUser} setCurrentUser={setCurrentUser} theme={theme} toggleTheme={toggleTheme} />
+            <Navbar currentUser={currentUser} setCurrentUser={setCurrentUser} theme={theme} toggleTheme={toggleTheme} hasUnreadNotifications={hasUnreadNotifications} />
 
             <main style={{ maxWidth: '600px', margin: '0 auto', padding: '1.5rem 1rem' }}>
                 <div style={{ marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>

@@ -155,7 +155,7 @@ const renderTextWithLinks = (text) => {
 // ==========================================
 // MAIN COMPONENT
 // ==========================================
-export default function EventDetails({ currentUser, theme, toggleTheme }) {
+export default function EventDetails<({ currentUser, setCurrentUser, theme, toggleTheme, hasUnreadNotifications }) {
   const params = useParams();
   const postId = params.postId || params.id;
   const navigate = useNavigate();
@@ -497,7 +497,7 @@ export default function EventDetails({ currentUser, theme, toggleTheme }) {
 
   return (
     <div>
-      <Navbar currentUser={currentUser} theme={theme} toggleTheme={toggleTheme} />
+      <Navbar currentUser={currentUser} setCurrentUser={setCurrentUser} theme={theme} toggleTheme={toggleTheme} hasUnreadNotifications={hasUnreadNotifications} />
       <main className="app-main-container" style={{ maxWidth: '800px', margin: '2rem auto', padding: '0 1rem' }}>
         <button
           onClick={() => navigate(-1)}

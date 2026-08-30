@@ -105,7 +105,7 @@ export default function Register() {
 
     return (
         <>
-            <Navbar currentUser={currentUser} theme={theme} toggleTheme={toggleTheme} />
+            <Navbar currentUser={null} theme={theme} toggleTheme={toggleTheme} />
 
             <main className="app-main-container">
                 <div className="card" style={{ maxWidth: '560px', margin: '0 auto' }}>

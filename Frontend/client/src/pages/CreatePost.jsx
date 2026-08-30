@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 
-export default function CreatePost({ currentUser, theme, toggleTheme }) {
+export default function CreatePost<({ currentUser, setCurrentUser, theme, toggleTheme, hasUnreadNotifications }) {
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
 
@@ -80,7 +80,7 @@ export default function CreatePost({ currentUser, theme, toggleTheme }) {
 
     return (
         <div>
-            <Navbar currentUser={currentUser} theme={theme} toggleTheme={toggleTheme} />
+            <Navbar currentUser={currentUser} setCurrentUser={setCurrentUser} theme={theme} toggleTheme={toggleTheme} hasUnreadNotifications={hasUnreadNotifications} />
             <main className="app-main-container" style={{ padding: '2rem 1rem' }}>
                 <div className="card" style={{ maxWidth: '600px', margin: '0 auto', background: 'var(--card-bg, #fff)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius)', padding: '2rem' }}>
                     <h2 style={{ marginBottom: '0.5rem', color: '#ccff00' }}>

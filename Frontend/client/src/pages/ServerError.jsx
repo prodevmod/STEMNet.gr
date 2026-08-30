@@ -23,7 +23,7 @@ export default function ServerError() {
 
     return (
         <>
-            <Navbar currentUser={currentUser} theme={theme} toggleTheme={toggleTheme} />
+            <Navbar currentUser={currentUser} setCurrentUser={setCurrentUser} theme={theme} toggleTheme={toggleTheme} hasUnreadNotifications={hasUnreadNotifications} />
             <main className="app-main-container">
                 <div className="card" style={{ padding: '3rem 1.5rem', textAlign: 'center', maxWidth: '480px', margin: '2rem auto', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                     <img src={logoPng} alt="STEMNet Greece Logo" style={{ height: '72px', width: 'auto', marginBottom: '1.25rem' }} />

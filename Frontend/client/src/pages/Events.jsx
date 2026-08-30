@@ -45,7 +45,7 @@ const SafeImage = ({ src, alt, className, width, height, onClick, style, id }) =
   );
 };
 
-export default function Events({ currentUser, theme, toggleTheme }) {
+export default function Events<({ currentUser, setCurrentUser, theme, toggleTheme, hasUnreadNotifications }) {
     const [posts, setPosts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [replyPostId, setReplyPostId] = useState(null);
@@ -171,7 +171,7 @@ export default function Events({ currentUser, theme, toggleTheme }) {
 
     return (
         <div>
-            <Navbar currentUser={currentUser} theme={theme} toggleTheme={toggleTheme} />
+            <Navbar currentUser={currentUser} setCurrentUser={setCurrentUser} theme={theme} toggleTheme={toggleTheme} hasUnreadNotifications={hasUnreadNotifications} />
             <main className="app-main-container" style={{ maxWidth: '800px', margin: '2rem auto', padding: '0 1rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                     <h2 style={{ color: '#ccff00' }}>Upcoming STEM & Robotics Events</h2>

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 
-export default function Groups({ currentUser, theme, toggleTheme }) {
+export default function Groups<({ currentUser, setCurrentUser, theme, toggleTheme, hasUnreadNotifications }) {
   const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -24,7 +24,7 @@ export default function Groups({ currentUser, theme, toggleTheme }) {
 
   return (
     <div>
-      <Navbar currentUser={currentUser} theme={theme} toggleTheme={toggleTheme} />
+      <Navbar currentUser={currentUser} setCurrentUser={setCurrentUser} theme={theme} toggleTheme={toggleTheme} hasUnreadNotifications={hasUnreadNotifications} />
 
       <main className="app-main-container" style={{ maxWidth: '800px', margin: '2rem auto', padding: '0 1rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>

@@ -55,7 +55,7 @@ const SafeImage = ({ src, alt, className, style, onClick }) => {
     );
 };
 
-export default function Profile({ currentUser, setCurrentUser, theme, toggleTheme }) {
+export default function Profile<({ currentUser, setCurrentUser, theme, toggleTheme, hasUnreadNotifications }) {
     const { username } = useParams();
     const navigate = useNavigate();
 
@@ -298,7 +298,7 @@ const handleSaveProfile = async (e) => {
 
     return (
         <>
-            <Navbar currentUser={currentUser} setCurrentUser={setCurrentUser} theme={theme} toggleTheme={toggleTheme} />
+            <Navbar currentUser={currentUser} setCurrentUser={setCurrentUser} theme={theme} toggleTheme={toggleTheme} hasUnreadNotifications={hasUnreadNotifications} />
 
             <main style={{ maxWidth: '800px', margin: '0 auto', padding: '1.5rem 1rem' }}>
                 {loading && (

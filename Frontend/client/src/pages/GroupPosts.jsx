@@ -43,7 +43,7 @@ const SafeImage = ({ src, alt, className, width, height, onClick, style }) => {
   );
 };
 
-export default function GroupPosts({ currentUser, theme, toggleTheme }) {
+export default function GroupPosts<({ currentUser, setCurrentUser, theme, toggleTheme, hasUnreadNotifications }) {
   const { groupId } = useParams();
   const navigate = useNavigate();
 
@@ -162,7 +162,7 @@ export default function GroupPosts({ currentUser, theme, toggleTheme }) {
   if (loading) {
     return (
       <div>
-        <Navbar currentUser={currentUser} theme={theme} toggleTheme={toggleTheme} />
+        <Navbar currentUser={currentUser} setCurrentUser={setCurrentUser} theme={theme} toggleTheme={toggleTheme} hasUnreadNotifications={hasUnreadNotifications} />
         <main className="app-main-container" style={{ maxWidth: '800px', margin: '2rem auto', padding: '0 1rem' }}>
           <div className="card" style={{ textAlign: 'center', padding: '3rem', color: '#ccff00' }}>
             Loading group discussions...
@@ -174,7 +174,7 @@ export default function GroupPosts({ currentUser, theme, toggleTheme }) {
 
   return (
     <div>
-      <Navbar currentUser={currentUser} theme={theme} toggleTheme={toggleTheme} />
+      <Navbar currentUser={currentUser} setCurrentUser={setCurrentUser} theme={theme} toggleTheme={toggleTheme} hasUnreadNotifications={hasUnreadNotifications} />
 
       <main className="app-main-container" style={{ maxWidth: '800px', margin: '2rem auto', padding: '0 1rem' }}>
             {group && (

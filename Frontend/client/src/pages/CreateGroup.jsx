@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 
-export default function CreateGroup({ currentUser, theme, toggleTheme }) {
+export default function CreateGroup<({ currentUser, setCurrentUser, theme, toggleTheme, hasUnreadNotifications }) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -47,7 +47,7 @@ export default function CreateGroup({ currentUser, theme, toggleTheme }) {
 
   return (
     <div>
-      <Navbar currentUser={currentUser} theme={theme} toggleTheme={toggleTheme} />
+      <Navbar currentUser={currentUser} setCurrentUser={setCurrentUser} theme={theme} toggleTheme={toggleTheme} hasUnreadNotifications={hasUnreadNotifications} />
 
       <main className="app-main-container" style={{ maxWidth: '600px', margin: '2rem auto', padding: '0 1rem' }}>
         <div className="card" style={{ background: 'var(--card-bg, #fff)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius)', padding: '2rem' }}>

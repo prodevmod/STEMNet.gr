@@ -75,7 +75,7 @@ const renderTextWithLinks = (text) => {
 // ==========================================
 // MAIN COMPONENT
 // ==========================================
-export default function PostThread({ currentUser, setCurrentUser, theme, toggleTheme }) {
+export default function PostThread<({ currentUser, setCurrentUser, theme, toggleTheme, hasUnreadNotifications }) {
     const params = useParams();
     const postId = params.postId || params.id;
     
@@ -522,7 +522,7 @@ export default function PostThread({ currentUser, setCurrentUser, theme, toggleT
     if (error || !threadData) {
         return (
             <>
-                <Navbar currentUser={currentUser} setCurrentUser={setCurrentUser} theme={theme} toggleTheme={toggleTheme} />
+                <Navbar currentUser={currentUser} setCurrentUser={setCurrentUser} theme={theme} toggleTheme={toggleTheme} hasUnreadNotifications={hasUnreadNotifications} />
                 <main style={{ maxWidth: '800px', margin: '0 auto', padding: '1.5rem 1rem', textAlign: 'center' }}>
                     <p style={{ color: '#ef4444', marginBottom: '1rem' }}>{error || 'Post not found'}</p>
                     <button onClick={() => navigate('/')} className="btn btn-primary">Go back to Home</button>
@@ -537,7 +537,7 @@ export default function PostThread({ currentUser, setCurrentUser, theme, toggleT
 
     return (
         <>
-            <Navbar currentUser={currentUser} setCurrentUser={setCurrentUser} theme={theme} toggleTheme={toggleTheme} />
+            <Navbar currentUser={currentUser} setCurrentUser={setCurrentUser} theme={theme} toggleTheme={toggleTheme} hasUnreadNotifications={hasUnreadNotifications} />
             <main style={{ maxWidth: '800px', margin: '0 auto', padding: '1.5rem 1rem' }}>
                 <button 
                     onClick={() => navigate(-1)} 
