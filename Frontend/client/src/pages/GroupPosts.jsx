@@ -4,63 +4,6 @@ import Navbar from '../components/Navbar';
 import likedIcon from '../assets/liked.svg';
 import likeIcon from '../assets/like.svg';
 import commentIcon from '../assets/comment.svg';
-const [isEditingGroup, setIsEditingGroup] = useState(false);
-const [editName, setEditName] = useState('');
-const [editDescription, setEditDescription] = useState('');
-const [savingGroup, setSavingGroup] = useState(false);
-const [deletingGroup, setDeletingGroup] = useState(false);
-
-const isGroupOwner = currentUser && group && currentUser.username === group.username;
-
-const startEditingGroup = () => {
-    setEditName(group.name);
-    setEditDescription(group.description);
-    setIsEditingGroup(true);
-};
-
-const handleSaveGroup = async (e) => {
-    e.preventDefault();
-    setSavingGroup(true);
-    try {
-        const res = await fetch(`/api/groups/${groupId}/edit`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify({ name: editName, description: editDescription }),
-        });
-        if (res.ok) {
-            setIsEditingGroup(false);
-            fetchGroupAndPosts();
-        } else {
-            const data = await res.json().catch(() => ({}));
-            alert(data.error || 'Failed to update group.');
-        }
-    } catch (err) {
-        console.error('Error updating group:', err);
-    } finally {
-        setSavingGroup(false);
-    }
-};
-
-const handleDeleteGroup = async () => {
-    if (!window.confirm('Delete this group? This cannot be undone.')) return;
-    setDeletingGroup(true);
-    try {
-        const res = await fetch(`/api/groups/${groupId}/delete`, {
-            method: 'DELETE',
-            credentials: 'include',
-        });
-        if (res.ok) {
-            navigate('/groups');
-        } else {
-            alert('Failed to delete group.');
-        }
-    } catch (err) {
-        console.error('Error deleting group:', err);
-    } finally {
-        setDeletingGroup(false);
-    }
-};
 
 const SafeImage = ({ src, alt, className, width, height, onClick, style }) => {
   const [error, setError] = useState(false);
@@ -234,97 +177,41 @@ export default function GroupPosts({ currentUser, setCurrentUser, theme, toggleT
       <Navbar currentUser={currentUser} setCurrentUser={setCurrentUser} theme={theme} toggleTheme={toggleTheme} hasUnreadNotifications={hasUnreadNotifications} />
 
       <main className="app-main-container" style={{ maxWidth: '800px', margin: '2rem auto', padding: '0 1rem' }}>
-        {group && (
-        <div className="card" style={{ padding: '1.5rem', background: 'var(--card-bg, #fff)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius)', marginBottom: '1.5rem' }}>
-            {!isEditingGroup ? (
-                <>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '1rem' }}>
-                        <div>
-                            <h2 style={{ margin: '0 0 0.3rem 0', color: 'var(--text-primary)' }}>{group.name}</h2>
-                            <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>
-                                Created by <Link to={`/profile/${group.username}`}>@{group.username}</Link>
-                            </p>
-                        </div>
-                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
-                            <Link
-                                to="/groups"
-                                className="btn btn-outline"
-                                style={{
-                                    fontSize: '0.8rem',
-                                    padding: '0.4rem 0.8rem',
-                                    color: '#ffffff !important',
-                                    borderColor: '#ffffff',
-                                    backgroundColor: 'transparent'
-                                }}
-                            >
-                                <span style={{ color: '#ffffff' }}>← Back to Groups</span>
-                            </Link>
-                            {currentUser && (
-                                <Link to={`/create-post?group_id=${group.id}`} className="btn btn-primary" style={{ fontSize: '0.8rem', padding: '0.4rem 0.8rem' }}>
-                                    + Post in Group
-                                </Link>
-                            )}
-                            {isGroupOwner && (
-                                <>
-                                    <button
-                                        onClick={startEditingGroup}
-                                        style={{ fontSize: '0.8rem', padding: '0.4rem 0.8rem', background: 'transparent', border: '1px solid var(--border-color)', borderRadius: 'var(--radius)', color: 'inherit', cursor: 'pointer' }}
-                                    >
-                                        Edit
-                                    </button>
-                                    <button
-                                        onClick={handleDeleteGroup}
-                                        disabled={deletingGroup}
-                                        style={{ fontSize: '0.8rem', padding: '0.4rem 0.8rem', background: '#ef4444', color: '#ffffff', border: 'none', borderRadius: 'var(--radius)', cursor: 'pointer' }}
-                                    >
-                                        {deletingGroup ? 'Deleting...' : 'Delete'}
-                                    </button>
-                                </>
-                            )}
-                        </div>
-                    </div>
-                    <p style={{ margin: 0, color: 'var(--text-primary)', fontSize: '0.95rem', lineHeight: '1.5' }}>
-                        {group.description}
+            {group && (
+            <div className="card" style={{ padding: '1.5rem', background: 'var(--card-bg, #fff)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius)', marginBottom: '1.5rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '1rem' }}>
+                <div>
+                    <h2 style={{ margin: '0 0 0.3rem 0', color: 'var(--text-primary)' }}>{group.name}</h2>
+                    <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>
+                    Created by <Link to={`/profile/${group.username}`}>@{group.username}</Link>
                     </p>
-                </>
-            ) : (
-                <form onSubmit={handleSaveGroup}>
-                    <div style={{ marginBottom: '0.75rem' }}>
-                        <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.3rem' }}>Group Name</label>
-                        <input
-                            type="text"
-                            value={editName}
-                            onChange={(e) => setEditName(e.target.value)}
-                            required
-                            style={{ width: '100%', padding: '0.6rem', borderRadius: 'var(--radius)', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'inherit', boxSizing: 'border-box' }}
-                        />
-                    </div>
-                    <div style={{ marginBottom: '1rem' }}>
-                        <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.3rem' }}>Description</label>
-                        <textarea
-                            value={editDescription}
-                            onChange={(e) => setEditDescription(e.target.value)}
-                            rows="3"
-                            required
-                            style={{ width: '100%', padding: '0.6rem', borderRadius: 'var(--radius)', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'inherit', boxSizing: 'border-box', resize: 'vertical' }}
-                        />
-                    </div>
-                    <div style={{ display: 'flex', gap: '0.5rem' }}>
-                        <button type="submit" disabled={savingGroup} className="btn btn-primary" style={{ padding: '0.5rem 1.25rem', fontSize: '0.85rem' }}>
-                            {savingGroup ? 'Saving...' : 'Save Changes'}
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => setIsEditingGroup(false)}
-                            style={{ padding: '0.5rem 1.25rem', fontSize: '0.85rem', background: 'transparent', border: '1px solid var(--border-color)', borderRadius: 'var(--radius)', color: 'inherit', cursor: 'pointer' }}
-                        >
-                            Cancel
-                        </button>
-                    </div>
-                </form>
+                </div>
+                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                    <Link 
+                    to="/groups" 
+                    className="btn btn-outline" 
+                    style={{ 
+                        fontSize: '0.8rem', 
+                        padding: '0.4rem 0.8rem', 
+                        color: '#ffffff !important', 
+                        borderColor: '#ffffff',
+                        backgroundColor: 'transparent'
+                    }}
+                    >
+                    <span style={{ color: '#ffffff' }}>← Back to Groups</span>
+                    </Link>
+                    {currentUser && (
+                    <Link to={`/create-post?group_id=${group.id}`} className="btn btn-primary" style={{ fontSize: '0.8rem', padding: '0.4rem 0.8rem' }}>
+                        + Post in Group
+                    </Link>
+                    )}
+                </div>
+                </div>
+                <p style={{ margin: 0, color: 'var(--text-primary)', fontSize: '0.95rem', lineHeight: '1.5' }}>
+                {group.description}
+                </p>
+            </div>
             )}
-        </div>
-        )}
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
           <h3 style={{ margin: 0, color: 'var(--text-primary)' }}>Group Discussions</h3>
