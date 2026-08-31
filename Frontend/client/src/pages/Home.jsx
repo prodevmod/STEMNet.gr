@@ -64,11 +64,21 @@ const renderTextWithLinks = (text) => {
 const SafeImage = ({ src, alt, className, style, onClick }) => {
     const [error, setError] = useState(false);
 
+    const width = style?.width || style?.height || '40px';
+    const height = style?.height || style?.width || '40px';
 
     const baseCropStyle = {
+        width: width,
+        height: height,
+        minWidth: width,
+        maxWidth: width,
+        minHeight: height,
+        maxHeight: height,
+        aspectRatio: '1 / 1',
         borderRadius: '50%',
         objectFit: 'cover',
-        flexShrink: 0
+        flexShrink: 0,
+        display: 'inline-block'
     };
 
     if (error || !src) {
