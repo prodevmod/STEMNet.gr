@@ -173,7 +173,6 @@ export default function Navbar({ currentUser, setCurrentUser, theme, toggleTheme
                                         onClick={handleLogout}
                                         style={{ ...mobileLinkStyle(lightGreen), background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
                                     >
-                                        <LogoutIcon strokeColor={lightGreen} /> <span>Logout</span>
                                     </button>
                                 </>
                             ) : (

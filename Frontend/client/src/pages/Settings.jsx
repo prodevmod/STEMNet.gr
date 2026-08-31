@@ -285,8 +285,9 @@ export default function Settings({ currentUser, setCurrentUser, theme, toggleThe
                 </div>
 
                 {activeSection === 'preferences' && (
-                    <div style={cardStyle}>
+                    <div>
                         <h3 style={{ marginTop: 0, marginBottom: '1rem', fontSize: '1.05rem' }}>Appearance</h3>
+                         <div style={cardStyle}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                             <span style={{ fontSize: '0.9rem' }}>
                                 {theme === 'dark' ? 'Dark mode' : 'Light mode'}
@@ -298,6 +299,7 @@ export default function Settings({ currentUser, setCurrentUser, theme, toggleThe
                             >
                                 Switch to {theme === 'dark' ? 'Light' : 'Dark'} Mode
                             </button>
+                        </div>
                         </div>
                     </div>
                 )}
@@ -468,25 +470,6 @@ export default function Settings({ currentUser, setCurrentUser, theme, toggleThe
                         </div>
                     </>
                 )}
-
-                <div style={{ marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border-color)' }}>
-                    <button
-                        onClick={handleLogout}
-                        style={{
-                            width: '100%',
-                            padding: '0.75rem',
-                            background: 'transparent',
-                            border: '1px solid var(--border-color)',
-                            borderRadius: 'var(--radius)',
-                            color: 'inherit',
-                            cursor: 'pointer',
-                            fontWeight: 600,
-                            fontSize: '0.95rem',
-                        }}
-                    >
-                        Log Out
-                    </button>
-                </div>
             </main>
         </>
     );
