@@ -353,6 +353,14 @@ export default function EventDetails({ currentUser, setCurrentUser, theme, toggl
         marginBottom: '0.75rem',
       }}
     >
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: '0.5rem',
+        }}
+      >
               {currentUser && post.username === currentUser.username && (
                   <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.75rem' }}>
                       <button
@@ -388,14 +396,6 @@ export default function EventDetails({ currentUser, setCurrentUser, theme, toggl
                       </button>
                   </div>
               )}
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: '0.5rem',
-        }}
-      >
         <Link
           to={`/profile/${comment.username}`}
           style={{
