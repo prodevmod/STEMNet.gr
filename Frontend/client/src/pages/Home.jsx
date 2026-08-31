@@ -64,13 +64,19 @@ const renderTextWithLinks = (text) => {
 const SafeImage = ({ src, alt, className, style, onClick }) => {
     const [error, setError] = useState(false);
 
+
+    const baseCropStyle = {
+        borderRadius: '50%',
+        objectFit: 'cover',
+        flexShrink: 0
+    };
+
     if (error || !src) {
         return (
             <div
                 className={className}
                 onClick={onClick}
                 style={{
-                    ...style,
                     display: 'inline-flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -78,8 +84,9 @@ const SafeImage = ({ src, alt, className, style, onClick }) => {
                     fontWeight: 'bold',
                     color: 'var(--text-color)',
                     backgroundColor: 'var(--border-color)',
-                    borderRadius: '50%',
-                    userSelect: 'none'
+                    userSelect: 'none',
+                    ...baseCropStyle,
+                    ...style
                 }}
             >
                 {alt ? alt[0].toUpperCase() : 'U'}
@@ -93,7 +100,10 @@ const SafeImage = ({ src, alt, className, style, onClick }) => {
             alt={alt}
             className={className}
             onClick={onClick}
-            style={style}
+            style={{
+                ...baseCropStyle,
+                ...style
+            }}
             onError={() => setError(true)}
         />
     );
@@ -257,10 +267,11 @@ export default function Home({ currentUser, setCurrentUser, theme, toggleTheme, 
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                                             <Link to={`/profile/${authorName}`} style={{ display: 'inline-flex' }}>
+                                              {/* Author Picture */}
                                                 <SafeImage
                                                     src={authorPic}
                                                     alt={authorName}
-                                                    style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover' }}
+                                                    style={{ width: '40px', height: '40px' }}
                                                 />
                                             </Link>
                                             <Link to={`/profile/${authorName}`} style={{ color: 'var(--primary-color)', fontWeight: 'bold', textDecoration: 'none' }}>

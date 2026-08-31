@@ -20,13 +20,19 @@ const likedIcon = getAssetUrl('liked.svg') || getAssetUrl('liked.svg') || unlike
 const SafeImage = ({ src, alt, className, style, onClick }) => {
     const [error, setError] = useState(false);
 
+
+    const baseCropStyle = {
+        borderRadius: '50%',
+        objectFit: 'cover',
+        flexShrink: 0
+    };
+
     if (error || !src) {
         return (
             <div
                 className={className}
                 onClick={onClick}
                 style={{
-                    ...style,
                     display: 'inline-flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -34,8 +40,9 @@ const SafeImage = ({ src, alt, className, style, onClick }) => {
                     fontWeight: 'bold',
                     color: 'var(--text-color)',
                     backgroundColor: 'var(--border-color)',
-                    borderRadius: '50%',
-                    userSelect: 'none'
+                    userSelect: 'none',
+                    ...baseCropStyle,
+                    ...style
                 }}
             >
                 {alt ? alt[0].toUpperCase() : 'U'}
@@ -49,7 +56,10 @@ const SafeImage = ({ src, alt, className, style, onClick }) => {
             alt={alt}
             className={className}
             onClick={onClick}
-            style={style}
+            style={{
+                ...baseCropStyle,
+                ...style
+            }}
             onError={() => setError(true)}
         />
     );
@@ -318,11 +328,13 @@ const handleSaveProfile = async (e) => {
                         {/* PROFILE HEADER */}
                         <div className="card" style={{ padding: '2rem', marginBottom: '1.5rem' }}>
                             <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1.5rem', flexWrap: 'wrap' }}>
+                                {/* Profile Picture */}
                                 <SafeImage
                                     src={profile.profile_pic}
                                     alt={profile.username}
-                                    style={{ width: '85px', height: '85px', borderRadius: '50%', objectFit: 'cover' }}
+                                    style={{ width: '85px', height: '85px' }}
                                 />
+
 
                                 <div style={{ flex: 1, minWidth: '240px' }}>
                                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
