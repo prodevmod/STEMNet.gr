@@ -58,10 +58,12 @@ export default function GroupPosts({ currentUser, setCurrentUser, theme, toggleT
   const [savingGroup, setSavingGroup] = useState(false);
   const [deletingGroup, setDeletingGroup] = useState(false);
 
+  // Resolve creator username dynamically from any common payload property key
+  const creatorUsername = group?.username || group?.creator_username || group?.owner_username || group?.created_by || '';
+
   const isGroupOwner = Boolean(
     currentUser && group && (
-      currentUser.username === group.username || 
-      String(currentUser.username).toLowerCase() === String(group.username).toLowerCase() ||
+      (creatorUsername && String(currentUser.username).toLowerCase() === String(creatorUsername).toLowerCase()) ||
       (currentUser.id && group.user_id && currentUser.id === group.user_id)
     )
   );
@@ -241,7 +243,7 @@ export default function GroupPosts({ currentUser, setCurrentUser, theme, toggleT
 
       <main className="app-main-container" style={{ maxWidth: '800px', margin: '1.5rem auto', padding: '0 1rem' }}>
         
-        {/* Navigation header moved outside the card */}
+        {/* Navigation header */}
         <div style={{ marginBottom: '1rem' }}>
           <Link
             to="/groups"
@@ -266,7 +268,11 @@ export default function GroupPosts({ currentUser, setCurrentUser, theme, toggleT
                 <div style={{ marginBottom: '0.75rem' }}>
                   <h2 style={{ margin: '0 0 0.25rem 0', color: 'var(--text-primary)' }}>{group.name}</h2>
                   <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>
-                    Created by <Link to={`/profile/${group.username}`}>@{group.username}</Link>
+                    Created by {creatorUsername ? (
+                      <Link to={`/profile/${creatorUsername}`}>@{creatorUsername}</Link>
+                    ) : (
+                      <span>Unknown</span>
+                    )}
                   </p>
                 </div>
 
@@ -352,7 +358,7 @@ export default function GroupPosts({ currentUser, setCurrentUser, theme, toggleT
               <div key={post.id} className="post-card card" style={{ background: 'var(--card-bg, #fff)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius)', padding: '1.25rem', marginBottom: '1rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <Link to={`/profile/${post.username}`} className="username" style={{ fontWeight: 'bold', textDecoration: 'none', color: 'var(--text-primary)' }}>
-                    @{post.username}
+                    @{post.username || 'unknown'}
                   </Link>
                   <small style={{ color: 'gray' }}>
                     <Link to={`/post/${post.id}`} style={{ color: 'gray', textDecoration: 'none' }}>
@@ -374,7 +380,7 @@ export default function GroupPosts({ currentUser, setCurrentUser, theme, toggleT
                     fontSize: '0.85rem'
                   }}>
                     <span style={{ fontWeight: 600, color: theme === 'dark' ? '#ffffff' : 'inherit' }}>
-                      Replying to @{post.parent_username}:
+                      Replying to @{post.parent_username || 'unknown'}:
                     </span>
                     <p style={{ margin: '0.2rem 0 0 0', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', color: theme === 'dark' ? '#ffffff' : 'inherit' }}>
                       {post.parent_content}
@@ -445,7 +451,7 @@ export default function GroupPosts({ currentUser, setCurrentUser, theme, toggleT
                 {replyPostId === post.id && (
                   <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid var(--border-color)' }}>
                     <textarea
-                      placeholder={`Write a reply to @${post.username}...`}
+                      placeholder={`Write a reply to @${post.username || 'user'}...`}
                       value={replyContent}
                       onChange={(e) => setReplyContent(e.target.value)}
                       style={{ marginBottom: '0.5rem', width: '100%' }}
