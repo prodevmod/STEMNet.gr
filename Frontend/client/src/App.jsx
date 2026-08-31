@@ -20,9 +20,6 @@ import GroupPosts from './pages/GroupPosts';
 import Education from './pages/Education';
 import CreateGroup from './pages/CreateGroup';
 import Settings from './pages/Settings';
-import ResetPassword from './pages/ResetPassword';
-import VerifyEmail from './pages/VerifyEmail';
-import ConfirmEmailChange from './pages/ConfirmEmailChange';
 import './style.css';
 
 const API_BASE = import.meta.env.VITE_API_URL || '';
@@ -87,9 +84,6 @@ function App() {
           <Route path="/" element={<Home currentUser={currentUser} setCurrentUser={setCurrentUser} theme={theme} toggleTheme={toggleTheme} hasUnreadNotifications={hasUnreadNotifications} />} />
           <Route path="/register" element={<Register theme={theme} toggleTheme={toggleTheme} />} />
           <Route path="/login" element={<Login setCurrentUser={setCurrentUser} theme={theme} toggleTheme={toggleTheme} />} />
-          <Route path="/verify-email" element={<VerifyEmail theme={theme} toggleTheme={toggleTheme} />} />
-          <Route path="/confirm-email-change" element={<ConfirmEmailChange currentUser={currentUser} theme={theme} toggleTheme={toggleTheme} />} />
-          <Route path="/reset-password" element={<ResetPassword theme={theme} toggleTheme={toggleTheme} />} />
           
           <Route path="/search" element={<Search currentUser={currentUser} setCurrentUser={setCurrentUser} theme={theme} toggleTheme={toggleTheme} hasUnreadNotifications={hasUnreadNotifications} />} />
           <Route path="/notifications" element={<Notifications currentUser={currentUser} setCurrentUser={setCurrentUser} theme={theme} toggleTheme={toggleTheme} hasUnreadNotifications={hasUnreadNotifications} setHasUnreadNotifications={setHasUnreadNotifications} />} />

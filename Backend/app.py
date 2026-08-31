@@ -2,6 +2,7 @@ from __future__ import annotations
 import time
 from werkzeug.exceptions import HTTPException
 from werkzeug.utils import secure_filename
+from werkzeug.middleware.proxy_fix import ProxyFix
 import os
 from dotenv import load_dotenv
 import re
@@ -43,6 +44,9 @@ SCHEMA = BASE_DIR / "schema.sql"
 
 app = Flask(__name__)
 CORS(app, supports_credentials=True, origins=[FRONTEND_URL, "http://127.0.0.1:3000"])
+app.wsgi_app = ProxyFix(
+    app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1
+)
 
 app.config["SESSION_PERMANENT"] = False
 app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=30)
