@@ -341,7 +341,7 @@ export default function EventDetails({ currentUser, setCurrentUser, theme, toggl
     }
   };
 
-  const renderCommentItem = (comment) => (
+const renderCommentItem = (comment) => (
     <div
       key={comment.id}
       className="card"
@@ -361,41 +361,6 @@ export default function EventDetails({ currentUser, setCurrentUser, theme, toggl
           marginBottom: '0.5rem',
         }}
       >
-              {currentUser && post.username === currentUser.username && (
-                  <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.75rem' }}>
-                      <button
-                          onClick={() => navigate(`/post/edit/${postId}`)}
-                          style={{
-                              padding: '0.4rem 1rem',
-                              background: 'transparent',
-                              color: theme === 'dark' ? '#ccff00' : '#000000',
-                              border: `1px solid ${theme === 'dark' ? '#ccff00' : '#000000'}`,
-                              borderRadius: '4px',
-                              cursor: 'pointer',
-                              fontWeight: 500,
-                              fontSize: '0.85rem',
-                          }}
-                      >
-                          Edit
-                      </button>
-                      <button
-                          onClick={handleDeleteEvent}
-                          disabled={deletingEvent}
-                          style={{
-                              padding: '0.4rem 1rem',
-                              background: '#ef4444',
-                              color: '#ffffff',
-                              border: 'none',
-                              borderRadius: '4px',
-                              cursor: 'pointer',
-                              fontWeight: 500,
-                              fontSize: '0.85rem',
-                          }}
-                      >
-                          {deletingEvent ? 'Deleting...' : 'Delete'}
-                      </button>
-                  </div>
-              )}
         <Link
           to={`/profile/${comment.username}`}
           style={{
@@ -409,6 +374,7 @@ export default function EventDetails({ currentUser, setCurrentUser, theme, toggl
         </Link>
         <small style={{ color: 'gray' }}>{comment.created_at}</small>
       </div>
+
 
       <p style={{
         margin: 0,
@@ -572,7 +538,7 @@ export default function EventDetails({ currentUser, setCurrentUser, theme, toggl
           </div>
         ) : (
           <>
-            <div
+          <div
               className="post-card"
               style={{
                 background: 'var(--card-bg, #fff)',
@@ -583,14 +549,55 @@ export default function EventDetails({ currentUser, setCurrentUser, theme, toggl
               }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Link
-                  to={`/profile/${post.username}`}
-                  className="username"
-                  style={{ fontWeight: 'bold', textDecoration: 'none', color: 'var(--text-primary)' }}
-                >
-                  @{post.username}
-                </Link>
-                <small style={{ color: 'gray' }}>{post.created_at}</small>
+                
+                {/* Username and Date */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <Link
+                    to={`/profile/${post.username}`}
+                    className="username"
+                    style={{ fontWeight: 'bold', textDecoration: 'none', color: 'var(--text-primary)' }}
+                  >
+                    @{post.username}
+                  </Link>
+                  <small style={{ color: 'gray' }}>{post.created_at}</small>
+                </div>
+
+                {/* Main Event Edit/Delete Buttons */}
+                {currentUser && post.username === currentUser.username && (
+                  <div style={{ display: 'flex', gap: '0.75rem' }}>
+                    <button
+                      onClick={() => navigate(`/post/edit/${postId}`)}
+                      style={{
+                        padding: '0.4rem 1rem',
+                        background: 'transparent',
+                        color: theme === 'dark' ? '#ccff00' : '#000000',
+                        border: `1px solid ${theme === 'dark' ? '#ccff00' : '#000000'}`,
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        fontWeight: 500,
+                        fontSize: '0.85rem',
+                      }}
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={handleDeleteEvent}
+                      disabled={deletingEvent}
+                      style={{
+                        padding: '0.4rem 1rem',
+                        background: '#ef4444',
+                        color: '#ffffff',
+                        border: 'none',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        fontWeight: 500,
+                        fontSize: '0.85rem',
+                      }}
+                    >
+                      {deletingEvent ? 'Deleting...' : 'Delete'}
+                    </button>
+                  </div>
+                )}
               </div>
 
               {post.event_type && (
