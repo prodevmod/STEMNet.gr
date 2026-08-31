@@ -353,6 +353,41 @@ export default function EventDetails({ currentUser, setCurrentUser, theme, toggl
         marginBottom: '0.75rem',
       }}
     >
+              {currentUser && post.username === currentUser.username && (
+                  <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.75rem' }}>
+                      <button
+                          onClick={() => navigate(`/post/edit/${postId}`)}
+                          style={{
+                              padding: '0.4rem 1rem',
+                              background: 'transparent',
+                              color: theme === 'dark' ? '#ccff00' : '#000000',
+                              border: `1px solid ${theme === 'dark' ? '#ccff00' : '#000000'}`,
+                              borderRadius: '4px',
+                              cursor: 'pointer',
+                              fontWeight: 500,
+                              fontSize: '0.85rem',
+                          }}
+                      >
+                          Edit
+                      </button>
+                      <button
+                          onClick={handleDeleteEvent}
+                          disabled={deletingEvent}
+                          style={{
+                              padding: '0.4rem 1rem',
+                              background: '#ef4444',
+                              color: '#ffffff',
+                              border: 'none',
+                              borderRadius: '4px',
+                              cursor: 'pointer',
+                              fontWeight: 500,
+                              fontSize: '0.85rem',
+                          }}
+                      >
+                          {deletingEvent ? 'Deleting...' : 'Delete'}
+                      </button>
+                  </div>
+              )}
       <div
         style={{
           display: 'flex',
@@ -415,42 +450,6 @@ export default function EventDetails({ currentUser, setCurrentUser, theme, toggl
             {Number(comment.like_count) > 0 ? comment.like_count : 'Like'}
           </span>
         </button>
-        {currentUser && post.username === currentUser.username && (
-          <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.75rem' }}>
-              <button
-                  onClick={() => navigate(`/post/edit/${postId}`)}
-                  style={{
-                      padding: '0.4rem 1rem',
-                      background: 'transparent',
-                      color: theme === 'dark' ? '#ccff00' : '#000000',
-                      border: `1px solid ${theme === 'dark' ? '#ccff00' : '#000000'}`,
-                      borderRadius: '4px',
-                      cursor: 'pointer',
-                      fontWeight: 500,
-                      fontSize: '0.85rem',
-                  }}
-              >
-                  Edit
-              </button>
-              <button
-                  onClick={handleDeleteEvent}
-                  disabled={deletingEvent}
-                  style={{
-                      padding: '0.4rem 1rem',
-                      background: '#ef4444',
-                      color: '#ffffff',
-                      border: 'none',
-                      borderRadius: '4px',
-                      cursor: 'pointer',
-                      fontWeight: 500,
-                      fontSize: '0.85rem',
-                  }}
-              >
-                  {deletingEvent ? 'Deleting...' : 'Delete'}
-              </button>
-          </div>
-      )}
-
         <button
           type="button"
           onClick={() => setReplyToId(replyToId === comment.id ? null : comment.id)}
