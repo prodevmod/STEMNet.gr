@@ -156,12 +156,10 @@ export default function Navbar({ currentUser, setCurrentUser, theme, toggleTheme
 
                                     <Link to={`/profile/${currentUser.username}`} style={mobileLinkStyle(lightGreen)}><ProfileIcon strokeColor={lightGreen} /> <span>Profile</span></Link>
                                     <Link to="/search" style={mobileLinkStyle(lightGreen)}><SearchIcon strokeColor={lightGreen} /> <span>Search</span></Link>
+                                    <Link to="/settings" style={mobileLinkStyle(lightGreen)}><GearIcon strokeColor={lightGreen} /> <span>Settings</span></Link>
                                 </>
                             )}
 
-                            <Link to="/settings" style={mobileLinkStyle(lightGreen)}>
-                                <GearIcon strokeColor={lightGreen} /> <span>Settings</span>
-                            </Link>
 
                             <hr style={{ border: '0', borderTop: `1px solid ${dropdownBorderColor}`, margin: '0.2rem 0' }} />
 
