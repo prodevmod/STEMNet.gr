@@ -95,12 +95,11 @@ export default function Navbar({ currentUser, setCurrentUser, theme, toggleTheme
                         </>
                     )}
 
-                    <Link to="/settings" title="Settings" aria-label="Settings" style={{ color: lightGreen, display: 'flex', alignItems: 'center' }}>
-                        <GearIcon strokeColor={lightGreen} />
-                    </Link>
-
                     {currentUser ? (
                         <>
+                            <Link to="/settings" title="Settings" aria-label="Settings" style={{ color: lightGreen, display: 'flex', alignItems: 'center' }}>
+                                <GearIcon strokeColor={lightGreen} />
+                            </Link>
                             <Link to="/create-post" className="btn btn-primary" style={{ color: lightGreen, borderColor: lightGreen, backgroundColor: 'transparent' }}>+ New Post</Link>
                             <button
                                 type="button"
@@ -114,6 +113,14 @@ export default function Navbar({ currentUser, setCurrentUser, theme, toggleTheme
                         </>
                     ) : (
                         <>
+                            <button
+                                onClick={toggleTheme}
+                                aria-label={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} Mode`}
+                                title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} Mode`}
+                                style={{ background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', color: lightGreen }}
+                            >
+                                {theme === 'dark' ? <SunIcon strokeColor={lightGreen} /> : <MoonIcon strokeColor={lightGreen} />}
+                            </button>
                             <Link to="/login" className="btn btn-primary" style={{ color: lightGreen, borderColor: lightGreen, backgroundColor: 'transparent' }}>Log In</Link>
                             <Link to="/register" className="btn btn-primary" style={{ color: lightGreen, borderColor: lightGreen, backgroundColor: 'transparent' }}>Register</Link>
                         </>
@@ -160,6 +167,15 @@ export default function Navbar({ currentUser, setCurrentUser, theme, toggleTheme
                                 </>
                             )}
 
+                            {!currentUser && (
+                                <button
+                                    onClick={toggleTheme}
+                                    style={{ ...mobileLinkStyle(lightGreen), background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                                >
+                                    {theme === 'dark' ? <SunIcon strokeColor={lightGreen} /> : <MoonIcon strokeColor={lightGreen} />}
+                                    <span>{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
+                                </button>
+                            )}
 
                             <hr style={{ border: '0', borderTop: `1px solid ${dropdownBorderColor}`, margin: '0.2rem 0' }} />
 
@@ -288,5 +304,24 @@ const GearIcon = ({ strokeColor }) => (
     <svg width="22" height="22" viewBox="0 0 24 24" style={{ stroke: strokeColor, fill: 'none' }} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="12" cy="12" r="3"></circle>
         <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+    </svg>
+);
+
+const SunIcon = ({ strokeColor }) => (
+    <svg width="22" height="22" viewBox="0 0 24 24" style={{ stroke: strokeColor, fill: 'none' }} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="5"></circle>
+        <line x1="12" y1="1" x2="12" y2="3"></line>
+        <line x1="12" y1="21" x2="12" y2="23"></line>
+        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+        <line x1="1" y1="12" x2="3" y2="12"></line>
+        <line x1="21" y1="12" x2="23" y2="12"></line>
+        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+);
+const MoonIcon = ({ strokeColor }) => (
+    <svg width="22" height="22" viewBox="0 0 24 24" style={{ stroke: strokeColor, fill: 'none' }} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
     </svg>
 );

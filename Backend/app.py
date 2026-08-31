@@ -73,6 +73,22 @@ def allowed_pfp_file(filename):
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+def get_mime_type(filename):
+    """Maps a file extension to its correct MIME type explicitly, instead of
+    trusting the browser-reported content type (which is unreliable for GIFs
+    uploaded via certain browsers/OSes and can cause them to be served as
+    application/octet-stream, breaking inline animated display)."""
+    ext = filename.rsplit('.', 1)[-1].lower() if '.' in filename else ''
+    return {
+        'png': 'image/png',
+        'jpg': 'image/jpeg',
+        'jpeg': 'image/jpeg',
+        'gif': 'image/gif',
+        'webp': 'image/webp',
+        'mp4': 'video/mp4',
+        'webm': 'video/webm',
+    }.get(ext, 'application/octet-stream')
+
 db_url = os.environ.get("DATABASE_URL", "sqlite:///app.db")
 if db_url.startswith("postgres://"):
     db_url = db_url.replace("postgres://", "postgresql://", 1)
@@ -236,7 +252,6 @@ def remove_or_softdelete_post(db, post_id, reassign_user_id=None):
         db.execute("DELETE FROM posts WHERE id = ?", (post_id,))
         return True
 
-# Wrappers
 class PostgresCursorWrapper:
     def __init__(self, cursor):
         self._cursor = cursor
@@ -272,7 +287,6 @@ class PostgresWrapper:
     def rollback(self): self.conn.rollback()
     def close(self): self.conn.close()
 
-# Database connection management
 def get_db():
     if "db" not in g:
         db_url = os.environ.get("DATABASE_URL")
@@ -348,6 +362,34 @@ def upgrade_database():
                 if col_name not in existing_cols:
                     db.execute(f"ALTER TABLE {table} ADD COLUMN {col_name} {col_def.split(' ', 1)[1]};")
             db.commit()
+
+        try:
+            if is_postgres:
+                db.execute("""
+                    CREATE TABLE IF NOT EXISTS bug_reports (
+                        id SERIAL PRIMARY KEY,
+                        user_id INTEGER,
+                        username TEXT,
+                        email TEXT,
+                        description TEXT NOT NULL,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    );
+                """)
+            else:
+                db.execute("""
+                    CREATE TABLE IF NOT EXISTS bug_reports (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        user_id INTEGER,
+                        username TEXT,
+                        email TEXT,
+                        description TEXT NOT NULL,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    );
+                """)
+            db.commit()
+        except Exception as e:
+            print(f"bug_reports table init notice: {e}")
+            if hasattr(db, 'rollback'): db.rollback()
     except Exception as e:
         print(f"Database initialization notice: {e}")
         if hasattr(db, 'rollback'): db.rollback()
@@ -490,7 +532,6 @@ def register():
         db.rollback()
         return jsonify({"error": "Registration failed due to a database error."}), 500
 
-#Helper function to verify email token and update user verification status
 @app.route("/api/verify/<token>")
 def verify_email(token):
     email = confirm_verification_token(token)
@@ -586,11 +627,12 @@ def create_post():
     if file and file.filename != '' and allowed_file(file.filename):
         filename = secure_filename(file.filename)
         unique_filename = f"{current_user_id}_{int(time.time())}_{filename}"
+        content_type = get_mime_type(filename)
         if supabase:
             try:
                 supabase.storage.from_("uploads").upload(
                     path=unique_filename, file=file.read(),
-                    file_options={"content-type": file.content_type, "upsert": "false"}
+                    file_options={"content-type": content_type, "upsert": "false"}
                 )
                 media_path = supabase.storage.from_("uploads").get_public_url(unique_filename)
             except Exception as e:
@@ -885,11 +927,24 @@ def api_edit_post(post_id):
         file = request.files["image"]
         if file and file.filename != "" and allowed_file(file.filename):
             filename = secure_filename(file.filename)
-            upload_folder = app.config.get("UPLOAD_FOLDER", "static/uploads")
-            os.makedirs(upload_folder, exist_ok=True)
-            file_path = os.path.join(upload_folder, filename)
-            file.save(file_path)
-            media_path = f"uploads/{filename}"
+            content_type = get_mime_type(filename)
+            if supabase:
+                try:
+                    unique_filename = f"{user_id}_{int(time.time())}_{filename}"
+                    supabase.storage.from_("uploads").upload(
+                        path=unique_filename, file=file.read(),
+                        file_options={"content-type": content_type, "upsert": "false"}
+                    )
+                    media_path = supabase.storage.from_("uploads").get_public_url(unique_filename)
+                except Exception as e:
+                    app.logger.error(f"Supabase edit upload error: {e}")
+                    return jsonify({"error": "Failed to upload media."}), 500
+            else:
+                upload_folder = app.config.get("UPLOAD_FOLDER", "static/uploads")
+                os.makedirs(upload_folder, exist_ok=True)
+                file_path = os.path.join(upload_folder, filename)
+                file.save(file_path)
+                media_path = f"uploads/{filename}"
 
     try:
         db.execute(
@@ -1037,11 +1092,12 @@ def edit_profile():
     if file and file.filename != '' and allowed_pfp_file(file.filename):
         filename = secure_filename(file.filename)
         unique_filename = f"pfp_{g.user['id']}_{int(time.time())}_{filename}"
+        content_type = get_mime_type(filename)
         if supabase:
             try:
                 supabase.storage.from_("uploads").upload(
                     path=unique_filename, file=file.read(),
-                    file_options={"content-type": file.content_type, "upsert": "true"}
+                    file_options={"content-type": content_type, "upsert": "true"}
                 )
                 profile_pic_url = supabase.storage.from_("uploads").get_public_url(unique_filename)
             except Exception as e:
@@ -1337,7 +1393,6 @@ def delete_group(group_id):
         app.logger.error(f"Delete group error: {e}")
         return jsonify({"error": "Failed to delete group."}), 500
 
-
 @app.route("/api/notifications", methods=["GET"])
 @login_required
 def api_get_notifications():
@@ -1390,7 +1445,6 @@ def mark_notifications_read():
         app.logger.error(f"Mark read error: {e}")
         return jsonify({"error": "Failed to update notifications."}), 500
 
-# Password Reset and Email Change Token Management
 ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL")
 
 def generate_password_reset_token(email):
@@ -1520,6 +1574,43 @@ def send_bug_report_email(reporter_username, reporter_email, description):
     except Exception as e:
         print(f"Error sending bug report email: {e}")
 
+def send_bug_report_confirmation_email(reporter_email, description):
+    resend_api_key = os.environ.get("RESEND_API_KEY")
+    if not resend_api_key:
+        print("RESEND_API_KEY not found. Skipping confirmation email.")
+        return
+
+    headers = {
+        "Authorization": f"Bearer {resend_api_key}",
+        "Content-Type": "application/json"
+    }
+    data = {
+        "from": "STEMNet Greece <noreply@verify.stemnet.app>",
+        "to": [reporter_email],
+        "subject": "We received your bug report",
+        "html": f"""
+            <div style="background-color: #121212; padding: 40px 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;">
+                <div style="max-width: 480px; margin: 0 auto; background-color: #1a1a1a; border: 1px solid #333333; border-radius: 12px; overflow: hidden;">
+                    <div style="padding: 32px 32px 24px 32px; text-align: center; border-bottom: 1px solid #2a2a2a;">
+                        <h1 style="margin: 0; color: #ccff00; font-size: 22px; font-weight: 700;">STEMNet Greece</h1>
+                    </div>
+                    <div style="padding: 32px; text-align: center;">
+                        <h2 style="margin: 0 0 12px 0; color: #ffffff; font-size: 20px; font-weight: 600;">Thanks for the report</h2>
+                        <p style="margin: 0 0 20px 0; color: #a1a1aa; font-size: 15px; line-height: 1.6;">
+                            We've received the following report and will look into it:
+                        </p>
+                        <p style="margin: 0; color: #ffffff; font-size: 14px; line-height: 1.6; white-space: pre-line; text-align: left; background: #0f0f0f; padding: 16px; border-radius: 8px;">
+                            {description}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        """
+    }
+    try:
+        requests.post("https://api.resend.com/emails", headers=headers, json=data)
+    except Exception as e:
+        print(f"Error sending bug report confirmation email: {e}")
 
 @app.route("/api/settings/change-password", methods=["POST"])
 @login_required
@@ -1557,7 +1648,6 @@ def send_password_reset():
     send_password_reset_email(g.user["email"], token)
     return jsonify({"success": True, "message": "Check your email for a reset link."}), 200
 
-
 @app.route("/api/reset-password", methods=["POST"])
 def reset_password():
     data = request.get_json(silent=True) or {}
@@ -1588,7 +1678,6 @@ def reset_password():
         app.logger.error(f"Reset password error: {e}")
         return jsonify({"error": "Failed to reset password."}), 500
 
-
 @app.route("/api/settings/change-email", methods=["POST"])
 @login_required
 def change_email():
@@ -1611,7 +1700,6 @@ def change_email():
     send_email_change_verification(new_email, token)
     return jsonify({"success": True, "message": "Check your new email inbox to confirm the change."}), 200
 
-
 @app.route("/api/verify-email-change/<token>")
 def verify_email_change(token):
     data = confirm_email_change_token(token)
@@ -1632,7 +1720,6 @@ def verify_email_change(token):
         app.logger.error(f"Email change error: {e}")
         return redirect(f"{FRONTEND_URL}/settings?error=server_error")
 
-
 @app.route("/api/settings/report-bug", methods=["POST"])
 @login_required
 def report_bug():
@@ -1642,9 +1729,21 @@ def report_bug():
     if not description:
         return jsonify({"error": "Please describe the issue."}), 400
 
-    send_bug_report_email(g.user["username"], g.user["email"], description)
-    return jsonify({"success": True, "message": "Thanks — your report has been sent."}), 200
+    db = get_db()
+    try:
+        db.execute(
+            "INSERT INTO bug_reports (user_id, username, email, description) VALUES (?, ?, ?, ?)",
+            (g.user["id"], g.user["username"], g.user["email"], description)
+        )
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        app.logger.error(f"Bug report save error: {e}")
 
+    send_bug_report_email(g.user["username"], g.user["email"], description)
+    send_bug_report_confirmation_email(g.user["email"], description)
+
+    return jsonify({"success": True, "message": "Thanks — your report has been sent and saved."}), 200
 
 def get_deleted_user_id(db):
     row = db.execute("SELECT id FROM users WHERE username = ?", ('deleted_user',)).fetchone()
@@ -1657,7 +1756,6 @@ def get_deleted_user_id(db):
     )
     db.commit()
     return cursor.lastrowid
-
 
 @app.route("/api/settings/delete-account", methods=["POST"])
 @login_required
@@ -1698,8 +1796,7 @@ def delete_account():
         db.rollback()
         app.logger.error(f"Delete account error: {e}")
         return jsonify({"error": "Failed to delete account."}), 500
-    
-# Error Handlers
+
 @app.errorhandler(404)
 def not_found(e):
     return jsonify({"error": "Not Found"}), 404
