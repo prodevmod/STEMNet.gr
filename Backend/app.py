@@ -193,11 +193,7 @@ def sanitize_profile_links(user):
                 user_dict[link_key] = url
     return user_dict
 
-def remove_or_softdelete_post(db, post_id):
-    """Hard-deletes a post if it has no replies. If it has replies, soft-deletes
-    it instead: content is replaced with a tombstone message and the row stays
-    in place so replies can still resolve their parent's username/content
-    (rendered as a 'this post has been deleted' quote instead of breaking)."""
+def remove_or_softdelete_post(db, post_id, reassign_user_id=None):
     child_count_row = db.execute(
         "SELECT COUNT(*) as c FROM posts WHERE parent_id = ?", (post_id,)
     ).fetchone()
@@ -206,18 +202,33 @@ def remove_or_softdelete_post(db, post_id):
     if has_children:
         db.execute("DELETE FROM likes WHERE post_id = ?", (post_id,))
         db.execute("DELETE FROM notifications WHERE post_id = ?", (post_id,))
-        db.execute(
-            """UPDATE posts
-               SET content = 'This post has been deleted.',
-                   media_path = NULL,
-                   github_link = NULL,
-                   event_type = NULL,
-                   event_time = NULL,
-                   event_location = NULL,
-                   is_deleted = 1
-               WHERE id = ?""",
-            (post_id,)
-        )
+        if reassign_user_id:
+            db.execute(
+                """UPDATE posts
+                   SET content = 'This post has been deleted.',
+                       media_path = NULL,
+                       github_link = NULL,
+                       event_type = NULL,
+                       event_time = NULL,
+                       event_location = NULL,
+                       is_deleted = 1,
+                       user_id = ?
+                   WHERE id = ?""",
+                (reassign_user_id, post_id)
+            )
+        else:
+            db.execute(
+                """UPDATE posts
+                   SET content = 'This post has been deleted.',
+                       media_path = NULL,
+                       github_link = NULL,
+                       event_type = NULL,
+                       event_time = NULL,
+                       event_location = NULL,
+                       is_deleted = 1
+                   WHERE id = ?""",
+                (post_id,)
+            )
         return False
     else:
         db.execute("DELETE FROM likes WHERE post_id = ?", (post_id,))
@@ -225,6 +236,7 @@ def remove_or_softdelete_post(db, post_id):
         db.execute("DELETE FROM posts WHERE id = ?", (post_id,))
         return True
 
+# Wrappers
 class PostgresCursorWrapper:
     def __init__(self, cursor):
         self._cursor = cursor
@@ -260,6 +272,7 @@ class PostgresWrapper:
     def rollback(self): self.conn.rollback()
     def close(self): self.conn.close()
 
+# Database connection management
 def get_db():
     if "db" not in g:
         db_url = os.environ.get("DATABASE_URL")
@@ -477,6 +490,7 @@ def register():
         db.rollback()
         return jsonify({"error": "Registration failed due to a database error."}), 500
 
+#Helper function to verify email token and update user verification status
 @app.route("/api/verify/<token>")
 def verify_email(token):
     email = confirm_verification_token(token)
@@ -1276,6 +1290,54 @@ def get_group_details(group_id):
         "posts": [dict(p) for p in posts]
     }), 200
 
+@app.route("/api/groups/<int:group_id>/edit", methods=["POST", "PUT"])
+@login_required
+def edit_group(group_id):
+    db = get_db()
+    group = db.execute("SELECT * FROM groups WHERE id = ?", (group_id,)).fetchone()
+    if not group:
+        return jsonify({"error": "Group not found"}), 404
+    if group["user_id"] != g.user["id"]:
+        return jsonify({"error": "Permission denied"}), 403
+
+    data = request.get_json(silent=True) or request.form
+    name = (data.get("name") or "").strip()
+    description = (data.get("description") or "").strip()
+    if not name or not description:
+        return jsonify({"error": "Name and description are required."}), 400
+
+    try:
+        db.execute("UPDATE groups SET name = ?, description = ? WHERE id = ?", (name, description, group_id))
+        db.commit()
+        return jsonify({"success": True, "message": "Group updated."}), 200
+    except Exception as e:
+        db.rollback()
+        app.logger.error(f"Edit group error: {e}")
+        return jsonify({"error": "Failed to update group."}), 500
+
+@app.route("/api/groups/<int:group_id>/delete", methods=["POST", "DELETE"])
+@login_required
+def delete_group(group_id):
+    db = get_db()
+    group = db.execute("SELECT * FROM groups WHERE id = ?", (group_id,)).fetchone()
+    if not group:
+        return jsonify({"error": "Group not found"}), 404
+    if group["user_id"] != g.user["id"]:
+        return jsonify({"error": "Permission denied"}), 403
+
+    try:
+        post_rows = db.execute("SELECT id FROM posts WHERE group_id = ?", (group_id,)).fetchall()
+        for row in post_rows:
+            remove_or_softdelete_post(db, row["id"])
+        db.execute("DELETE FROM groups WHERE id = ?", (group_id,))
+        db.commit()
+        return jsonify({"success": True, "message": "Group deleted."}), 200
+    except Exception as e:
+        db.rollback()
+        app.logger.error(f"Delete group error: {e}")
+        return jsonify({"error": "Failed to delete group."}), 500
+
+
 @app.route("/api/notifications", methods=["GET"])
 @login_required
 def api_get_notifications():
@@ -1488,7 +1550,6 @@ def change_password():
         app.logger.error(f"Change password error: {e}")
         return jsonify({"error": "Failed to update password."}), 500
 
-
 @app.route("/api/settings/send-password-reset", methods=["POST"])
 @login_required
 def send_password_reset():
@@ -1585,6 +1646,19 @@ def report_bug():
     return jsonify({"success": True, "message": "Thanks — your report has been sent."}), 200
 
 
+def get_deleted_user_id(db):
+    row = db.execute("SELECT id FROM users WHERE username = ?", ('deleted_user',)).fetchone()
+    if row:
+        return row["id"]
+    cursor = db.execute(
+        """INSERT INTO users (username, email, password_hash, age, grade, interest, is_verified)
+           VALUES (?, ?, ?, ?, ?, ?, ?)""",
+        ('deleted_user', 'deleted-user@stemnet.invalid', generate_password_hash(os.urandom(16).hex()), 18, 'N/A', 'N/A', 1)
+    )
+    db.commit()
+    return cursor.lastrowid
+
+
 @app.route("/api/settings/delete-account", methods=["POST"])
 @login_required
 def delete_account():
@@ -1601,9 +1675,16 @@ def delete_account():
     user_id = g.user["id"]
 
     try:
+        placeholder_id = get_deleted_user_id(db)
+
+        own_group = db.execute("SELECT id FROM groups WHERE user_id = ?", (user_id,)).fetchone()
+        if own_group:
+            db.execute("UPDATE posts SET group_id = NULL WHERE group_id = ?", (own_group["id"],))
+            db.execute("DELETE FROM groups WHERE id = ?", (own_group["id"],))
+
         own_posts = db.execute("SELECT id FROM posts WHERE user_id = ?", (user_id,)).fetchall()
         for row in own_posts:
-            remove_or_softdelete_post(db, row["id"])
+            remove_or_softdelete_post(db, row["id"], reassign_user_id=placeholder_id)
 
         db.execute("DELETE FROM likes WHERE user_id = ?", (user_id,))
         db.execute("DELETE FROM notifications WHERE user_id = ? OR actor_id = ?", (user_id, user_id))
@@ -1617,7 +1698,7 @@ def delete_account():
         db.rollback()
         app.logger.error(f"Delete account error: {e}")
         return jsonify({"error": "Failed to delete account."}), 500
-
+    
 # Error Handlers
 @app.errorhandler(404)
 def not_found(e):

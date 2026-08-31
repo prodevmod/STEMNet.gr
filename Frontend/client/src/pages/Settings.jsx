@@ -5,7 +5,18 @@ import Navbar from '../components/Navbar';
 export default function Settings({ currentUser, setCurrentUser, theme, toggleTheme, hasUnreadNotifications }) {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
-    const [activeSection, setActiveSection] = useState('account');
+
+    const [openSections, setOpenSections] = useState({
+        appearance: true,
+        password: false,
+        email: false,
+        bug: false,
+        delete: false,
+    });
+
+    const toggleSection = (key) => {
+        setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
+    };
 
     const [statusMsg, setStatusMsg] = useState('');
     const [statusType, setStatusType] = useState('');
@@ -37,6 +48,7 @@ export default function Settings({ currentUser, setCurrentUser, theme, toggleThe
         if (searchParams.get('email_changed') === 'true') {
             setStatusType('success');
             setStatusMsg('Your email address has been updated.');
+            setOpenSections((prev) => ({ ...prev, email: true }));
         } else if (searchParams.get('error') === 'invalid_token') {
             setStatusType('error');
             setStatusMsg('That confirmation link is invalid or has expired.');
@@ -52,21 +64,6 @@ export default function Settings({ currentUser, setCurrentUser, theme, toggleThe
     const clearStatus = () => {
         setStatusMsg('');
         setStatusType('');
-    };
-
-    const handleLogout = async () => {
-        try {
-            await fetch('/api/logout', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include'
-            });
-        } catch (err) {
-            console.error('Logout failed:', err);
-        } finally {
-            if (setCurrentUser) setCurrentUser(null);
-            navigate('/login');
-        }
     };
 
     const handleChangePassword = async (e) => {
@@ -215,19 +212,6 @@ export default function Settings({ currentUser, setCurrentUser, theme, toggleThe
 
     const accentColor = theme === 'dark' ? '#ccff00' : '#000000';
 
-    const sectionTabStyle = (isActive) => ({
-        flex: 1,
-        padding: '0.75rem',
-        textAlign: 'center',
-        cursor: 'pointer',
-        fontWeight: 600,
-        fontSize: '0.95rem',
-        background: 'transparent',
-        border: 'none',
-        borderBottom: `2px solid ${isActive ? accentColor : 'var(--border-color)'}`,
-        color: isActive ? accentColor : 'var(--text-secondary, #64748b)',
-    });
-
     const inputStyle = {
         width: '100%',
         padding: '0.65rem',
@@ -246,12 +230,48 @@ export default function Settings({ currentUser, setCurrentUser, theme, toggleThe
         marginBottom: '0.35rem',
     };
 
-    const cardStyle = {
-        padding: '1.5rem',
-        marginBottom: '1.5rem',
+    const AccordionHeader = ({ title, sectionKey, danger }) => (
+        <button
+            onClick={() => toggleSection(sectionKey)}
+            style={{
+                width: '100%',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '1.1rem 1.25rem',
+                background: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: '1.05rem',
+                fontWeight: 600,
+                color: danger ? '#ef4444' : 'inherit',
+                textAlign: 'left',
+            }}
+        >
+            <span>{title}</span>
+            <span
+                style={{
+                    display: 'inline-block',
+                    transform: openSections[sectionKey] ? 'rotate(180deg)' : 'rotate(0deg)',
+                    transition: 'transform 0.15s ease',
+                    color: danger ? '#ef4444' : accentColor,
+                }}
+            >
+                ▾
+            </span>
+        </button>
+    );
+
+    const accordionWrapperStyle = (danger) => ({
+        marginBottom: '1rem',
         background: 'var(--card-bg)',
-        border: '1px solid var(--border-color)',
+        border: `1px solid ${danger ? '#ef4444' : 'var(--border-color)'}`,
         borderRadius: 'var(--radius)',
+        overflow: 'hidden',
+    });
+
+    const accordionBodyStyle = {
+        padding: '0 1.25rem 1.25rem 1.25rem',
     };
 
     return (
@@ -275,39 +295,30 @@ export default function Settings({ currentUser, setCurrentUser, theme, toggleThe
                     </div>
                 )}
 
-                <div style={{ display: 'flex', marginBottom: '1.5rem', borderBottom: '1px solid var(--border-color)' }}>
-                    <button style={sectionTabStyle(activeSection === 'account')} onClick={() => setActiveSection('account')}>
-                        Account
-                    </button>
-                    <button style={sectionTabStyle(activeSection === 'preferences')} onClick={() => setActiveSection('preferences')}>
-                        Preferences
-                    </button>
+                <div style={accordionWrapperStyle(false)}>
+                    <AccordionHeader title="Appearance" sectionKey="appearance" />
+                    {openSections.appearance && (
+                        <div style={accordionBodyStyle}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <span style={{ fontSize: '0.9rem' }}>
+                                    {theme === 'dark' ? 'Dark mode' : 'Light mode'}
+                                </span>
+                                <button
+                                    onClick={toggleTheme}
+                                    className="btn btn-primary"
+                                    style={{ padding: '0.5rem 1.25rem', fontSize: '0.85rem' }}
+                                >
+                                    Switch to {theme === 'dark' ? 'Light' : 'Dark'} Mode
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
-                {activeSection === 'preferences' && (
-                    <div>
-                        <h3 style={{ marginTop: 0, marginBottom: '1rem', fontSize: '1.05rem' }}>Appearance</h3>
-                         <div style={cardStyle}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                            <span style={{ fontSize: '0.9rem' }}>
-                                {theme === 'dark' ? 'Dark mode' : 'Light mode'}
-                            </span>
-                            <button
-                                onClick={toggleTheme}
-                                className="btn btn-primary"
-                                style={{ padding: '0.5rem 1.25rem', fontSize: '0.85rem' }}
-                            >
-                                Switch to {theme === 'dark' ? 'Light' : 'Dark'} Mode
-                            </button>
-                        </div>
-                        </div>
-                    </div>
-                )}
-
-                {activeSection === 'account' && (
-                    <>
-                        <div style={cardStyle}>
-                            <h3 style={{ marginTop: 0, marginBottom: '0.5rem', fontSize: '1.05rem' }}>Change Password</h3>
+                <div style={accordionWrapperStyle(false)}>
+                    <AccordionHeader title="Change Password" sectionKey="password" />
+                    {openSections.password && (
+                        <div style={accordionBodyStyle}>
                             <p style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '1rem' }}>
                                 Update your password directly, or have a reset link sent to your email instead.
                             </p>
@@ -352,9 +363,13 @@ export default function Settings({ currentUser, setCurrentUser, theme, toggleThe
                                 </div>
                             </form>
                         </div>
+                    )}
+                </div>
 
-                        <div style={cardStyle}>
-                            <h3 style={{ marginTop: 0, marginBottom: '0.5rem', fontSize: '1.05rem' }}>Change Email</h3>
+                <div style={accordionWrapperStyle(false)}>
+                    <AccordionHeader title="Change Email" sectionKey="email" />
+                    {openSections.email && (
+                        <div style={accordionBodyStyle}>
                             <p style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '1rem' }}>
                                 Current email: <strong>{currentUser.email}</strong>. We'll send a confirmation link to your new address.
                             </p>
@@ -380,9 +395,13 @@ export default function Settings({ currentUser, setCurrentUser, theme, toggleThe
                                 </button>
                             </form>
                         </div>
+                    )}
+                </div>
 
-                        <div style={cardStyle}>
-                            <h3 style={{ marginTop: 0, marginBottom: '0.5rem', fontSize: '1.05rem' }}>Report a Bug</h3>
+                <div style={accordionWrapperStyle(false)}>
+                    <AccordionHeader title="Report a Bug" sectionKey="bug" />
+                    {openSections.bug && (
+                        <div style={accordionBodyStyle}>
                             <form onSubmit={handleReportBug}>
                                 <textarea
                                     value={bugDescription}
@@ -397,9 +416,13 @@ export default function Settings({ currentUser, setCurrentUser, theme, toggleThe
                                 </button>
                             </form>
                         </div>
+                    )}
+                </div>
 
-                        <div style={{ ...cardStyle, borderColor: '#ef4444' }}>
-                            <h3 style={{ marginTop: 0, marginBottom: '0.5rem', fontSize: '1.05rem', color: '#ef4444' }}>Delete Account</h3>
+                <div style={accordionWrapperStyle(true)}>
+                    <AccordionHeader title="Delete Account" sectionKey="delete" danger />
+                    {openSections.delete && (
+                        <div style={accordionBodyStyle}>
                             <p style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '1rem' }}>
                                 This permanently deletes your account. This cannot be undone.
                             </p>
@@ -468,8 +491,8 @@ export default function Settings({ currentUser, setCurrentUser, theme, toggleThe
                                 </form>
                             )}
                         </div>
-                    </>
-                )}
+                    )}
+                </div>
             </main>
         </>
     );
