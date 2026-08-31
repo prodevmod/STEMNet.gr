@@ -992,3 +992,22 @@ button.btn-primary img,
 [data-theme='dark'] .back-nav-btn {
     color: #ccff00; /* Neon green for dark mode */
 }
+
+/* --- Avatar & Circular Profile Image Locks --- */
+.avatar,
+.user-avatar,
+.profile-avatar,
+.post-header img,
+.card .avatar {
+    width: 40px !important;
+    height: 40px !important;
+    min-width: 40px !important;
+    min-height: 40px !important;
+    max-width: 40px !important;
+    max-height: 40px !important;
+    aspect-ratio: 1 / 1 !important;
+    object-fit: cover !important;
+    border-radius: 50% !important;
+    flex-shrink: 0 !important;
+    display: block !important;
+}

@@ -276,12 +276,24 @@ export default function Home({ currentUser, setCurrentUser, theme, toggleTheme, 
                                 }}>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                                            <Link to={`/profile/${authorName}`} style={{ display: 'inline-flex' }}>
-                                              {/* Author Picture */}
+                                            <Link to={`/profile/${authorName}`} style={{ display: 'inline-flex', flexShrink: 0 }}>
+                                                {/* Author Picture locked to 40x40 circle */}
                                                 <SafeImage
                                                     src={authorPic}
                                                     alt={authorName}
-                                                    style={{ width: '40px', height: '40px' }}
+                                                    className="avatar"
+                                                    style={{ 
+                                                        width: '40px', 
+                                                        height: '40px',
+                                                        minWidth: '40px',
+                                                        minHeight: '40px',
+                                                        maxWidth: '40px',
+                                                        maxHeight: '40px',
+                                                        aspectRatio: '1 / 1',
+                                                        objectFit: 'cover',
+                                                        borderRadius: '50%',
+                                                        flexShrink: 0
+                                                    }}
                                                 />
                                             </Link>
                                             <Link to={`/profile/${authorName}`} style={{ color: 'var(--primary-color)', fontWeight: 'bold', textDecoration: 'none' }}>
