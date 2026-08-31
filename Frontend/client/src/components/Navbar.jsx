@@ -2,8 +2,6 @@ import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 
 export default function Navbar({ currentUser, setCurrentUser, theme, toggleTheme, hasUnreadNotifications }) {
-    console.log('Navbar hasUnreadNotifications:', hasUnreadNotifications, typeof hasUnreadNotifications);
-
     const navigate = useNavigate();
     const location = useLocation();
     const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -71,22 +69,19 @@ export default function Navbar({ currentUser, setCurrentUser, theme, toggleTheme
     return (
         <header style={{ position: 'sticky', top: 0, zIndex: 1000, background: dropdownBg, borderBottom: theme === 'dark' ? 'none' : '1px solid #1e293b' }}>
             <nav style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', maxWidth: '1200px', margin: '0 auto', padding: '0.5rem 1rem', color: lightGreen }}>
-                
-                {/* Brand Logo & Title */}
+
                 <Link to="/" className="nav-brand" title="STEMNet Greece Home" style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', textDecoration: 'none', fontWeight: 700, color: lightGreen }}>
                     <img src="/logo.png" alt="STEMNet Logo" width="30" height="30" />
                     <span style={{ color: lightGreen }}>STEMNet.gr</span>
                 </Link>
 
-                {/* Desktop Navigation Menu */}
                 <div className="nav-links-desktop" style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', color: lightGreen }}>
                     {currentUser && (
                         <>
                             <Link to="/education" title="Education" style={{ color: lightGreen, display: 'flex', alignItems: 'center' }}><StemIcon strokeColor={lightGreen} /></Link>
                             <Link to="/groups" title="Groups" style={{ color: lightGreen, display: 'flex', alignItems: 'center' }}><GroupIcon strokeColor={lightGreen} /></Link>
                             <Link to="/events" title="Events" style={{ color: lightGreen, display: 'flex', alignItems: 'center' }}><EventsIcon strokeColor={lightGreen} /></Link>
-                            
-                            {/* Dynamic Notification Icon (inline SVG, no external asset dependency) */}
+
                             <Link to="/notifications" title="Notifications" style={{ color: lightGreen, display: 'flex', alignItems: 'center', position: 'relative' }}>
                                 {hasUnreadNotifications ? (
                                     <BellFilledIcon strokeColor={lightGreen} />
@@ -94,24 +89,23 @@ export default function Navbar({ currentUser, setCurrentUser, theme, toggleTheme
                                     <BellOutlineIcon strokeColor={lightGreen} />
                                 )}
                             </Link>
-                            
+
                             <Link to={`/profile/${currentUser.username}`} title="Profile" style={{ color: lightGreen, display: 'flex', alignItems: 'center' }}><ProfileIcon strokeColor={lightGreen} /></Link>
                             <Link to="/search" title="Search" style={{ color: lightGreen, display: 'flex', alignItems: 'center' }}><SearchIcon strokeColor={lightGreen} /></Link>
                         </>
                     )}
 
-                    {/* Theme Toggle Button */}
-                    <button onClick={toggleTheme} className="theme-toggle-btn" aria-label={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} Mode`} style={{ background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', color: lightGreen }}>
-                        {theme === 'dark' ? <SunIcon strokeColor={lightGreen} /> : <MoonIcon strokeColor={lightGreen} />}
-                    </button>
+                    <Link to="/settings" title="Settings" aria-label="Settings" style={{ color: lightGreen, display: 'flex', alignItems: 'center' }}>
+                        <GearIcon strokeColor={lightGreen} />
+                    </Link>
 
                     {currentUser ? (
                         <>
                             <Link to="/create-post" className="btn btn-primary" style={{ color: lightGreen, borderColor: lightGreen, backgroundColor: 'transparent' }}>+ New Post</Link>
-                            <button 
-                                type="button" 
-                                onClick={handleLogout} 
-                                className="nav-logout-link" 
+                            <button
+                                type="button"
+                                onClick={handleLogout}
+                                className="nav-logout-link"
                                 style={{ background: 'none', border: 'none', cursor: 'pointer', color: lightGreen, fontSize: 'inherit', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
                             >
                                 <LogoutIcon strokeColor={lightGreen} />
@@ -126,10 +120,9 @@ export default function Navbar({ currentUser, setCurrentUser, theme, toggleTheme
                     )}
                 </div>
 
-                {/* Mobile Dropdown Menu Container */}
                 <div className="nav-dropdown-toggle-container" ref={dropdownRef}>
-                    <button 
-                        onClick={() => setDropdownOpen(!dropdownOpen)} 
+                    <button
+                        onClick={() => setDropdownOpen(!dropdownOpen)}
                         aria-label="Toggle Navigation Menu"
                         aria-expanded={dropdownOpen}
                         aria-haspopup="true"
@@ -151,8 +144,7 @@ export default function Navbar({ currentUser, setCurrentUser, theme, toggleTheme
                                     <Link to="/education" style={mobileLinkStyle(lightGreen)}><StemIcon strokeColor={lightGreen} /> <span>Education</span></Link>
                                     <Link to="/groups" style={mobileLinkStyle(lightGreen)}><GroupIcon strokeColor={lightGreen} /> <span>Groups</span></Link>
                                     <Link to="/events" style={mobileLinkStyle(lightGreen)}><EventsIcon strokeColor={lightGreen} /> <span>Events</span></Link>
-                                    
-                                    {/* Mobile Dynamic Notification Icon */}
+
                                     <Link to="/notifications" style={mobileLinkStyle(lightGreen)}>
                                         {hasUnreadNotifications ? (
                                             <BellFilledIcon strokeColor={lightGreen} />
@@ -161,25 +153,24 @@ export default function Navbar({ currentUser, setCurrentUser, theme, toggleTheme
                                         )}
                                         <span>Notifications{hasUnreadNotifications ? ' (New)' : ''}</span>
                                     </Link>
-                                    
+
                                     <Link to={`/profile/${currentUser.username}`} style={mobileLinkStyle(lightGreen)}><ProfileIcon strokeColor={lightGreen} /> <span>Profile</span></Link>
                                     <Link to="/search" style={mobileLinkStyle(lightGreen)}><SearchIcon strokeColor={lightGreen} /> <span>Search</span></Link>
                                 </>
                             )}
 
-                            <button onClick={toggleTheme} style={{ ...mobileLinkStyle(lightGreen), background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
-                                {theme === 'dark' ? <SunIcon strokeColor={lightGreen} /> : <MoonIcon strokeColor={lightGreen} />} 
-                                <span>{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
-                            </button>
+                            <Link to="/settings" style={mobileLinkStyle(lightGreen)}>
+                                <GearIcon strokeColor={lightGreen} /> <span>Settings</span>
+                            </Link>
 
                             <hr style={{ border: '0', borderTop: `1px solid ${dropdownBorderColor}`, margin: '0.2rem 0' }} />
 
                             {currentUser ? (
                                 <>
                                     <Link to="/create-post" className="btn btn-primary" style={{ textAlign: 'center', textDecoration: 'none', padding: '0.75rem', fontWeight: 'bold', color: lightGreen, borderColor: lightGreen }}>+ New Post</Link>
-                                    <button 
-                                        type="button" 
-                                        onClick={handleLogout} 
+                                    <button
+                                        type="button"
+                                        onClick={handleLogout}
                                         style={{ ...mobileLinkStyle(lightGreen), background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
                                     >
                                         <LogoutIcon strokeColor={lightGreen} /> <span>Logout</span>
@@ -250,24 +241,6 @@ const SearchIcon = ({ strokeColor }) => (
         <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
     </svg>
 );
-const SunIcon = ({ strokeColor }) => (
-    <svg width="22" height="22" viewBox="0 0 24 24" style={{ stroke: strokeColor, fill: 'none' }} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="12" cy="12" r="5"></circle>
-        <line x1="12" y1="1" x2="12" y2="3"></line>
-        <line x1="12" y1="21" x2="12" y2="23"></line>
-        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-        <line x1="1" y1="12" x2="3" y2="12"></line>
-        <line x1="21" y1="12" x2="23" y2="12"></line>
-        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
-        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
-    </svg>
-);
-const MoonIcon = ({ strokeColor }) => (
-    <svg width="22" height="22" viewBox="0 0 24 24" style={{ stroke: strokeColor, fill: 'none' }} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-    </svg>
-);
 const DropdownToggleIcon = ({ strokeColor }) => (
     <svg width="26" height="26" viewBox="0 0 24 24" style={{ stroke: strokeColor, fill: 'none' }} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
         <line x1="3" y1="12" x2="21" y2="12"></line>
@@ -283,14 +256,12 @@ const LogoutIcon = ({ strokeColor }) => (
     </svg>
 );
 
-
 const BellOutlineIcon = ({ strokeColor }) => (
     <svg width="22" height="22" viewBox="0 0 24 24" style={{ stroke: strokeColor, fill: 'none' }} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path>
         <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
     </svg>
 );
-
 
 const BellFilledIcon = ({ strokeColor }) => (
     <svg width="22" height="22" viewBox="0 0 24 24" style={{ overflow: 'visible' }}>
@@ -311,5 +282,12 @@ const BellFilledIcon = ({ strokeColor }) => (
             strokeLinejoin="round"
         />
         <circle cx="18.5" cy="6" r="4.5" fill="#ef4444" stroke="#000000" strokeWidth="1" />
+    </svg>
+);
+
+const GearIcon = ({ strokeColor }) => (
+    <svg width="22" height="22" viewBox="0 0 24 24" style={{ stroke: strokeColor, fill: 'none' }} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="3"></circle>
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
     </svg>
 );

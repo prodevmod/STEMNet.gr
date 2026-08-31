@@ -19,6 +19,8 @@ import Groups from './pages/Groups';
 import GroupPosts from './pages/GroupPosts';
 import Education from './pages/Education';
 import CreateGroup from './pages/CreateGroup';
+import Settings from './pages/Settings';
+import ResetPassword from './pages/ResetPassword';
 import './style.css';
 
 const API_BASE = import.meta.env.VITE_API_URL || '';
@@ -102,6 +104,9 @@ function App() {
           <Route path="/500" element={<ServerError />} />
           <Route path="/events" element={<Events currentUser={currentUser} setCurrentUser={setCurrentUser} theme={theme} toggleTheme={toggleTheme} hasUnreadNotifications={hasUnreadNotifications} />} />
           <Route path="*" element={<NotFound />} />
+
+          <Route path="/settings" element={<Settings currentUser={currentUser} setCurrentUser={setCurrentUser} theme={theme} toggleTheme={toggleTheme} hasUnreadNotifications={hasUnreadNotifications} />} />
+          <Route path="/reset-password" element={<ResetPassword theme={theme} toggleTheme={toggleTheme} />} />
         </Routes>
       </div>
     </Router>

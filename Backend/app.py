@@ -1328,6 +1328,297 @@ def mark_notifications_read():
         app.logger.error(f"Mark read error: {e}")
         return jsonify({"error": "Failed to update notifications."}), 500
 
+# Password Reset and Email Change Token Management
+ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL")
+
+def generate_password_reset_token(email):
+    return get_serializer().dumps(email, salt='password-reset-salt')
+
+def confirm_password_reset_token(token, expiration=3600):
+    try:
+        return get_serializer().loads(token, salt='password-reset-salt', max_age=expiration)
+    except Exception:
+        return None
+
+def generate_email_change_token(user_id, new_email):
+    return get_serializer().dumps({'user_id': user_id, 'new_email': new_email}, salt='email-change-salt')
+
+def confirm_email_change_token(token, expiration=3600):
+    try:
+        return get_serializer().loads(token, salt='email-change-salt', max_age=expiration)
+    except Exception:
+        return None
+
+def send_password_reset_email(user_email, token):
+    resend_api_key = os.environ.get("RESEND_API_KEY")
+    if not resend_api_key:
+        print("RESEND_API_KEY not found. Skipping email.")
+        return
+
+    reset_url = f"{FRONTEND_URL}/reset-password?token={token}"
+    headers = {
+        "Authorization": f"Bearer {resend_api_key}",
+        "Content-Type": "application/json"
+    }
+    data = {
+        "from": "STEMNet Greece <noreply@verify.stemnet.app>",
+        "to": [user_email],
+        "subject": "Reset your STEMNet Greece password",
+        "html": f"""
+            <div style="background-color: #121212; padding: 40px 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;">
+                <div style="max-width: 480px; margin: 0 auto; background-color: #1a1a1a; border: 1px solid #333333; border-radius: 12px; overflow: hidden;">
+                    <div style="padding: 32px 32px 24px 32px; text-align: center; border-bottom: 1px solid #2a2a2a;">
+                        <h1 style="margin: 0; color: #ccff00; font-size: 22px; font-weight: 700;">STEMNet Greece</h1>
+                    </div>
+                    <div style="padding: 32px; text-align: center;">
+                        <h2 style="margin: 0 0 12px 0; color: #ffffff; font-size: 20px; font-weight: 600;">Reset your password</h2>
+                        <p style="margin: 0 0 28px 0; color: #a1a1aa; font-size: 15px; line-height: 1.6;">
+                            Click below to choose a new password. This link expires in 1 hour.
+                        </p>
+                        <a href="{reset_url}" style="display: inline-block; padding: 14px 36px; background-color: #ccff00; color: #111111; text-decoration: none; border-radius: 8px; font-weight: 700; font-size: 15px;">
+                            Reset Password
+                        </a>
+                        <p style="margin: 28px 0 0 0; color: #6b7280; font-size: 12px; line-height: 1.5;">
+                            If you didn't request this, you can safely ignore this email.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        """
+    }
+    try:
+        requests.post("https://api.resend.com/emails", headers=headers, json=data)
+    except Exception as e:
+        print(f"Error sending password reset email: {e}")
+
+def send_email_change_verification(new_email, token):
+    resend_api_key = os.environ.get("RESEND_API_KEY")
+    if not resend_api_key:
+        print("RESEND_API_KEY not found. Skipping email.")
+        return
+
+    verify_url = url_for('verify_email_change', token=token, _external=True)
+    headers = {
+        "Authorization": f"Bearer {resend_api_key}",
+        "Content-Type": "application/json"
+    }
+    data = {
+        "from": "STEMNet Greece <noreply@verify.stemnet.app>",
+        "to": [new_email],
+        "subject": "Confirm your new STEMNet Greece email",
+        "html": f"""
+            <div style="background-color: #121212; padding: 40px 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;">
+                <div style="max-width: 480px; margin: 0 auto; background-color: #1a1a1a; border: 1px solid #333333; border-radius: 12px; overflow: hidden;">
+                    <div style="padding: 32px 32px 24px 32px; text-align: center; border-bottom: 1px solid #2a2a2a;">
+                        <h1 style="margin: 0; color: #ccff00; font-size: 22px; font-weight: 700;">STEMNet Greece</h1>
+                    </div>
+                    <div style="padding: 32px; text-align: center;">
+                        <h2 style="margin: 0 0 12px 0; color: #ffffff; font-size: 20px; font-weight: 600;">Confirm this email</h2>
+                        <p style="margin: 0 0 28px 0; color: #a1a1aa; font-size: 15px; line-height: 1.6;">
+                            Click below to make this your new STEMNet Greece login email.
+                        </p>
+                        <a href="{verify_url}" style="display: inline-block; padding: 14px 36px; background-color: #ccff00; color: #111111; text-decoration: none; border-radius: 8px; font-weight: 700; font-size: 15px;">
+                            Confirm Email
+                        </a>
+                    </div>
+                </div>
+            </div>
+        """
+    }
+    try:
+        requests.post("https://api.resend.com/emails", headers=headers, json=data)
+    except Exception as e:
+        print(f"Error sending email change verification: {e}")
+
+def send_bug_report_email(reporter_username, reporter_email, description):
+    resend_api_key = os.environ.get("RESEND_API_KEY")
+    if not resend_api_key or not ADMIN_EMAIL:
+        print("RESEND_API_KEY or ADMIN_EMAIL not set. Skipping bug report email.")
+        return
+
+    headers = {
+        "Authorization": f"Bearer {resend_api_key}",
+        "Content-Type": "application/json"
+    }
+    data = {
+        "from": "STEMNet Greece <noreply@verify.stemnet.app>",
+        "to": [ADMIN_EMAIL],
+        "subject": f"Bug report from @{reporter_username}",
+        "html": f"""
+            <div style="font-family: -apple-system, sans-serif; padding: 20px;">
+                <h2>Bug report</h2>
+                <p><strong>From:</strong> @{reporter_username} ({reporter_email})</p>
+                <p><strong>Description:</strong></p>
+                <p style="white-space: pre-line;">{description}</p>
+            </div>
+        """
+    }
+    try:
+        requests.post("https://api.resend.com/emails", headers=headers, json=data)
+    except Exception as e:
+        print(f"Error sending bug report email: {e}")
+
+
+@app.route("/api/settings/change-password", methods=["POST"])
+@login_required
+def change_password():
+    data = request.get_json(silent=True) or {}
+    current_password = data.get("current_password", "")
+    new_password = data.get("new_password", "")
+
+    if not current_password or not new_password:
+        return jsonify({"error": "Both current and new password are required."}), 400
+
+    if not check_password_hash(g.user["password_hash"], current_password):
+        return jsonify({"error": "Current password is incorrect."}), 401
+
+    if len(new_password) < 8 or not any(c.isdigit() for c in new_password) or not any(not c.isalnum() for c in new_password):
+        return jsonify({"error": "New password does not meet complexity requirements."}), 400
+
+    db = get_db()
+    try:
+        db.execute(
+            "UPDATE users SET password_hash = ? WHERE id = ?",
+            (generate_password_hash(new_password), g.user["id"])
+        )
+        db.commit()
+        return jsonify({"success": True, "message": "Password updated successfully."}), 200
+    except Exception as e:
+        db.rollback()
+        app.logger.error(f"Change password error: {e}")
+        return jsonify({"error": "Failed to update password."}), 500
+
+
+@app.route("/api/settings/send-password-reset", methods=["POST"])
+@login_required
+def send_password_reset():
+    token = generate_password_reset_token(g.user["email"])
+    send_password_reset_email(g.user["email"], token)
+    return jsonify({"success": True, "message": "Check your email for a reset link."}), 200
+
+
+@app.route("/api/reset-password", methods=["POST"])
+def reset_password():
+    data = request.get_json(silent=True) or {}
+    token = data.get("token", "")
+    new_password = data.get("new_password", "")
+
+    email = confirm_password_reset_token(token)
+    if not email:
+        return jsonify({"error": "This reset link is invalid or has expired."}), 400
+
+    if len(new_password) < 8 or not any(c.isdigit() for c in new_password) or not any(not c.isalnum() for c in new_password):
+        return jsonify({"error": "Password does not meet complexity requirements."}), 400
+
+    db = get_db()
+    user = db.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
+    if not user:
+        return jsonify({"error": "User not found."}), 404
+
+    try:
+        db.execute(
+            "UPDATE users SET password_hash = ?, failed_attempts = 0, locked_until = 0 WHERE email = ?",
+            (generate_password_hash(new_password), email)
+        )
+        db.commit()
+        return jsonify({"success": True, "message": "Password reset successfully. You can now log in."}), 200
+    except Exception as e:
+        db.rollback()
+        app.logger.error(f"Reset password error: {e}")
+        return jsonify({"error": "Failed to reset password."}), 500
+
+
+@app.route("/api/settings/change-email", methods=["POST"])
+@login_required
+def change_email():
+    data = request.get_json(silent=True) or {}
+    new_email = data.get("new_email", "").strip()
+    password = data.get("password", "")
+
+    if not new_email or not password:
+        return jsonify({"error": "New email and password are required."}), 400
+
+    if not check_password_hash(g.user["password_hash"], password):
+        return jsonify({"error": "Password is incorrect."}), 401
+
+    db = get_db()
+    existing = db.execute("SELECT id FROM users WHERE email = ?", (new_email,)).fetchone()
+    if existing:
+        return jsonify({"error": "That email is already in use."}), 400
+
+    token = generate_email_change_token(g.user["id"], new_email)
+    send_email_change_verification(new_email, token)
+    return jsonify({"success": True, "message": "Check your new email inbox to confirm the change."}), 200
+
+
+@app.route("/api/verify-email-change/<token>")
+def verify_email_change(token):
+    data = confirm_email_change_token(token)
+    if not data:
+        return redirect(f"{FRONTEND_URL}/settings?error=invalid_token")
+
+    db = get_db()
+    existing = db.execute("SELECT id FROM users WHERE email = ?", (data["new_email"],)).fetchone()
+    if existing:
+        return redirect(f"{FRONTEND_URL}/settings?error=email_taken")
+
+    try:
+        db.execute("UPDATE users SET email = ? WHERE id = ?", (data["new_email"], data["user_id"]))
+        db.commit()
+        return redirect(f"{FRONTEND_URL}/settings?email_changed=true")
+    except Exception as e:
+        db.rollback()
+        app.logger.error(f"Email change error: {e}")
+        return redirect(f"{FRONTEND_URL}/settings?error=server_error")
+
+
+@app.route("/api/settings/report-bug", methods=["POST"])
+@login_required
+def report_bug():
+    data = request.get_json(silent=True) or {}
+    description = data.get("description", "").strip()
+
+    if not description:
+        return jsonify({"error": "Please describe the issue."}), 400
+
+    send_bug_report_email(g.user["username"], g.user["email"], description)
+    return jsonify({"success": True, "message": "Thanks — your report has been sent."}), 200
+
+
+@app.route("/api/settings/delete-account", methods=["POST"])
+@login_required
+def delete_account():
+    data = request.get_json(silent=True) or {}
+    password = data.get("password", "")
+
+    if not password:
+        return jsonify({"error": "Password is required."}), 400
+
+    if not check_password_hash(g.user["password_hash"], password):
+        return jsonify({"error": "Password is incorrect."}), 401
+
+    db = get_db()
+    user_id = g.user["id"]
+
+    try:
+        own_posts = db.execute("SELECT id FROM posts WHERE user_id = ?", (user_id,)).fetchall()
+        for row in own_posts:
+            remove_or_softdelete_post(db, row["id"])
+
+        db.execute("DELETE FROM likes WHERE user_id = ?", (user_id,))
+        db.execute("DELETE FROM notifications WHERE user_id = ? OR actor_id = ?", (user_id, user_id))
+        db.execute("DELETE FROM follows WHERE follower_id = ? OR following_id = ?", (user_id, user_id))
+        db.execute("DELETE FROM users WHERE id = ?", (user_id,))
+        db.commit()
+
+        session.clear()
+        return jsonify({"success": True, "message": "Account deleted."}), 200
+    except Exception as e:
+        db.rollback()
+        app.logger.error(f"Delete account error: {e}")
+        return jsonify({"error": "Failed to delete account."}), 500
+
+# Error Handlers
 @app.errorhandler(404)
 def not_found(e):
     return jsonify({"error": "Not Found"}), 404
