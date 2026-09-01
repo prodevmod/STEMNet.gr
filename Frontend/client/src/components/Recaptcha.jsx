@@ -2,30 +2,35 @@ import { useEffect, useRef } from 'react';
 
 const SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
 
-let scriptLoadingPromise = null;
+let scriptPromise = null;
 
 function loadRecaptchaScript() {
-    if (window.grecaptcha && window.grecaptcha.render) {
-        return Promise.resolve();
-    }
-    if (scriptLoadingPromise) return scriptLoadingPromise;
+    if (scriptPromise) return scriptPromise;
 
-    scriptLoadingPromise = new Promise((resolve, reject) => {
-        const existing = document.querySelector('script[src*="recaptcha/api.js"]');
-        if (existing) {
-            existing.addEventListener('load', resolve);
+    scriptPromise = new Promise((resolve, reject) => {
+        if (window.grecaptcha && typeof window.grecaptcha.render === 'function') {
+            resolve();
             return;
         }
+
+        const callbackName = '__onGrecaptchaLoaded';
+        window[callbackName] = () => {
+            resolve();
+            delete window[callbackName];
+        };
+
         const script = document.createElement('script');
-        script.src = 'https://www.google.com/recaptcha/api.js?render=explicit';
+        script.src = `https://www.google.com/recaptcha/api.js?onload=${callbackName}&render=explicit`;
         script.async = true;
         script.defer = true;
-        script.onload = resolve;
-        script.onerror = reject;
+        script.onerror = (err) => {
+            scriptPromise = null;
+            reject(err);
+        };
         document.head.appendChild(script);
     });
 
-    return scriptLoadingPromise;
+    return scriptPromise;
 }
 
 export default function Recaptcha({ onChange, onExpired }) {
@@ -33,19 +38,15 @@ export default function Recaptcha({ onChange, onExpired }) {
     const widgetIdRef = useRef(null);
 
     useEffect(() => {
-        if (!SITE_KEY) {
-            console.error('VITE_RECAPTCHA_SITE_KEY is missing. Check your .env file and restart the dev server.');
-            return;
-        }
-
-        let mounted = true;
+        if (!SITE_KEY) return;
+        let isMounted = true;
 
         loadRecaptchaScript()
             .then(() => {
-                if (!mounted || !window.grecaptcha) return;
+                if (!isMounted || !containerRef.current) return;
 
                 window.grecaptcha.ready(() => {
-                    if (!mounted || !containerRef.current) return;
+                    if (!isMounted || !containerRef.current) return;
                     if (widgetIdRef.current !== null) return;
                     if (containerRef.current.childElementCount > 0) return;
 
@@ -68,32 +69,21 @@ export default function Recaptcha({ onChange, onExpired }) {
             });
 
         return () => {
-            mounted = false;
+            isMounted = false;
         };
-    }, []);
+    }, [onChange, onExpired]);
 
     if (!SITE_KEY) {
         return (
-            <div style={{ color: '#ef4444', fontSize: '0.85rem' }}>
+            <div style={{ color: '#ef4444', fontSize: '0.85rem', textAlign: 'center' }}>
                 reCAPTCHA is misconfigured (missing site key).
             </div>
         );
     }
 
     return (
-        <>
-            <style>{`
-                .g-recaptcha-response {
-                    display: none !important;
-                    position: absolute !important;
-                    width: 0 !important;
-                    height: 0 !important;
-                    overflow: hidden !important;
-                }
-            `}</style>
-            <div style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
-                <div ref={containerRef}></div>
-            </div>
-        </>
+        <div style={{ display: 'flex', justifyContent: 'center', width: '100%', margin: '1rem 0' }}>
+            <div ref={containerRef}></div>
+        </div>
     );
 }
