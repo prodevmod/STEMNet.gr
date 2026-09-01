@@ -42,17 +42,25 @@ export default function Recaptcha({ onChange, onExpired }) {
 
         loadRecaptchaScript()
             .then(() => {
-                if (!mounted || !containerRef.current) return;
-                if (widgetIdRef.current !== null) return;
-                if (containerRef.current.childElementCount > 0) return;
+                if (!mounted || !window.grecaptcha) return;
 
-                widgetIdRef.current = window.grecaptcha.render(containerRef.current, {
-                    sitekey: SITE_KEY,
-                    callback: (token) => onChange && onChange(token),
-                    'expired-callback': () => {
-                        onChange && onChange('');
-                        onExpired && onExpired();
-                    },
+                window.grecaptcha.ready(() => {
+                    if (!mounted || !containerRef.current) return;
+                    if (widgetIdRef.current !== null) return;
+                    if (containerRef.current.childElementCount > 0) return;
+
+                    try {
+                        widgetIdRef.current = window.grecaptcha.render(containerRef.current, {
+                            sitekey: SITE_KEY,
+                            callback: (token) => onChange && onChange(token),
+                            'expired-callback': () => {
+                                onChange && onChange('');
+                                onExpired && onExpired();
+                            },
+                        });
+                    } catch (err) {
+                        console.error('reCAPTCHA render error:', err);
+                    }
                 });
             })
             .catch((err) => {
