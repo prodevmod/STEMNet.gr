@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 
-const SunIcon = ({ strokeColor }) => (
+const SunIcon = ({ strokeColor = 'currentColor' }) => (
     <svg width="18" height="18" viewBox="0 0 24 24" style={{ stroke: strokeColor, fill: 'none' }} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="12" cy="12" r="5"></circle>
         <line x1="12" y1="1" x2="12" y2="3"></line>
@@ -15,8 +15,7 @@ const SunIcon = ({ strokeColor }) => (
         <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
     </svg>
 );
-
-const MoonIcon = ({ strokeColor }) => (
+const MoonIcon = ({ strokeColor = 'currentColor' }) => (
     <svg width="18" height="18" viewBox="0 0 24 24" style={{ stroke: strokeColor, fill: 'none' }} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
     </svg>
@@ -321,14 +320,15 @@ export default function Settings({ currentUser, setCurrentUser, theme, toggleThe
                         <div style={accordionBodyStyle}>
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                                 <span style={{ fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                    {theme === 'dark' ? <MoonIcon strokeColor="inherit" /> : <SunIcon strokeColor="inherit" />}
+                                    {theme === 'dark' ? <MoonIcon /> : <SunIcon />}
                                     {theme === 'dark' ? 'Dark mode' : 'Light mode'}
                                 </span>
                                 <button
                                     onClick={toggleTheme}
                                     className="btn btn-primary"
-                                    style={{ padding: '0.5rem 1.25rem', fontSize: '0.85rem' }}
+                                    style={{ padding: '0.5rem 1.25rem', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
                                 >
+                                    {theme === 'dark' ? <SunIcon strokeColor="currentColor" /> : <MoonIcon strokeColor="currentColor" />}
                                     Switch to {theme === 'dark' ? 'Light' : 'Dark'} Mode
                                 </button>
                             </div>
