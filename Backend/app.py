@@ -30,7 +30,8 @@ from werkzeug.security import check_password_hash, generate_password_hash
 from itsdangerous import URLSafeTimedSerializer
 from supabase import create_client, Client
 
-load_dotenv()
+BASE_DIR = Path(__file__).resolve().parent
+load_dotenv(BASE_DIR / ".env")
 
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
@@ -38,7 +39,6 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY) if SUPABASE_URL and
 
 FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:3000")
 
-BASE_DIR = Path(__file__).resolve().parent
 DATABASE = BASE_DIR / "project.db"
 SCHEMA = BASE_DIR / "schema.sql"
 
