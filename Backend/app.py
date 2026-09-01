@@ -405,6 +405,7 @@ def load_current_user():
         g.user = None
     else:
         g.user = get_db().execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
+
 def login_required(view):
     @wraps(view)
     def wrapped_view(*args, **kwargs):
@@ -1798,6 +1799,16 @@ def delete_account():
         db.rollback()
         app.logger.error(f"Delete account error: {e}")
         return jsonify({"error": "Failed to delete account."}), 500
+
+@app.after_request
+def set_security_headers(response):
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-Frame-Options'] = 'DENY'
+    response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+    response.headers['Cross-Origin-Resource-Policy'] = 'same-origin'
+    if not app.debug:
+        response.headers['Strict-Transport-Security'] = 'max-age=63072000; includeSubDomains; preload'
+    return response
 
 @app.errorhandler(404)
 def not_found(e):
