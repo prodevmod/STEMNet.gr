@@ -43,10 +43,8 @@ DATABASE = BASE_DIR / "project.db"
 SCHEMA = BASE_DIR / "schema.sql"
 
 app = Flask(__name__)
+app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1, x_prefix=1)
 CORS(app, supports_credentials=True, origins=[FRONTEND_URL, "http://127.0.0.1:3000"])
-app.wsgi_app = ProxyFix(
-    app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1
-)
 
 app.config["SESSION_PERMANENT"] = False
 app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=30)
@@ -146,7 +144,7 @@ def send_verification_email(user_email, token):
         print("RESEND_API_KEY not found. Skipping email.")
         return
 
-    verify_url = url_for('verify_email', token=token, _external=True)
+    verify_url = f"{FRONTEND_URL}/api/verify/{token}"
     headers = {
         "Authorization": f"Bearer {resend_api_key}",
         "Content-Type": "application/json"
@@ -1517,7 +1515,7 @@ def send_email_change_verification(new_email, token):
         print("RESEND_API_KEY not found. Skipping email.")
         return
 
-    verify_url = url_for('verify_email_change', token=token, _external=True)
+    verify_url = f"{FRONTEND_URL}/api/verify-email-change/{token}"
     headers = {
         "Authorization": f"Bearer {resend_api_key}",
         "Content-Type": "application/json"
