@@ -1415,14 +1415,25 @@ def create_group():
 
     if not name:
         return jsonify({"error": "Group name cannot be empty."}), 400
+    if not description:
+        return jsonify({"error": "Group description cannot be empty."}), 400
 
-    cursor = db.execute(
-        "INSERT INTO groups (user_id, name, description) VALUES (?, ?, ?)",
-        (g.user["id"], name, description)
-    )
-    db.commit()
-    return jsonify({"success": True, "group_id": cursor.lastrowid}), 201
+    existing = db.execute("SELECT id FROM groups WHERE user_id = ?", (g.user["id"],)).fetchone()
+    if existing:
+        return jsonify({"error": "You already own a group. Each account can create only one."}), 400
 
+    try:
+        cursor = db.execute(
+            "INSERT INTO groups (user_id, name, description) VALUES (?, ?, ?)",
+            (g.user["id"], name, description)
+        )
+        db.commit()
+        return jsonify({"success": True, "group_id": cursor.lastrowid}), 201
+    except Exception as e:
+        db.rollback()
+        app.logger.error(f"Create group error: {e}")
+        return jsonify({"error": "Failed to create group."}), 500
+    
 @app.route("/api/groups", methods=["GET"])
 def get_groups():
     db = get_db()
