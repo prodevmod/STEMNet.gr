@@ -87,28 +87,16 @@ const SafeImage = ({ src, alt, className, style, onClick }) => {
                 className={className}
                 onClick={onClick}
                 style={{
-                    position: 'relative',
-                    padding: 0,
-                    boxSizing: 'border-box',
                     fontWeight: 'bold',
+                    fontSize: '1.25rem',
                     color: 'var(--text-color)',
                     backgroundColor: 'var(--border-color)',
                     userSelect: 'none',
-                    overflow: 'hidden',
                     ...baseCropStyle,
                     ...style
                 }}
             >
-                <span style={{
-                    position: 'absolute',
-                    top: '50%',
-                    left: '50%',
-                    transform: 'translate(-50%, -50%)',
-                    fontSize: '1.25rem',
-                    lineHeight: 1,
-                }}>
-                    {alt ? alt[0].toUpperCase() : 'U'}
-                </span>
+                {alt ? alt[0].toUpperCase() : 'U'}
             </div>
         );
     }
