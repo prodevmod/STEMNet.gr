@@ -87,41 +87,46 @@ const SafeImage = ({ src, alt, className, style, onClick }) => {
                 className={className}
                 onClick={onClick}
                 style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    textAlign: 'center',   // added
-                    lineHeight: 1,         // added
-                    padding: 0,            // added
-                    boxSizing: 'border-box', // added
-                    fontSize: '1.25rem',
+                    position: 'relative',
+                    padding: 0,
+                    boxSizing: 'border-box',
                     fontWeight: 'bold',
                     color: 'var(--text-color)',
                     backgroundColor: 'var(--border-color)',
                     userSelect: 'none',
+                    overflow: 'hidden',
                     ...baseCropStyle,
                     ...style
                 }}
             >
-                {alt ? alt[0].toUpperCase() : 'U'}
+                <span style={{
+                    position: 'absolute',
+                    top: '50%',
+                    left: '50%',
+                    transform: 'translate(-50%, -50%)',
+                    fontSize: '1.25rem',
+                    lineHeight: 1,
+                }}>
+                    {alt ? alt[0].toUpperCase() : 'U'}
+                </span>
             </div>
         );
     }
 
-    return (
-        <img
-            src={src}
-            alt={alt}
-            className={className}
-            onClick={onClick}
-            style={{
-                ...baseCropStyle,
-                ...style
-            }}
-            onError={() => setError(true)}
-        />
-    );
-};
+        return (
+            <img
+                src={src}
+                alt={alt}
+                className={className}
+                onClick={onClick}
+                style={{
+                    ...baseCropStyle,
+                    ...style
+                }}
+                onError={() => setError(true)}
+            />
+        );
+    };
 
 export default function Home({ currentUser, setCurrentUser, theme, toggleTheme, hasUnreadNotifications }) {
     const navigate = useNavigate();
