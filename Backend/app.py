@@ -2,7 +2,6 @@ from __future__ import annotations
 import time
 from werkzeug.exceptions import HTTPException
 from werkzeug.utils import secure_filename
-from werkzeug.middleware.proxy_fix import ProxyFix
 import os
 from dotenv import load_dotenv
 import re
@@ -15,6 +14,7 @@ import sqlite3
 from pathlib import Path
 import requests
 from functools import wraps
+from urllib.parse import urlparse
 
 from flask import (
     jsonify,
@@ -30,8 +30,7 @@ from werkzeug.security import check_password_hash, generate_password_hash
 from itsdangerous import URLSafeTimedSerializer
 from supabase import create_client, Client
 
-BASE_DIR = Path(__file__).resolve().parent
-load_dotenv(BASE_DIR / ".env")
+load_dotenv()
 
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
@@ -39,11 +38,11 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY) if SUPABASE_URL and
 
 FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:3000")
 
+BASE_DIR = Path(__file__).resolve().parent
 DATABASE = BASE_DIR / "project.db"
 SCHEMA = BASE_DIR / "schema.sql"
 
 app = Flask(__name__)
-app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1, x_prefix=1)
 CORS(app, supports_credentials=True, origins=[FRONTEND_URL, "http://127.0.0.1:3000"])
 
 app.config["SESSION_PERMANENT"] = False
@@ -57,12 +56,84 @@ if not app.debug:
     )
 app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "fallback-dev-key-change-in-prod")
 
-BLOCKED_DOMAINS = {
+MANUAL_BLOCKED_DOMAINS = {
     "iplogger.org", "iplogger.com", "iplogger.ru", "2no.co", "yip.su",
     "grabify.link", "blasze.com", "cest.la", "spotlogger.com", "iplogger.co",
     "pornhub.com", "xvideos.com", "xnxx.com", "stripchat.com", "cam4.com",
     "redtube.com", "youporngay.com", "hentaihaven.xxx"
 }
+
+_blocked_domains_cache = None
+_blocked_domains_cache_time = 0
+BLOCKED_DOMAINS_CACHE_TTL = 3600
+
+def fetch_urlhaus_blocklist():
+    """Fetches abuse.ch's URLhaus list of known malicious/phishing domains."""
+    try:
+        resp = requests.get(
+            "https://urlhaus.abuse.ch/downloads/text_online/",
+            timeout=10
+        )
+        if resp.status_code == 200:
+            domains = set()
+            for line in resp.text.splitlines():
+                line = line.strip()
+                if not line or line.startswith("#"):
+                    continue
+                try:
+                    parsed = urlparse(line)
+                    if parsed.netloc:
+                        domains.add(parsed.netloc.lower())
+                except Exception:
+                    continue
+            return domains
+    except Exception as e:
+        print(f"Failed to fetch URLhaus list: {e}")
+    return set()
+
+def get_blocked_domains():
+    global _blocked_domains_cache, _blocked_domains_cache_time
+    now = time.time()
+    if _blocked_domains_cache is None or (now - _blocked_domains_cache_time) > BLOCKED_DOMAINS_CACHE_TTL:
+        remote = fetch_urlhaus_blocklist()
+        _blocked_domains_cache = MANUAL_BLOCKED_DOMAINS | remote
+        _blocked_domains_cache_time = now
+    return _blocked_domains_cache
+
+def extract_domain(url):
+    """Extracts the bare domain from a URL, stripping www. and normalizing case."""
+    if not url or not isinstance(url, str):
+        return None
+    url = url.strip()
+    if not url.startswith(("http://", "https://")):
+        url = f"https://{url}"
+    try:
+        parsed = urlparse(url)
+        domain = parsed.netloc.lower()
+        if domain.startswith("www."):
+            domain = domain[4:]
+        return domain
+    except Exception:
+        return None
+
+def is_blocked_url(url):
+    """Checks a single URL string against the blocklist."""
+    domain = extract_domain(url)
+    return bool(domain and domain in get_blocked_domains())
+
+def contains_blocked_link(text):
+    """Scans free-text content for any URL whose domain is on the blocklist."""
+    if not text or not isinstance(text, str):
+        return False
+    blocked = get_blocked_domains()
+    url_pattern = re.compile(r'https?://[^\s<>"\']+|www\.[^\s<>"\']+')
+    for match in url_pattern.findall(text):
+        domain = extract_domain(match)
+        if domain and domain in blocked:
+            return True
+    return False
+
+BLOCKED_DOMAINS = MANUAL_BLOCKED_DOMAINS
 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'mp4', 'webm', 'webp'}
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
@@ -77,9 +148,7 @@ def allowed_file(filename):
 
 def get_mime_type(filename):
     """Maps a file extension to its correct MIME type explicitly, instead of
-    trusting the browser-reported content type (which is unreliable for GIFs
-    uploaded via certain browsers/OSes and can cause them to be served as
-    application/octet-stream, breaking inline animated display)."""
+    trusting the browser-reported content type."""
     ext = filename.rsplit('.', 1)[-1].lower() if '.' in filename else ''
     return {
         'png': 'image/png',
@@ -405,7 +474,6 @@ def load_current_user():
         g.user = None
     else:
         g.user = get_db().execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
-
 def login_required(view):
     @wraps(view)
     def wrapped_view(*args, **kwargs):
@@ -498,6 +566,13 @@ def register():
     age_str = data.get("age", "").strip()
     grade = data.get("grade", "").strip()
     interest = data.get("interest", "").strip()
+    github_user = data.get("github_user", "").strip()
+    linkedin_url = data.get("linkedin_url", "").strip()
+    custom_link_1 = data.get("custom_link_1", "").strip()
+    custom_link_2 = data.get("custom_link_2", "").strip()
+    custom_link_3 = data.get("custom_link_3", "").strip()
+    custom_link_4 = data.get("custom_link_4", "").strip()
+    custom_link_5 = data.get("custom_link_5", "").strip()
 
     if not all([username, email, password, confirm_password, age_str, grade, interest]):
         return jsonify({"error": "Please fill out all required fields."}), 400
@@ -513,6 +588,10 @@ def register():
     except ValueError:
         return jsonify({"error": "Age must be a valid number."}), 400
 
+    for link_value in [github_user, linkedin_url, custom_link_1, custom_link_2, custom_link_3, custom_link_4, custom_link_5]:
+        if link_value and is_blocked_url(link_value):
+            return jsonify({"error": "One of the links you entered is not allowed."}), 400
+
     db = get_db()
     existing_user = db.execute("SELECT username, email FROM users WHERE username = ? OR email = ?", (username, email)).fetchone()
 
@@ -524,8 +603,11 @@ def register():
 
     try:
         db.execute(
-            """INSERT INTO users (username, email, password_hash, age, grade, interest) VALUES (?, ?, ?, ?, ?, ?)""",
-            (username, email, generate_password_hash(password), age, grade, interest)
+            """INSERT INTO users (username, email, password_hash, age, grade, interest, github_user, linkedin_url, custom_link_1, custom_link_2, custom_link_3, custom_link_4, custom_link_5)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (username, email, generate_password_hash(password), age, grade, interest,
+             github_user or None, linkedin_url or None, custom_link_1 or None,
+             custom_link_2 or None, custom_link_3 or None, custom_link_4 or None, custom_link_5 or None)
         )
         db.commit()
         token_email = generate_verification_token(email)
@@ -620,7 +702,13 @@ def create_post():
     if not content:
         return jsonify({"error": "Content cannot be empty."}), 400
 
+    if contains_blocked_link(content):
+        return jsonify({"error": "Your post contains a link to a blocked or unsafe domain."}), 400
+
     github_link = request.form.get("github_link", "").strip() or None
+    if github_link and is_blocked_url(github_link):
+        return jsonify({"error": "That link is not allowed."}), 400
+
     event_type = request.form.get("event_type", "").strip() if category == "Events" else None
     event_time = request.form.get("event_time", "").strip() if category == "Events" else None
     event_location = request.form.get("event_location", "").strip() if category == "Events" else None
@@ -780,6 +868,9 @@ def api_update_post(post_id):
     if not new_content:
         return jsonify({"error": "Content cannot be empty"}), 400
 
+    if contains_blocked_link(new_content):
+        return jsonify({"error": "Your post contains a link to a blocked or unsafe domain."}), 400
+
     try:
         db.execute("UPDATE posts SET content = ? WHERE id = ?", (new_content, post_id))
         db.commit()
@@ -812,6 +903,9 @@ def api_update_comment(post_id):
     new_content = data.get("content").strip()
     if not new_content:
         return jsonify({"error": "Content cannot be empty"}), 400
+
+    if contains_blocked_link(new_content):
+        return jsonify({"error": "Your reply contains a link to a blocked or unsafe domain."}), 400
 
     try:
         db.execute("UPDATE posts SET content = ? WHERE id = ?", (new_content, post_id))
@@ -923,6 +1017,12 @@ def api_edit_post(post_id):
 
     if not content:
         return jsonify({"error": "Post content cannot be empty."}), 400
+
+    if contains_blocked_link(content):
+        return jsonify({"error": "Your post contains a link to a blocked or unsafe domain."}), 400
+
+    if github_link and is_blocked_url(github_link):
+        return jsonify({"error": "That link is not allowed."}), 400
 
     media_path = post["media_path"]
 
@@ -1088,6 +1188,13 @@ def edit_profile():
     custom_link_3 = data.get("custom_link_3", "").strip()
     custom_link_4 = data.get("custom_link_4", "").strip()
     custom_link_5 = data.get("custom_link_5", "").strip()
+
+    for link_key, link_value in [("github_user", github_user), ("linkedin_url", linkedin_url),
+                                  ("custom_link_1", custom_link_1), ("custom_link_2", custom_link_2),
+                                  ("custom_link_3", custom_link_3), ("custom_link_4", custom_link_4),
+                                  ("custom_link_5", custom_link_5)]:
+        if link_value and is_blocked_url(link_value):
+            return jsonify({"error": f"The link you entered for {link_key.replace('_', ' ')} is not allowed."}), 400
 
     file = request.files.get("profile_pic")
     profile_pic_url = None
@@ -1799,16 +1906,6 @@ def delete_account():
         db.rollback()
         app.logger.error(f"Delete account error: {e}")
         return jsonify({"error": "Failed to delete account."}), 500
-
-@app.after_request
-def set_security_headers(response):
-    response.headers['X-Content-Type-Options'] = 'nosniff'
-    response.headers['X-Frame-Options'] = 'DENY'
-    response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
-    response.headers['Cross-Origin-Resource-Policy'] = 'same-origin'
-    if not app.debug:
-        response.headers['Strict-Transport-Security'] = 'max-age=63072000; includeSubDomains; preload'
-    return response
 
 @app.errorhandler(404)
 def not_found(e):
