@@ -999,19 +999,27 @@ button.btn-primary img,
 .profile-avatar,
 .post-header img,
 .card .avatar {
-    font-size: 1.25rem;
-    font-weight: bold;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    line-height: 40px !important;
-    text-align: center;
+    width: 40px !important;
+    height: 40px !important;
+    min-width: 40px !important;
+    min-height: 40px !important;
+    max-width: 40px !important;
+    max-height: 40px !important;
+    aspect-ratio: 1 / 1 !important;
+    object-fit: cover !important;
+    object-position: center !important;
+    border-radius: 50% !important;
+    flex-shrink: 0 !important;
+    display: block !important;
 }
+
 
 div.avatar {
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
+    font-size: 1.25rem;
+    font-weight: bold;
     text-align: center;
     line-height: normal !important;
     padding: 0 !important;
