@@ -90,10 +90,10 @@ const SafeImage = ({ src, alt, className, style, onClick }) => {
                     display: 'inline-flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    textAlign: 'center',
-                    lineHeight: 1,        
-                    padding: 0,         
-                    boxSizing: 'border-box',
+                    textAlign: 'center',   // added
+                    lineHeight: 1,         // added
+                    padding: 0,            // added
+                    boxSizing: 'border-box', // added
                     fontSize: '1.25rem',
                     fontWeight: 'bold',
                     color: 'var(--text-color)',
