@@ -2,29 +2,47 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 
-export default function Groups({ currentUser, setCurrentUser, theme, toggleTheme, hasUnreadNotifications }) {
+export default function Groups({ currentUser, theme, toggleTheme, hasUnreadNotifications }) {
   const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
 
-  useEffect(() => {
-    fetch('/api/groups', { credentials: 'include' })
+  const fetchGroups = (pageNum = 1, append = false) => {
+    if (append) setLoadingMore(true); else setLoading(true);
+    fetch(`/api/groups?page=${pageNum}`, { credentials: 'include' })
       .then((res) => {
         if (!res.ok) throw new Error('Failed to fetch groups');
         return res.json();
       })
       .then((data) => {
-        setGroups(Array.isArray(data) ? data : []);
+        const newGroups = data.groups || (Array.isArray(data) ? data : []);
+        setGroups((prev) => (append ? [...prev, ...newGroups] : newGroups));
+        setHasMore(Boolean(data.has_more));
+        setPage(pageNum);
       })
       .catch((err) => {
         console.error('Error fetching groups:', err);
-        setGroups([]);
+        if (!append) setGroups([]);
       })
-      .finally(() => setLoading(false));
+      .finally(() => {
+        setLoading(false);
+        setLoadingMore(false);
+      });
+  };
+
+  useEffect(() => {
+    fetchGroups(1, false);
   }, []);
+
+  const handleLoadMore = () => {
+    fetchGroups(page + 1, true);
+  };
 
   return (
     <div>
-      <Navbar currentUser={currentUser} setCurrentUser={setCurrentUser} theme={theme} toggleTheme={toggleTheme} hasUnreadNotifications={hasUnreadNotifications} />
+      <Navbar currentUser={currentUser} theme={theme} toggleTheme={toggleTheme} hasUnreadNotifications={hasUnreadNotifications} />
 
       <main className="app-main-container" style={{ maxWidth: '800px', margin: '2rem auto', padding: '0 1rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
@@ -56,34 +74,47 @@ export default function Groups({ currentUser, setCurrentUser, theme, toggleTheme
               )}
             </div>
           ) : (
-            groups.map((group) => (
-              <div key={group.id} className="card" style={{ background: 'var(--card-bg, #fff)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius)', padding: '1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
-                <div style={{ flex: '1', minWidth: '250px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.3rem' }}>
-                    <h3 style={{ margin: 0 }}>
-                      <Link to={`/groups/${group.id}`} style={{ textDecoration: 'none', color: 'var(--text-primary)' }}>
-                        {group.name}
-                      </Link>
-                    </h3>
+            <>
+              {groups.map((group) => (
+                <div key={group.id} className="card" style={{ background: 'var(--card-bg, #fff)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius)', padding: '1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+                  <div style={{ flex: '1', minWidth: '250px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.3rem' }}>
+                      <h3 style={{ margin: 0 }}>
+                        <Link to={`/groups/${group.id}`} style={{ textDecoration: 'none', color: 'var(--text-primary)' }}>
+                          {group.name}
+                        </Link>
+                      </h3>
+                    </div>
+                    <p style={{ margin: '0 0 0.5rem 0', fontSize: '0.85rem', color: '#64748b' }}>
+                      Created by <Link to={`/profile/${group.username}`}>@{group.username}</Link>
+                    </p>
+                    <p style={{ margin: 0, color: 'var(--text-primary)', fontSize: '0.95rem', lineHeight: '1.4' }}>
+                      {group.description}
+                    </p>
                   </div>
-                  <p style={{ margin: '0 0 0.5rem 0', fontSize: '0.85rem', color: '#64748b' }}>
-                    Created by <Link to={`/profile/${group.username}`}>@{group.username}</Link>
-                  </p>
-                  <p style={{ margin: 0, color: 'var(--text-primary)', fontSize: '0.95rem', lineHeight: '1.4' }}>
-                    {group.description}
-                  </p>
+                  <div>
+                    <Link 
+                      to={`/groups/${group.id}`} 
+                      className={`btn btn-outline ${theme === 'dark' ? 'force-white' : ''}`}
+                      style={{ fontSize: '0.85rem', padding: '0.5rem 1rem' }}
+                    >
+                      View Group ↗
+                    </Link>
+                  </div>
                 </div>
-                <div>
-                  <Link 
-                    to={`/groups/${group.id}`} 
-                    className={`btn btn-outline ${theme === 'dark' ? 'force-white' : ''}`}
-                    style={{ fontSize: '0.85rem', padding: '0.5rem 1rem' }}
-                  >
-                    View Group ↗
-                  </Link>
-                </div>
-              </div>
-            ))
+              ))}
+
+              {hasMore && (
+                <button
+                  onClick={handleLoadMore}
+                  disabled={loadingMore}
+                  className="btn btn-primary"
+                  style={{ alignSelf: 'center', padding: '0.6rem 1.5rem' }}
+                >
+                  {loadingMore ? 'Loading...' : 'Load More'}
+                </button>
+              )}
+            </>
           )}
         </div>
       </main>

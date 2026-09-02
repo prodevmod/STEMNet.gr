@@ -26,14 +26,14 @@ const resolveImageUrl = (url) => {
 
 const getPostImage = (item) => {
     if (!item) return '';
-    const raw = item.media_path || 
-                item.image_url || 
-                item.image || 
-                item.media_url || 
-                item.media || 
-                item.photo_url || 
-                item.photo || 
-                item.file_path || 
+    const raw = item.media_path ||
+                item.image_url ||
+                item.image ||
+                item.media_url ||
+                item.media ||
+                item.photo_url ||
+                item.photo ||
+                item.file_path ||
                 item.attachment;
 
     return resolveImageUrl(raw);
@@ -46,11 +46,11 @@ const renderTextWithLinks = (text) => {
     return parts.map((part, i) => {
         if (part.match(urlRegex)) {
             return (
-                <a 
-                    key={i} 
-                    href={part} 
-                    target="_blank" 
-                    rel="noopener noreferrer" 
+                <a
+                    key={i}
+                    href={part}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     style={{ color: 'var(--primary-color)', textDecoration: 'underline', wordBreak: 'break-all' }}
                 >
                     {part}
@@ -64,36 +64,22 @@ const renderTextWithLinks = (text) => {
 const SafeImage = ({ src, alt, className, style, onClick }) => {
     const [error, setError] = useState(false);
 
-    const width = style?.width || style?.height || '40px';
-    const height = style?.height || style?.width || '40px';
-
-    const baseCropStyle = {
-        width: width,
-        height: height,
-        minWidth: width,
-        maxWidth: width,
-        minHeight: height,
-        maxHeight: height,
-        aspectRatio: '1 / 1',
-        borderRadius: '50%',
-        objectFit: 'cover',
-        flexShrink: 0,
-        display: 'inline-block'
-    };
-
     if (error || !src) {
         return (
             <div
                 className={className}
                 onClick={onClick}
                 style={{
-                    fontWeight: 'bold',
+                    ...style,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
                     fontSize: '1.25rem',
+                    fontWeight: 'bold',
                     color: 'var(--text-color)',
                     backgroundColor: 'var(--border-color)',
-                    userSelect: 'none',
-                    ...baseCropStyle,
-                    ...style
+                    borderRadius: '50%',
+                    userSelect: 'none'
                 }}
             >
                 {alt ? alt[0].toUpperCase() : 'U'}
@@ -101,39 +87,42 @@ const SafeImage = ({ src, alt, className, style, onClick }) => {
         );
     }
 
-        return (
-            <img
-                src={src}
-                alt={alt}
-                className={className}
-                onClick={onClick}
-                style={{
-                    ...baseCropStyle,
-                    ...style
-                }}
-                onError={() => setError(true)}
-            />
-        );
-    };
+    return (
+        <img
+            src={src}
+            alt={alt}
+            className={className}
+            onClick={onClick}
+            style={style}
+            onError={() => setError(true)}
+        />
+    );
+};
 
 export default function Home({ currentUser, setCurrentUser, theme, toggleTheme, hasUnreadNotifications }) {
     const navigate = useNavigate();
 
     const [posts, setPosts] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [loadingMore, setLoadingMore] = useState(false);
     const [error, setError] = useState('');
-    
+    const [page, setPage] = useState(1);
+    const [hasMore, setHasMore] = useState(false);
+
     const [activeCommentPostId, setActiveCommentPostId] = useState(null);
     const [commentInputs, setCommentInputs] = useState({});
 
-    const fetchPosts = async () => {
-        setLoading(true);
+    const fetchPosts = async (pageNum = 1, append = false) => {
+        if (append) setLoadingMore(true); else setLoading(true);
         setError('');
         try {
-            const res = await fetch('/api/posts', { credentials: 'include' });
+            const res = await fetch(`/api/posts?page=${pageNum}`, { credentials: 'include' });
             if (res.ok) {
                 const data = await res.json();
-                setPosts(Array.isArray(data) ? data : data.posts || []);
+                const newPosts = data.posts || (Array.isArray(data) ? data : []);
+                setPosts((prev) => (append ? [...prev, ...newPosts] : newPosts));
+                setHasMore(Boolean(data.has_more));
+                setPage(pageNum);
             } else {
                 setError('Failed to load posts.');
             }
@@ -142,12 +131,17 @@ export default function Home({ currentUser, setCurrentUser, theme, toggleTheme, 
             setError('Failed to load feed.');
         } finally {
             setLoading(false);
+            setLoadingMore(false);
         }
     };
 
     useEffect(() => {
-        fetchPosts();
+        fetchPosts(1, false);
     }, []);
+
+    const handleLoadMore = () => {
+        fetchPosts(page + 1, true);
+    };
 
     const handleLikePost = async (postId) => {
         if (!currentUser) return navigate('/login');
@@ -179,7 +173,7 @@ export default function Home({ currentUser, setCurrentUser, theme, toggleTheme, 
         }
     };
 
-    const handleAddComment = async (postId, parentPost, e) => {
+    const handleAddComment = async (postId, e) => {
         e.preventDefault();
         if (!currentUser) return navigate('/login');
 
@@ -198,9 +192,15 @@ export default function Home({ currentUser, setCurrentUser, theme, toggleTheme, 
             });
 
             if (res.ok) {
+                setPosts((prevPosts) =>
+                    prevPosts.map((p) =>
+                        p.id === postId
+                            ? { ...p, comment_count: (Number(p.comment_count) || 0) + 1 }
+                            : p
+                    )
+                );
                 setCommentInputs((prev) => ({ ...prev, [postId]: '' }));
                 setActiveCommentPostId(null);
-                fetchPosts();
             }
         } catch (err) {
             console.error('Error submitting comment:', err);
@@ -218,18 +218,18 @@ export default function Home({ currentUser, setCurrentUser, theme, toggleTheme, 
 
             <main style={{ maxWidth: '800px', margin: '0 auto', padding: '1.5rem 1rem' }}>
                 {!currentUser && (
-                    <div className="card" style={{ 
-                        marginBottom: '1.5rem', 
-                        padding: '1.5rem', 
-                        backgroundColor: 'var(--card-bg)', 
-                        border: '1px solid var(--border-color)', 
-                        borderRadius: '8px' 
+                    <div className="card" style={{
+                        marginBottom: '1.5rem',
+                        padding: '1.5rem',
+                        backgroundColor: 'var(--card-bg)',
+                        border: '1px solid var(--border-color)',
+                        borderRadius: '8px'
                     }}>
                         <h2 style={{ fontSize: '1.25rem', marginBottom: '0.75rem', color: 'var(--text-color)' }}>
                             Welcome to STEMNet Greece
                         </h2>
                         <p style={{ margin: 0, color: 'var(--text-color)', lineHeight: '1.5', fontSize: '0.95rem' }}>
-                            STEMNet is an open platform centered around Greek high school robotics clubs and STEM students. Connect with other teams, share your open-source code, showcase your 3D printing files, and ask technical troubleshooting questions. I truly believe that this simple medium can make a difference in Greek students' networking and personal growth.
+                            STEMNet is an open platform centered around Greek high school robotics clubs and STEM students. Connect with other teams, share your open-source code, showcase your 3D printing files, and ask technical troubleshooting questions.
                         </p>
                     </div>
                 )}
@@ -258,39 +258,27 @@ export default function Home({ currentUser, setCurrentUser, theme, toggleTheme, 
                             const postImage = getPostImage(post);
                             const userLiked = Boolean(post.user_liked);
                             const totalLikes = Number(post.like_count) || 0;
+                            const commentCount = Number(post.comment_count) || 0;
                             const postDate = post.created_at ? new Date(post.created_at).toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric' }) : 'Recently';
-                            
+
                             const authorName = post.username || 'user';
                             const authorPic = resolveImageUrl(post.profile_pic);
                             const isReplying = activeCommentPostId === post.id;
 
                             return (
-                                <div key={post.id} className="card" style={{ 
-                                    padding: '1.25rem', 
-                                    backgroundColor: 'var(--card-bg)', 
-                                    border: '1px solid var(--border-color)', 
-                                    borderRadius: '8px' 
+                                <div key={post.id} className="card" style={{
+                                    padding: '1.25rem',
+                                    backgroundColor: 'var(--card-bg)',
+                                    border: '1px solid var(--border-color)',
+                                    borderRadius: '8px'
                                 }}>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                                            <Link to={`/profile/${authorName}`} style={{ display: 'inline-flex', flexShrink: 0 }}>
-                                                {/* Author Picture locked to 40x40 circle */}
+                                            <Link to={`/profile/${authorName}`} style={{ display: 'inline-flex' }}>
                                                 <SafeImage
                                                     src={authorPic}
                                                     alt={authorName}
-                                                    className="avatar"
-                                                    style={{ 
-                                                        width: '40px', 
-                                                        height: '40px',
-                                                        minWidth: '40px',
-                                                        minHeight: '40px',
-                                                        maxWidth: '40px',
-                                                        maxHeight: '40px',
-                                                        aspectRatio: '1 / 1',
-                                                        objectFit: 'cover',
-                                                        borderRadius: '50%',
-                                                        flexShrink: 0
-                                                    }}
+                                                    style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover' }}
                                                 />
                                             </Link>
                                             <Link to={`/profile/${authorName}`} style={{ color: 'var(--primary-color)', fontWeight: 'bold', textDecoration: 'none' }}>
@@ -306,10 +294,10 @@ export default function Home({ currentUser, setCurrentUser, theme, toggleTheme, 
                                     </div>
 
                                     {post.parent_content && (
-                                        <div style={{ 
-                                            border: '1px solid var(--border-color)', 
-                                            borderRadius: '8px', 
-                                            padding: '0.75rem', 
+                                        <div style={{
+                                            border: '1px solid var(--border-color)',
+                                            borderRadius: '8px',
+                                            padding: '0.75rem',
                                             marginTop: '0.5rem',
                                             marginBottom: '1rem',
                                             backgroundColor: 'rgba(0,0,0,0.02)'
@@ -330,26 +318,26 @@ export default function Home({ currentUser, setCurrentUser, theme, toggleTheme, 
                                     )}
 
                                     {postImage && (
-                                        <div style={{ 
-                                            marginBottom: '0.75rem', 
-                                            width: '100%', 
-                                            display: 'flex', 
+                                        <div style={{
+                                            marginBottom: '0.75rem',
+                                            width: '100%',
+                                            display: 'flex',
                                             justifyContent: 'center',
                                             backgroundColor: 'rgba(0,0,0,0.02)',
                                             borderRadius: '8px',
                                             overflow: 'hidden'
                                         }}>
-                                            <img 
-                                                src={postImage} 
-                                                alt="Post attachment" 
-                                                style={{ 
-                                                    maxWidth: '100%', 
-                                                    height: 'auto', 
+                                            <img
+                                                src={postImage}
+                                                alt="Post attachment"
+                                                style={{
+                                                    maxWidth: '100%',
+                                                    height: 'auto',
                                                     maxHeight: '600px',
                                                     objectFit: 'contain',
                                                     display: 'block',
                                                     borderRadius: '8px'
-                                                }} 
+                                                }}
                                                 onError={(e) => {
                                                     e.currentTarget.parentElement.style.display = 'none';
                                                 }}
@@ -367,19 +355,14 @@ export default function Home({ currentUser, setCurrentUser, theme, toggleTheme, 
                                                 display: 'flex',
                                                 alignItems: 'center',
                                                 gap: '0.4rem',
-                                                color: userLiked ? '#000000' : 'inherit',
+                                                color: 'inherit',
                                                 fontSize: 'inherit',
-                                                fontWeight: userLiked ? 'bold' : 'normal'
                                             }}
                                         >
                                             <img
                                                 src={userLiked ? likedIcon : unlikedIcon}
                                                 alt={userLiked ? 'Liked' : 'Unliked'}
-                                                style={{
-                                                    width: '18px',
-                                                    height: '18px',
-                                                    filter: 'var(--icon-filter)'
-                                                }}
+                                                style={{ width: '18px', height: '18px', filter: 'var(--icon-filter)' }}
                                             />
                                             <span>{totalLikes}</span>
                                         </button>
@@ -395,25 +378,20 @@ export default function Home({ currentUser, setCurrentUser, theme, toggleTheme, 
                                                 gap: '0.4rem',
                                                 color: isReplying ? 'var(--primary-color)' : 'inherit',
                                                 fontSize: 'inherit',
-                                                fontWeight: isReplying ? 'bold' : 'normal'
                                             }}
                                         >
                                             <img
                                                 src={commentIcon}
                                                 alt="Reply"
-                                                style={{
-                                                    width: '18px',
-                                                    height: '18px',
-                                                    filter: isReplying ? 'none' : 'var(--icon-filter)'
-                                                }}
+                                                style={{ width: '18px', height: '18px', filter: isReplying ? 'none' : 'var(--icon-filter)' }}
                                             />
-                                            <span>Reply</span>
+                                            <span>{commentCount > 0 ? `${commentCount}` : 'Reply'}</span>
                                         </button>
                                     </div>
 
                                     {isReplying && (
                                         <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px dashed var(--border-color)' }}>
-                                            <form onSubmit={(e) => handleAddComment(post.id, post, e)} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                            <form onSubmit={(e) => handleAddComment(post.id, e)} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                                                 <input
                                                     type="text"
                                                     placeholder="Write a reply..."
@@ -431,11 +409,11 @@ export default function Home({ currentUser, setCurrentUser, theme, toggleTheme, 
                                                     autoFocus
                                                 />
                                                 <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                                                    <button 
-                                                        type="button" 
+                                                    <button
+                                                        type="button"
                                                         onClick={() => handleCancelReply(post.id)}
-                                                        style={{ 
-                                                            padding: '0.4rem 0.8rem', 
+                                                        style={{
+                                                            padding: '0.4rem 0.8rem',
                                                             fontSize: '0.85rem',
                                                             background: 'transparent',
                                                             color: 'var(--text-color)',
@@ -445,13 +423,10 @@ export default function Home({ currentUser, setCurrentUser, theme, toggleTheme, 
                                                         }}>
                                                         Cancel
                                                     </button>
-                                                    <button 
-                                                        type="submit" 
-                                                        className="btn btn-primary" 
-                                                        style={{ 
-                                                            padding: '0.4rem 1.2rem', 
-                                                            fontSize: '0.85rem' 
-                                                        }}>
+                                                    <button
+                                                        type="submit"
+                                                        className="btn btn-primary"
+                                                        style={{ padding: '0.4rem 1.2rem', fontSize: '0.85rem' }}>
                                                         Reply
                                                     </button>
                                                 </div>
@@ -461,6 +436,17 @@ export default function Home({ currentUser, setCurrentUser, theme, toggleTheme, 
                                 </div>
                             );
                         })}
+
+                        {hasMore && (
+                            <button
+                                onClick={handleLoadMore}
+                                disabled={loadingMore}
+                                className="btn btn-primary"
+                                style={{ alignSelf: 'center', padding: '0.6rem 1.5rem', marginTop: '0.5rem' }}
+                            >
+                                {loadingMore ? 'Loading...' : 'Load More'}
+                            </button>
+                        )}
                     </div>
                 )}
             </main>

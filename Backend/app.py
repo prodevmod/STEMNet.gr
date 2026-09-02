@@ -15,6 +15,8 @@ from pathlib import Path
 import requests
 from functools import wraps
 from urllib.parse import urlparse
+import io
+from PIL import Image
 
 from flask import (
     jsonify,
@@ -30,7 +32,8 @@ from werkzeug.security import check_password_hash, generate_password_hash
 from itsdangerous import URLSafeTimedSerializer
 from supabase import create_client, Client
 
-load_dotenv()
+BASE_DIR = Path(__file__).resolve().parent
+load_dotenv(BASE_DIR / ".env")
 
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
@@ -38,7 +41,6 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY) if SUPABASE_URL and
 
 FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:3000")
 
-BASE_DIR = Path(__file__).resolve().parent
 DATABASE = BASE_DIR / "project.db"
 SCHEMA = BASE_DIR / "schema.sql"
 
@@ -68,7 +70,6 @@ _blocked_domains_cache_time = 0
 BLOCKED_DOMAINS_CACHE_TTL = 3600
 
 def fetch_urlhaus_blocklist():
-    """Fetches abuse.ch's URLhaus list of known malicious/phishing domains."""
     try:
         resp = requests.get(
             "https://urlhaus.abuse.ch/downloads/text_online/",
@@ -101,7 +102,6 @@ def get_blocked_domains():
     return _blocked_domains_cache
 
 def extract_domain(url):
-    """Extracts the bare domain from a URL, stripping www. and normalizing case."""
     if not url or not isinstance(url, str):
         return None
     url = url.strip()
@@ -117,12 +117,10 @@ def extract_domain(url):
         return None
 
 def is_blocked_url(url):
-    """Checks a single URL string against the blocklist."""
     domain = extract_domain(url)
     return bool(domain and domain in get_blocked_domains())
 
 def contains_blocked_link(text):
-    """Scans free-text content for any URL whose domain is on the blocklist."""
     if not text or not isinstance(text, str):
         return False
     blocked = get_blocked_domains()
@@ -147,8 +145,6 @@ def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 def get_mime_type(filename):
-    """Maps a file extension to its correct MIME type explicitly, instead of
-    trusting the browser-reported content type."""
     ext = filename.rsplit('.', 1)[-1].lower() if '.' in filename else ''
     return {
         'png': 'image/png',
@@ -160,6 +156,48 @@ def get_mime_type(filename):
         'webm': 'video/webm',
     }.get(ext, 'application/octet-stream')
 
+def resize_image_if_needed(file_bytes, filename, max_dimension=1600):
+    """Resizes static images (png/jpg/webp) to a max dimension on the long
+    edge before upload, to reduce page weight. GIFs are left untouched to
+    preserve animation, and videos are skipped entirely (no image codec)."""
+    ext = filename.rsplit('.', 1)[-1].lower() if '.' in filename else ''
+    if ext not in ('png', 'jpg', 'jpeg', 'webp'):
+        return file_bytes
+    try:
+        img = Image.open(io.BytesIO(file_bytes))
+        width, height = img.size
+        if max(width, height) <= max_dimension:
+            return file_bytes
+        if width > height:
+            new_width = max_dimension
+            new_height = round(height * (max_dimension / width))
+        else:
+            new_height = max_dimension
+            new_width = round(width * (max_dimension / height))
+        resized = img.resize((new_width, new_height), Image.LANCZOS)
+        output = io.BytesIO()
+        fmt = img.format if img.format else ('JPEG' if ext in ('jpg', 'jpeg') else 'PNG')
+        if fmt == 'JPEG' and resized.mode in ('RGBA', 'P'):
+            resized = resized.convert('RGB')
+        resized.save(output, format=fmt, quality=85, optimize=True)
+        return output.getvalue()
+    except Exception as e:
+        print(f"Image resize failed, using original: {e}")
+        return file_bytes
+
+def get_pagination_params():
+    try:
+        page = max(1, int(request.args.get('page', 1)))
+    except (ValueError, TypeError):
+        page = 1
+    try:
+        per_page = int(request.args.get('per_page', 20))
+        per_page = min(max(per_page, 1), 50)
+    except (ValueError, TypeError):
+        per_page = 20
+    offset = (page - 1) * per_page
+    return page, per_page, offset
+
 db_url = os.environ.get("DATABASE_URL", "sqlite:///app.db")
 if db_url.startswith("postgres://"):
     db_url = db_url.replace("postgres://", "postgresql://", 1)
@@ -170,7 +208,7 @@ limiter = Limiter(
     app=app,
     key_func=get_remote_address,
     default_limits=["50 per hour"],
-    storage_uri="memory://"
+    storage_uri=os.environ.get("REDIS_URL", "memory://")
 )
 RECAPTCHA_SECRET_KEY = os.environ.get("RECAPTCHA_SECRET_KEY")
 
@@ -289,6 +327,7 @@ def remove_or_softdelete_post(db, post_id, reassign_user_id=None):
     if has_children:
         db.execute("DELETE FROM likes WHERE post_id = ?", (post_id,))
         db.execute("DELETE FROM notifications WHERE post_id = ?", (post_id,))
+        db.execute("DELETE FROM event_attendees WHERE post_id = ?", (post_id,))
         if reassign_user_id:
             db.execute(
                 """UPDATE posts
@@ -320,6 +359,7 @@ def remove_or_softdelete_post(db, post_id, reassign_user_id=None):
     else:
         db.execute("DELETE FROM likes WHERE post_id = ?", (post_id,))
         db.execute("DELETE FROM notifications WHERE post_id = ?", (post_id,))
+        db.execute("DELETE FROM event_attendees WHERE post_id = ?", (post_id,))
         db.execute("DELETE FROM posts WHERE id = ?", (post_id,))
         return True
 
@@ -460,6 +500,34 @@ def upgrade_database():
             db.commit()
         except Exception as e:
             print(f"bug_reports table init notice: {e}")
+            if hasattr(db, 'rollback'): db.rollback()
+
+        try:
+            if is_postgres:
+                db.execute("""
+                    CREATE TABLE IF NOT EXISTS event_attendees (
+                        id SERIAL PRIMARY KEY,
+                        post_id INTEGER NOT NULL,
+                        user_id INTEGER NOT NULL,
+                        status TEXT NOT NULL,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        UNIQUE(post_id, user_id)
+                    );
+                """)
+            else:
+                db.execute("""
+                    CREATE TABLE IF NOT EXISTS event_attendees (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        post_id INTEGER NOT NULL,
+                        user_id INTEGER NOT NULL,
+                        status TEXT NOT NULL,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        UNIQUE(post_id, user_id)
+                    );
+                """)
+            db.commit()
+        except Exception as e:
+            print(f"event_attendees table init notice: {e}")
             if hasattr(db, 'rollback'): db.rollback()
     except Exception as e:
         print(f"Database initialization notice: {e}")
@@ -719,10 +787,12 @@ def create_post():
         filename = secure_filename(file.filename)
         unique_filename = f"{current_user_id}_{int(time.time())}_{filename}"
         content_type = get_mime_type(filename)
+        file_bytes = file.read()
+        file_bytes = resize_image_if_needed(file_bytes, filename)
         if supabase:
             try:
                 supabase.storage.from_("uploads").upload(
-                    path=unique_filename, file=file.read(),
+                    path=unique_filename, file=file_bytes,
                     file_options={"content-type": content_type, "upsert": "false"}
                 )
                 media_path = supabase.storage.from_("uploads").get_public_url(unique_filename)
@@ -778,13 +848,15 @@ def get_posts():
     db = get_db()
     current_user_id = g.user["id"] if g.get("user") else 0
     category = request.args.get('category')
+    page, per_page, offset = get_pagination_params()
 
     query = """
         SELECT posts.*, users.username, users.profile_pic,
                parent_posts.content AS parent_content,
                parent_users.username AS parent_username,
                (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id) AS like_count,
-               (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id AND likes.user_id = ?) AS user_liked
+               (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id AND likes.user_id = ?) AS user_liked,
+               (SELECT COUNT(*) FROM posts AS replies WHERE replies.parent_id = posts.id AND (replies.is_deleted IS NULL OR replies.is_deleted = 0)) AS comment_count
         FROM posts
         JOIN users ON posts.user_id = users.id
         LEFT JOIN posts AS parent_posts ON posts.parent_id = parent_posts.id
@@ -800,10 +872,14 @@ def get_posts():
     else:
         query += " AND posts.category != 'Events'"
 
-    query += " ORDER BY posts.created_at DESC"
-    posts = db.execute(query, params).fetchall()
+    query += " ORDER BY posts.created_at DESC LIMIT ? OFFSET ?"
+    params.extend([per_page + 1, offset])
 
-    return jsonify([dict(row) for row in posts]), 200
+    rows = db.execute(query, params).fetchall()
+    has_more = len(rows) > per_page
+    posts = [dict(row) for row in rows[:per_page]]
+
+    return jsonify({"posts": posts, "has_more": has_more, "page": page}), 200
 
 @app.route("/api/posts/<int:post_id>", methods=["GET"])
 def api_get_single_post(post_id):
@@ -814,12 +890,16 @@ def api_get_single_post(post_id):
         """
         SELECT posts.*, users.username, users.profile_pic,
                (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id) AS like_count,
-               (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id AND likes.user_id = ?) AS user_liked
+               (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id AND likes.user_id = ?) AS user_liked,
+               (SELECT COUNT(*) FROM posts AS replies WHERE replies.parent_id = posts.id AND (replies.is_deleted IS NULL OR replies.is_deleted = 0)) AS comment_count,
+               (SELECT COUNT(*) FROM event_attendees WHERE event_attendees.post_id = posts.id AND event_attendees.status = 'going') AS going_count,
+               (SELECT COUNT(*) FROM event_attendees WHERE event_attendees.post_id = posts.id AND event_attendees.status = 'interested') AS interested_count,
+               (SELECT status FROM event_attendees WHERE event_attendees.post_id = posts.id AND event_attendees.user_id = ?) AS user_rsvp_status
         FROM posts
         JOIN users ON posts.user_id = users.id
         WHERE posts.id = ?
         """,
-        (current_user_id, post_id)
+        (current_user_id, current_user_id, post_id)
     ).fetchone()
 
     if not post:
@@ -926,12 +1006,16 @@ def api_get_post_thread(post_id):
         """
         SELECT posts.*, users.username, users.profile_pic,
                (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id) AS like_count,
-               (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id AND likes.user_id = ?) AS user_liked
+               (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id AND likes.user_id = ?) AS user_liked,
+               (SELECT COUNT(*) FROM posts AS replies WHERE replies.parent_id = posts.id AND (replies.is_deleted IS NULL OR replies.is_deleted = 0)) AS comment_count,
+               (SELECT COUNT(*) FROM event_attendees WHERE event_attendees.post_id = posts.id AND event_attendees.status = 'going') AS going_count,
+               (SELECT COUNT(*) FROM event_attendees WHERE event_attendees.post_id = posts.id AND event_attendees.status = 'interested') AS interested_count,
+               (SELECT status FROM event_attendees WHERE event_attendees.post_id = posts.id AND event_attendees.user_id = ?) AS user_rsvp_status
         FROM posts
         JOIN users ON posts.user_id = users.id
         WHERE posts.id = ?
         """,
-        (current_user_id, post_id)
+        (current_user_id, current_user_id, post_id)
     ).fetchone()
 
     if not post:
@@ -1031,11 +1115,13 @@ def api_edit_post(post_id):
         if file and file.filename != "" and allowed_file(file.filename):
             filename = secure_filename(file.filename)
             content_type = get_mime_type(filename)
+            file_bytes = file.read()
+            file_bytes = resize_image_if_needed(file_bytes, filename)
             if supabase:
                 try:
                     unique_filename = f"{user_id}_{int(time.time())}_{filename}"
                     supabase.storage.from_("uploads").upload(
-                        path=unique_filename, file=file.read(),
+                        path=unique_filename, file=file_bytes,
                         file_options={"content-type": content_type, "upsert": "false"}
                     )
                     media_path = supabase.storage.from_("uploads").get_public_url(unique_filename)
@@ -1046,7 +1132,8 @@ def api_edit_post(post_id):
                 upload_folder = app.config.get("UPLOAD_FOLDER", "static/uploads")
                 os.makedirs(upload_folder, exist_ok=True)
                 file_path = os.path.join(upload_folder, filename)
-                file.save(file_path)
+                with open(file_path, 'wb') as f:
+                    f.write(file_bytes)
                 media_path = f"uploads/{filename}"
 
     try:
@@ -1126,6 +1213,63 @@ def toggle_like(post_id):
     db.commit()
     return jsonify({"success": True}), 200
 
+@app.route("/api/events/<int:post_id>/rsvp", methods=["POST"])
+@login_required
+def rsvp_event(post_id):
+    db = get_db()
+    user_id = g.user["id"]
+    data = request.get_json(silent=True) or {}
+    status = data.get("status", "").strip().lower()
+
+    if status not in ("going", "interested"):
+        return jsonify({"error": "Invalid RSVP status."}), 400
+
+    post = db.execute("SELECT id, category FROM posts WHERE id = ?", (post_id,)).fetchone()
+    if not post or post["category"] != "Events":
+        return jsonify({"error": "Event not found."}), 404
+
+    try:
+        existing = db.execute(
+            "SELECT * FROM event_attendees WHERE post_id = ? AND user_id = ?",
+            (post_id, user_id)
+        ).fetchone()
+
+        if existing and existing["status"] == status:
+            db.execute("DELETE FROM event_attendees WHERE post_id = ? AND user_id = ?", (post_id, user_id))
+            new_status = None
+        elif existing:
+            db.execute(
+                "UPDATE event_attendees SET status = ? WHERE post_id = ? AND user_id = ?",
+                (status, post_id, user_id)
+            )
+            new_status = status
+        else:
+            db.execute(
+                "INSERT INTO event_attendees (post_id, user_id, status) VALUES (?, ?, ?)",
+                (post_id, user_id, status)
+            )
+            new_status = status
+
+        db.commit()
+
+        going_count = db.execute(
+            "SELECT COUNT(*) as c FROM event_attendees WHERE post_id = ? AND status = 'going'", (post_id,)
+        ).fetchone()["c"]
+        interested_count = db.execute(
+            "SELECT COUNT(*) as c FROM event_attendees WHERE post_id = ? AND status = 'interested'", (post_id,)
+        ).fetchone()["c"]
+
+        return jsonify({
+            "success": True,
+            "user_status": new_status,
+            "going_count": going_count,
+            "interested_count": interested_count
+        }), 200
+    except Exception as e:
+        db.rollback()
+        app.logger.error(f"RSVP error: {e}")
+        return jsonify({"error": "Failed to update RSVP."}), 500
+
 @app.route("/api/profile/<username>", methods=["GET"])
 def profile(username):
     db = get_db()
@@ -1142,7 +1286,8 @@ def profile(username):
                parent_posts.content AS parent_content,
                parent_users.username AS parent_username,
                (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id) AS like_count,
-               (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id AND likes.user_id = ?) AS user_liked
+               (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id AND likes.user_id = ?) AS user_liked,
+               (SELECT COUNT(*) FROM posts AS replies WHERE replies.parent_id = posts.id AND (replies.is_deleted IS NULL OR replies.is_deleted = 0)) AS comment_count
            FROM posts
            JOIN users ON posts.user_id = users.id
            LEFT JOIN posts AS parent_posts ON posts.parent_id = parent_posts.id
@@ -1203,10 +1348,12 @@ def edit_profile():
         filename = secure_filename(file.filename)
         unique_filename = f"pfp_{g.user['id']}_{int(time.time())}_{filename}"
         content_type = get_mime_type(filename)
+        file_bytes = file.read()
+        file_bytes = resize_image_if_needed(file_bytes, filename, max_dimension=800)
         if supabase:
             try:
                 supabase.storage.from_("uploads").upload(
-                    path=unique_filename, file=file.read(),
+                    path=unique_filename, file=file_bytes,
                     file_options={"content-type": content_type, "upsert": "true"}
                 )
                 profile_pic_url = supabase.storage.from_("uploads").get_public_url(unique_filename)
@@ -1215,7 +1362,8 @@ def edit_profile():
                 return jsonify({"error": "Failed to upload image"}), 500
         else:
             filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
-            file.save(filepath)
+            with open(filepath, 'wb') as f:
+                f.write(file_bytes)
             profile_pic_url = f"/static/uploads/{unique_filename}"
 
     db = get_db()
@@ -1330,33 +1478,29 @@ def get_following(username):
 @app.route("/api/events", methods=["GET"])
 def get_events():
     db = get_db()
-    user_id = session.get("user_id")
+    user_id = session.get("user_id") or 0
+    page, per_page, offset = get_pagination_params()
 
-    if user_id:
-        events = db.execute(
-            """SELECT posts.*, users.username,
-               (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id) as like_count,
-               EXISTS(SELECT 1 FROM likes WHERE likes.post_id = posts.id AND likes.user_id = ?) as user_liked
-               FROM posts
-               JOIN users ON posts.user_id = users.id
-               WHERE posts.category = 'Events'
-                 AND (posts.is_deleted IS NULL OR posts.is_deleted = 0)
-               ORDER BY posts.event_time ASC""",
-            (user_id,)
-        ).fetchall()
-    else:
-        events = db.execute(
-            """SELECT posts.*, users.username,
-               (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id) as like_count,
-               0 as user_liked
-               FROM posts
-               JOIN users ON posts.user_id = users.id
-               WHERE posts.category = 'Events'
-                 AND (posts.is_deleted IS NULL OR posts.is_deleted = 0)
-               ORDER BY posts.event_time ASC"""
-        ).fetchall()
+    query = """SELECT posts.*, users.username,
+           (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id) as like_count,
+           (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id AND likes.user_id = ?) as user_liked,
+           (SELECT COUNT(*) FROM posts AS replies WHERE replies.parent_id = posts.id AND (replies.is_deleted IS NULL OR replies.is_deleted = 0)) AS comment_count,
+           (SELECT COUNT(*) FROM event_attendees WHERE event_attendees.post_id = posts.id AND event_attendees.status = 'going') as going_count,
+           (SELECT COUNT(*) FROM event_attendees WHERE event_attendees.post_id = posts.id AND event_attendees.status = 'interested') as interested_count,
+           (SELECT status FROM event_attendees WHERE event_attendees.post_id = posts.id AND event_attendees.user_id = ?) as user_rsvp_status
+           FROM posts
+           JOIN users ON posts.user_id = users.id
+           WHERE posts.category = 'Events'
+             AND (posts.is_deleted IS NULL OR posts.is_deleted = 0)
+           ORDER BY posts.event_time ASC
+           LIMIT ? OFFSET ?"""
+    params = [user_id, user_id, per_page + 1, offset]
 
-    return jsonify([dict(row) for row in events]), 200
+    rows = db.execute(query, params).fetchall()
+    has_more = len(rows) > per_page
+    events = [dict(row) for row in rows[:per_page]]
+
+    return jsonify({"events": events, "has_more": has_more, "page": page}), 200
 
 @app.route("/api/cron/cleanup-events", methods=["POST"])
 def api_cleanup_events():
@@ -1398,6 +1542,35 @@ def api_cleanup_events():
         app.logger.error(f"Event cleanup error: {e}")
         return jsonify({"error": "Failed to clean up events."}), 500
 
+@app.route("/api/cron/cleanup-notifications", methods=["POST"])
+def api_cleanup_notifications():
+    db = get_db()
+    is_postgres = bool(os.environ.get("DATABASE_URL"))
+
+    try:
+        if is_postgres:
+            db.execute(
+                """
+                DELETE FROM notifications
+                WHERE is_read = 1
+                  AND created_at < NOW() - INTERVAL '30 days'
+                """
+            )
+        else:
+            db.execute(
+                """
+                DELETE FROM notifications
+                WHERE is_read = 1
+                  AND created_at < datetime('now', '-30 days')
+                """
+            )
+        db.commit()
+        return jsonify({"message": "Old read notifications cleaned up."}), 200
+    except Exception as e:
+        db.rollback()
+        app.logger.error(f"Notification cleanup error: {e}")
+        return jsonify({"error": "Failed to clean up notifications."}), 500
+
 @app.route('/api/education', methods=['GET'])
 def get_education_extras():
     return jsonify({
@@ -1433,12 +1606,18 @@ def create_group():
         db.rollback()
         app.logger.error(f"Create group error: {e}")
         return jsonify({"error": "Failed to create group."}), 500
-    
+
 @app.route("/api/groups", methods=["GET"])
 def get_groups():
     db = get_db()
-    groups = db.execute("SELECT g.*, u.username FROM groups g JOIN users u ON g.user_id = u.id ORDER BY g.created_at DESC").fetchall()
-    return jsonify([dict(g) for g in groups]), 200
+    page, per_page, offset = get_pagination_params()
+    rows = db.execute(
+        "SELECT g.*, u.username FROM groups g JOIN users u ON g.user_id = u.id ORDER BY g.created_at DESC LIMIT ? OFFSET ?",
+        (per_page + 1, offset)
+    ).fetchall()
+    has_more = len(rows) > per_page
+    groups = [dict(g) for g in rows[:per_page]]
+    return jsonify({"groups": groups, "has_more": has_more, "page": page}), 200
 
 @app.route("/api/groups/<int:group_id>", methods=["GET"])
 def get_group_details(group_id):
@@ -1452,7 +1631,8 @@ def get_group_details(group_id):
         """
         SELECT posts.*, users.username, users.profile_pic,
                (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id) AS like_count,
-               (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id AND likes.user_id = ?) AS user_liked
+               (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id AND likes.user_id = ?) AS user_liked,
+               (SELECT COUNT(*) FROM posts AS replies WHERE replies.parent_id = posts.id AND (replies.is_deleted IS NULL OR replies.is_deleted = 0)) AS comment_count
         FROM posts
         JOIN users ON posts.user_id = users.id
         WHERE posts.group_id = ?
@@ -1906,6 +2086,7 @@ def delete_account():
             remove_or_softdelete_post(db, row["id"], reassign_user_id=placeholder_id)
 
         db.execute("DELETE FROM likes WHERE user_id = ?", (user_id,))
+        db.execute("DELETE FROM event_attendees WHERE user_id = ?", (user_id,))
         db.execute("DELETE FROM notifications WHERE user_id = ? OR actor_id = ?", (user_id, user_id))
         db.execute("DELETE FROM follows WHERE follower_id = ? OR following_id = ?", (user_id, user_id))
         db.execute("DELETE FROM users WHERE id = ?", (user_id,))
@@ -1929,6 +2110,16 @@ def ratelimit_handler(e):
 
 def server_error(e):
     return jsonify({"error": "Internal Server Error"}), 500
+
+@app.after_request
+def set_security_headers(response):
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-Frame-Options'] = 'DENY'
+    response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+    response.headers['Cross-Origin-Resource-Policy'] = 'same-origin'
+    if not app.debug:
+        response.headers['Strict-Transport-Security'] = 'max-age=63072000; includeSubDomains; preload'
+    return response
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=80)

@@ -141,6 +141,32 @@ const renderTextWithLinks = (text) => {
   return text;
 };
 
+const handleRsvp = async (status) => {
+    if (!currentUser) {
+        alert('Please log in to RSVP.');
+        return;
+    }
+    try {
+        const res = await fetch(`/api/events/${postId}/rsvp`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ status }),
+        });
+        if (res.ok) {
+            const data = await res.json();
+            setPost((prev) => ({
+                ...prev,
+                user_rsvp_status: data.user_status,
+                going_count: data.going_count,
+                interested_count: data.interested_count,
+            }));
+        }
+    } catch (err) {
+        console.error('RSVP error:', err);
+    }
+};
+
 export default function EventDetails({ currentUser, setCurrentUser, theme, toggleTheme, hasUnreadNotifications }) {
   const params = useParams();
   const postId = params.postId || params.id;
@@ -631,6 +657,40 @@ const renderCommentItem = (comment) => (
                 </div>
               )}
 
+              <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
+                  <button
+                      type="button"
+                      onClick={() => handleRsvp('going')}
+                      style={{
+                          padding: '0.5rem 1.1rem',
+                          borderRadius: 'var(--radius)',
+                          border: `1px solid ${post.user_rsvp_status === 'going' ? '#22c55e' : 'var(--border-color)'}`,
+                          background: post.user_rsvp_status === 'going' ? 'rgba(34,197,94,0.15)' : 'transparent',
+                          color: post.user_rsvp_status === 'going' ? '#22c55e' : 'inherit',
+                          cursor: 'pointer',
+                          fontSize: '0.9rem',
+                          fontWeight: 600,
+                      }}
+                  >
+                      Going {post.going_count > 0 ? `(${post.going_count})` : ''}
+                  </button>
+                  <button
+                      type="button"
+                      onClick={() => handleRsvp('interested')}
+                      style={{
+                          padding: '0.5rem 1.1rem',
+                          borderRadius: 'var(--radius)',
+                          border: `1px solid ${post.user_rsvp_status === 'interested' ? '#3b82f6' : 'var(--border-color)'}`,
+                          background: post.user_rsvp_status === 'interested' ? 'rgba(59,130,246,0.15)' : 'transparent',
+                          color: post.user_rsvp_status === 'interested' ? '#3b82f6' : 'inherit',
+                          cursor: 'pointer',
+                          fontSize: '0.9rem',
+                          fontWeight: 600,
+                      }}
+                  >
+                      Interested {post.interested_count > 0 ? `(${post.interested_count})` : ''}
+                  </button>
+              </div>
               <p
                 style={{
                   marginTop: '10px',

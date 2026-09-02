@@ -637,7 +637,7 @@ const handleSaveProfile = async (e) => {
                                                             filter: 'var(--icon-filter)'
                                                         }}
                                                     />
-                                                    <span>Reply</span>
+                                                    <span>{Number(post.comment_count) > 0 ? Number(post.comment_count) : 'Reply'}</span>
                                                 </button>
 
                                                 <Link to={`/post/${post.id}`} style={{ textDecoration: 'none', color: '#64748b', marginLeft: 'auto' }}>
