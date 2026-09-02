@@ -64,22 +64,36 @@ const renderTextWithLinks = (text) => {
 const SafeImage = ({ src, alt, className, style, onClick }) => {
     const [error, setError] = useState(false);
 
+    const width = style?.width || style?.height || '40px';
+    const height = style?.height || style?.width || '40px';
+
+    const baseCropStyle = {
+        width: width,
+        height: height,
+        minWidth: width,
+        maxWidth: width,
+        minHeight: height,
+        maxHeight: height,
+        aspectRatio: '1 / 1',
+        borderRadius: '50%',
+        objectFit: 'cover',
+        flexShrink: 0,
+        display: 'inline-block'
+    };
+
     if (error || !src) {
         return (
             <div
                 className={className}
                 onClick={onClick}
                 style={{
-                    ...style,
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '1.25rem',
                     fontWeight: 'bold',
+                    fontSize: '1.25rem',
                     color: 'var(--text-color)',
                     backgroundColor: 'var(--border-color)',
-                    borderRadius: '50%',
-                    userSelect: 'none'
+                    userSelect: 'none',
+                    ...baseCropStyle,
+                    ...style
                 }}
             >
                 {alt ? alt[0].toUpperCase() : 'U'}
@@ -87,18 +101,21 @@ const SafeImage = ({ src, alt, className, style, onClick }) => {
         );
     }
 
-    return (
-        <img
-            src={src}
-            alt={alt}
-            className={className}
-            onClick={onClick}
-            style={style}
-            onError={() => setError(true)}
-        />
-    );
-};
-
+        return (
+            <img
+                src={src}
+                alt={alt}
+                className={className}
+                onClick={onClick}
+                style={{
+                    ...baseCropStyle,
+                    ...style
+                }}
+                onError={() => setError(true)}
+            />
+        );
+    };
+    
 export default function Home({ currentUser, setCurrentUser, theme, toggleTheme, hasUnreadNotifications }) {
     const navigate = useNavigate();
 
@@ -274,11 +291,24 @@ export default function Home({ currentUser, setCurrentUser, theme, toggleTheme, 
                                 }}>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                                            <Link to={`/profile/${authorName}`} style={{ display: 'inline-flex' }}>
+                                            <Link to={`/profile/${authorName}`} style={{ display: 'inline-flex', flexShrink: 0 }}>
+                                                {/* Author Picture locked to 40x40 circle */}
                                                 <SafeImage
                                                     src={authorPic}
                                                     alt={authorName}
-                                                    style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover' }}
+                                                    className="avatar"
+                                                    style={{ 
+                                                        width: '40px', 
+                                                        height: '40px',
+                                                        minWidth: '40px',
+                                                        minHeight: '40px',
+                                                        maxWidth: '40px',
+                                                        maxHeight: '40px',
+                                                        aspectRatio: '1 / 1',
+                                                        objectFit: 'cover',
+                                                        borderRadius: '50%',
+                                                        flexShrink: 0
+                                                    }}
                                                 />
                                             </Link>
                                             <Link to={`/profile/${authorName}`} style={{ color: 'var(--primary-color)', fontWeight: 'bold', textDecoration: 'none' }}>
