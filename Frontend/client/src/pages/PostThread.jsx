@@ -641,7 +641,7 @@ export default function PostThread({ currentUser, setCurrentUser, theme, toggleT
                                     alt="Reply" 
                                     style={{ width: '18px', height: '18px', display: 'block' }} 
                                 />
-                                <span>Reply</span>
+                                <span>{Number(post.comment_count) > 0 ? Number(post.comment_count) : 'Reply'}</span>
                             </button>
                         </div>
 
