@@ -65,6 +65,11 @@ const renderTextWithLinks = (text) => {
     });
 };
 
+const getReplyLabel = (count) => {
+    const replyCount = Number(count) || 0;
+    return replyCount > 0 ? `Reply (${replyCount})` : 'Reply';
+};
+
 export default function PostThread({ currentUser, setCurrentUser, theme, toggleTheme, hasUnreadNotifications }) {
     const params = useParams();
     const postId = params.postId || params.id;
@@ -298,6 +303,7 @@ export default function PostThread({ currentUser, setCurrentUser, theme, toggleT
     const renderCommentItem = (comment) => {
         const replyImage = getPostImage(comment);
         const isCommentOwner = currentUser && currentUser.username === comment.username;
+        const childReplyCount = comment.replies ? comment.replies.length : 0;
 
         return (
             <div
@@ -392,7 +398,7 @@ export default function PostThread({ currentUser, setCurrentUser, theme, toggleT
                         <button
                             type="button"
                             onClick={() => setReplyToId(replyToId === comment.id ? null : comment.id)}
-                            title="Reply"
+                            title={getReplyLabel(childReplyCount)}
                             style={{
                                 background: 'none',
                                 border: 'none',
@@ -405,7 +411,7 @@ export default function PostThread({ currentUser, setCurrentUser, theme, toggleT
                                 fontSize: '0.85rem',
                             }}
                         >
-                            <span>Reply</span>
+                            <span>{getReplyLabel(childReplyCount)}</span>
                         </button>
                     </div>
 
@@ -532,6 +538,7 @@ export default function PostThread({ currentUser, setCurrentUser, theme, toggleT
     const { post, parent } = threadData;
     const postImage = getPostImage(post);
     const isOwner = currentUser && currentUser.username === post.username;
+    const mainReplyCount = comments ? comments.length : 0;
 
     return (
         <>
@@ -614,7 +621,7 @@ export default function PostThread({ currentUser, setCurrentUser, theme, toggleT
                             <button
                                 type="button"
                                 onClick={() => setShowMainReplyForm(prev => !prev)}
-                                title="Reply"
+                                title={getReplyLabel(mainReplyCount)}
                                 style={{
                                     background: 'none',
                                     border: 'none',
@@ -627,7 +634,7 @@ export default function PostThread({ currentUser, setCurrentUser, theme, toggleT
                                     fontSize: '0.9rem',
                                 }}
                             >
-                                <span>Reply</span>
+                                    <span>{getReplyLabel(mainReplyCount)}</span>
                             </button>
                         </div>
 
