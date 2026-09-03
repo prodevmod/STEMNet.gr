@@ -406,14 +406,14 @@ export default function GroupPosts({ currentUser, setCurrentUser, theme, toggleT
                 {post.media_path && (
                   <div style={{ marginBottom: '0.75rem', borderRadius: 'var(--radius)', overflow: 'hidden', maxHeight: '350px' }}>
                     {post.media_path.match(/\.(mp4|webm)$/i) ? (
-                      <video controls style={{ width: '100%', maxHeight: '350px', objectFit: 'cover' }}>
+                                          <video controls style={{ width: '100%', height: 'auto', maxHeight: '600px', objectFit: 'contain', display: 'block' }}>
                         <source src={post.media_path.startsWith('http') ? post.media_path : `/static/${post.media_path}`} type="video/mp4" />
                       </video>
                     ) : (
                       <SafeImage
                         src={post.media_path.startsWith('http') ? post.media_path : `/static/${post.media_path}`}
                         alt="Group post media"
-                        style={{ width: '100%', maxHeight: '350px', objectFit: 'cover' }}
+                                            style={{ width: '100%', height: 'auto', maxHeight: '600px', objectFit: 'contain', display: 'block' }}
                       />
                     )}
                   </div>

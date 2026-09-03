@@ -281,22 +281,7 @@ export default function Events({ currentUser, theme, toggleTheme, hasUnreadNotif
                                     </div>
                                 )}
 
-                                <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap', marginTop: '0.5rem', marginBottom: '0.75rem' }}>
-                                    <button
-                                        type="button"
-                                        onClick={() => handleRsvp(post.id, 'going')}
-                                        style={rsvpBtnStyle(post.user_rsvp_status === 'going', '#22c55e')}
-                                    >
-                                        Going {post.going_count > 0 ? `(${post.going_count})` : ''}
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => handleRsvp(post.id, 'interested')}
-                                        style={rsvpBtnStyle(post.user_rsvp_status === 'interested', '#3b82f6')}
-                                    >
-                                        Interested {post.interested_count > 0 ? `(${post.interested_count})` : ''}
-                                    </button>
-                                </div>
+
 
                                 <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center', borderTop: '1px solid var(--border-color)', paddingTop: '0.75rem', marginTop: '0.5rem' }}>
                                     <button
@@ -323,6 +308,21 @@ export default function Events({ currentUser, theme, toggleTheme, hasUnreadNotif
                                         <SafeImage src={commentIcon} alt="Reply" width="20" height="20" />
                                         <span>{Number(post.comment_count) > 0 ? Number(post.comment_count) : 'Reply'}</span>
                                     </button>
+
+                                    <button
+                                        type="button"
+                                        onClick={() => handleRsvp(post.id, 'going')}
+                                        style={rsvpBtnStyle(post.user_rsvp_status === 'going', '#22c55e')}
+                                    >
+                                        {post.going_count > 0 ? `${post.going_count}` : 'Going'}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => handleRsvp(post.id, 'interested')}
+                                        style={rsvpBtnStyle(post.user_rsvp_status === 'interested', '#3b82f6')}
+                                    >
+                                        {post.interested_count > 0 ? `${post.interested_count}` : 'Interested'}
+                                    </button>
                                 </div>
 
                                 {replyPostId === post.id && (
@@ -339,7 +339,7 @@ export default function Events({ currentUser, theme, toggleTheme, hasUnreadNotif
                                             className="btn btn-primary"
                                             style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem' }}
                                         >
-                                            Send Reply
+                                            Post Reply
                                         </button>
                                     </div>
                                 )}

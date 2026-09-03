@@ -582,7 +582,7 @@ const handleSaveProfile = async (e) => {
                                             {/* MEDIA */}
                                             {postImage && (
                                                 <div style={{ marginBottom: '0.75rem' }}>
-                                                    <img src={postImage} alt="Post attachment" style={{ maxWidth: '100%', borderRadius: '6px', maxHeight: '400px', objectFit: 'cover' }} />
+                                                    <img src={postImage} alt="Post attachment" style={{ maxWidth: '100%', borderRadius: '6px', maxHeight: '600px', height: 'auto', objectFit: 'contain', display: 'block' }} />
                                                 </div>
                                             )}
 

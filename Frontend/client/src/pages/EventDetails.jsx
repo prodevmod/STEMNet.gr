@@ -97,10 +97,8 @@ const SafeImage = ({ src, alt, className, width, height, onClick, style, id }) =
       src={src}
       alt={alt}
       className={className}
-      width={width}
-      height={height}
       onClick={onClick}
-      style={combinedStyle}
+      style={{ display: 'block', width: '100%', height: 'auto', objectFit: 'contain', ...combinedStyle }}
       onError={() => setError(true)}
     />
   );
@@ -141,31 +139,18 @@ const renderTextWithLinks = (text) => {
   return text;
 };
 
-const handleRsvp = async (status) => {
-    if (!currentUser) {
-        alert('Please log in to RSVP.');
-        return;
-    }
-    try {
-        const res = await fetch(`/api/events/${postId}/rsvp`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify({ status }),
-        });
-        if (res.ok) {
-            const data = await res.json();
-            setPost((prev) => ({
-                ...prev,
-                user_rsvp_status: data.user_status,
-                going_count: data.going_count,
-                interested_count: data.interested_count,
-            }));
-        }
-    } catch (err) {
-        console.error('RSVP error:', err);
-    }
-};
+export const GoingIcon = ({ width = 18, height = 18, className = '', style = {} }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={width} height={height} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} style={{ color: 'inherit', ...style }}>
+    <path d="M21 10v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h8" />
+    <polyline points="7 10 11 14 21 4" />
+  </svg>
+);
+
+export const InterestedIcon = ({ width = 18, height = 18, className = '', style = {} }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={width} height={height} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} style={{ color: 'inherit', ...style }}>
+    <path d="M12 20l-6.16 3.24 1.18-6.88L2 10.76l6.92-1.01L12 3l3.08 6.75L22 10.76l-5.02 5.6 1.18 6.88z" />
+  </svg>
+);
 
 export default function EventDetails({ currentUser, setCurrentUser, theme, toggleTheme, hasUnreadNotifications }) {
   const params = useParams();
@@ -288,7 +273,61 @@ export default function EventDetails({ currentUser, setCurrentUser, theme, toggl
     }
   };
 
-  const toggleCommentLike = async (commentId) => {
+    const handleRsvp = async (status) => {
+      if (!currentUser) {
+        alert('Please log in to RSVP.');
+        return;
+      }
+      if (!post) return;
+
+      const prevStatus = post.user_rsvp_status;
+      const goingCount = Number(post.going_count) || 0;
+      const interestedCount = Number(post.interested_count) || 0;
+
+      let newGoing = goingCount;
+      let newInterested = interestedCount;
+      let newStatus = prevStatus;
+
+      if (prevStatus === status) {
+        // toggle off
+        newStatus = null;
+        if (status === 'going') newGoing = Math.max(0, goingCount - 1);
+        else newInterested = Math.max(0, interestedCount - 1);
+      } else {
+        newStatus = status;
+        if (status === 'going') {
+          newGoing = goingCount + 1;
+          if (prevStatus === 'interested') newInterested = Math.max(0, interestedCount - 1);
+        } else {
+          newInterested = interestedCount + 1;
+          if (prevStatus === 'going') newGoing = Math.max(0, goingCount - 1);
+        }
+      }
+
+      setPost(prev => ({ ...prev, user_rsvp_status: newStatus, going_count: newGoing, interested_count: newInterested }));
+
+      try {
+        const res = await fetch(`/api/events/${postId}/rsvp`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ status }),
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          setPost(prev => ({ ...prev, user_rsvp_status: data.user_status, going_count: data.going_count, interested_count: data.interested_count }));
+        } else {
+          // revert to server state on failure
+          await fetchPostDetails();
+        }
+      } catch (err) {
+        console.error('RSVP error:', err);
+        await fetchPostDetails();
+      }
+    };
+
+    const toggleCommentLike = async (commentId) => {
     if (!currentUser) {
       alert('Please log in to like comments.');
       return;
@@ -657,40 +696,6 @@ const renderCommentItem = (comment) => (
                 </div>
               )}
 
-              <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
-                  <button
-                      type="button"
-                      onClick={() => handleRsvp('going')}
-                      style={{
-                          padding: '0.5rem 1.1rem',
-                          borderRadius: 'var(--radius)',
-                          border: `1px solid ${post.user_rsvp_status === 'going' ? '#22c55e' : 'var(--border-color)'}`,
-                          background: post.user_rsvp_status === 'going' ? 'rgba(34,197,94,0.15)' : 'transparent',
-                          color: post.user_rsvp_status === 'going' ? '#22c55e' : 'inherit',
-                          cursor: 'pointer',
-                          fontSize: '0.9rem',
-                          fontWeight: 600,
-                      }}
-                  >
-                      Going {post.going_count > 0 ? `(${post.going_count})` : ''}
-                  </button>
-                  <button
-                      type="button"
-                      onClick={() => handleRsvp('interested')}
-                      style={{
-                          padding: '0.5rem 1.1rem',
-                          borderRadius: 'var(--radius)',
-                          border: `1px solid ${post.user_rsvp_status === 'interested' ? '#3b82f6' : 'var(--border-color)'}`,
-                          background: post.user_rsvp_status === 'interested' ? 'rgba(59,130,246,0.15)' : 'transparent',
-                          color: post.user_rsvp_status === 'interested' ? '#3b82f6' : 'inherit',
-                          cursor: 'pointer',
-                          fontSize: '0.9rem',
-                          fontWeight: 600,
-                      }}
-                  >
-                      Interested {post.interested_count > 0 ? `(${post.interested_count})` : ''}
-                  </button>
-              </div>
               <p
                 style={{
                   marginTop: '10px',
@@ -713,7 +718,7 @@ const renderCommentItem = (comment) => (
                   }}
                 >
                   {post.media_path.match(/\.(mp4|webm)$/i) ? (
-                    <video controls style={{ width: '100%', maxHeight: '450px', objectFit: 'cover' }}>
+                                      <video controls style={{ width: '100%', height: 'auto', maxHeight: '600px', objectFit: 'contain', display: 'block' }}>
                       <source
                         src={post.media_path.startsWith('http') ? post.media_path : `/static/${post.media_path}`}
                         type="video/mp4"
@@ -723,7 +728,7 @@ const renderCommentItem = (comment) => (
                     <SafeImage
                       src={post.media_path.startsWith('http') ? post.media_path : `/static/${post.media_path}`}
                       alt="Event media"
-                      style={{ width: '100%', maxHeight: '450px', objectFit: 'cover' }}
+                                        style={{ width: '100%', height: 'auto', maxHeight: '600px', objectFit: 'contain' }}
                     />
                   )}
                 </div>
@@ -761,6 +766,42 @@ const renderCommentItem = (comment) => (
                   <span>
                     {Number(post.like_count) > 0 ? Number(post.like_count) : 'Like'}
                   </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleRsvp('going')}
+                  className="post-action-btn"
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    color: post.user_rsvp_status === 'going' ? '#22c55e' : 'inherit',
+                  }}
+                >
+                  <GoingIcon width="18" height="18" style={{ color: post.user_rsvp_status === 'going' ? '#22c55e' : 'inherit' }} />
+                  <span>{post.going_count > 0 ? `Going (${post.going_count})` : 'Going'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleRsvp('interested')}
+                  className="post-action-btn"
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    color: post.user_rsvp_status === 'interested' ? '#3b82f6' : 'inherit',
+                  }}
+                >
+                  <InterestedIcon width="18" height="18" style={{ color: post.user_rsvp_status === 'interested' ? '#3b82f6' : 'inherit' }} />
+                  <span>{post.interested_count > 0 ? `Interested (${post.interested_count})` : 'Interested'}</span>
                 </button>
               </div>
             </div>
