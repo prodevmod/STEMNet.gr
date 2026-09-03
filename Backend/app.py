@@ -2267,7 +2267,7 @@ def rsvp_event(post_id):
         db.rollback()
         app.logger.error(f"RSVP error: {e}")
         return jsonify({"error": "Failed to update RSVP."}), 500
-
+    
 @app.errorhandler(404)
 def not_found(e):
     return jsonify({"error": "Not Found"}), 404
