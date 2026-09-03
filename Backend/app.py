@@ -1325,63 +1325,6 @@ def toggle_like(post_id):
     db.commit()
     return jsonify({"success": True}), 200
 
-@app.route("/api/events/<int:post_id>/rsvp", methods=["POST"])
-@login_required
-def rsvp_event(post_id):
-    db = get_db()
-    user_id = g.user["id"]
-    data = request.get_json(silent=True) or {}
-    status = data.get("status", "").strip().lower()
-
-    if status not in ("going", "interested"):
-        return jsonify({"error": "Invalid RSVP status."}), 400
-
-    post = db.execute("SELECT id, category FROM posts WHERE id = ?", (post_id,)).fetchone()
-    if not post or post["category"] != "Events":
-        return jsonify({"error": "Event not found."}), 404
-
-    try:
-        existing = db.execute(
-            "SELECT * FROM event_attendees WHERE post_id = ? AND user_id = ?",
-            (post_id, user_id)
-        ).fetchone()
-
-        if existing and existing["status"] == status:
-            db.execute("DELETE FROM event_attendees WHERE post_id = ? AND user_id = ?", (post_id, user_id))
-            new_status = None
-        elif existing:
-            db.execute(
-                "UPDATE event_attendees SET status = ? WHERE post_id = ? AND user_id = ?",
-                (status, post_id, user_id)
-            )
-            new_status = status
-        else:
-            db.execute(
-                "INSERT INTO event_attendees (post_id, user_id, status) VALUES (?, ?, ?)",
-                (post_id, user_id, status)
-            )
-            new_status = status
-
-        db.commit()
-
-        going_count = db.execute(
-            "SELECT COUNT(*) as c FROM event_attendees WHERE post_id = ? AND status = 'going'", (post_id,)
-        ).fetchone()["c"]
-        interested_count = db.execute(
-            "SELECT COUNT(*) as c FROM event_attendees WHERE post_id = ? AND status = 'interested'", (post_id,)
-        ).fetchone()["c"]
-
-        return jsonify({
-            "success": True,
-            "user_status": new_status,
-            "going_count": going_count,
-            "interested_count": interested_count
-        }), 200
-    except Exception as e:
-        db.rollback()
-        app.logger.error(f"RSVP error: {e}")
-        return jsonify({"error": "Failed to update RSVP."}), 500
-
 @app.route("/api/profile/<username>", methods=["GET"])
 def profile(username):
     db = get_db()
