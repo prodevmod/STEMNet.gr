@@ -3,6 +3,11 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 
 const globAssets = import.meta.glob('../assets/*', { eager: true, import: 'default' });
+const SUPPORTED_PFP_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
+const FALLBACK_PFP_OUTPUT_MIME_TYPE = 'image/png';
+const PFP_CROP_VIEWPORT_SIZE = 240;
+const PFP_MIN_ZOOM = 1;
+const PFP_MAX_ZOOM = 3;
 
 const getAssetUrl = (filename) => {
     const keys = Object.keys(globAssets);
@@ -65,6 +70,88 @@ const SafeImage = ({ src, alt, className, style, onClick }) => {
     );
 };
 
+const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+
+const getFitScale = (imageWidth, imageHeight, viewportSize) => (
+    Math.max(viewportSize / imageWidth, viewportSize / imageHeight)
+);
+
+const clampCropOffset = (x, y, imageWidth, imageHeight, viewportSize, zoom) => {
+    const fitScale = getFitScale(imageWidth, imageHeight, viewportSize) * zoom;
+    const scaledWidth = imageWidth * fitScale;
+    const scaledHeight = imageHeight * fitScale;
+    const maxOffsetX = Math.max(0, (scaledWidth - viewportSize) / 2);
+    const maxOffsetY = Math.max(0, (scaledHeight - viewportSize) / 2);
+    return {
+        x: clamp(x, -maxOffsetX, maxOffsetX),
+        y: clamp(y, -maxOffsetY, maxOffsetY),
+    };
+};
+
+const cropAvatarFromImage = async ({ imageSourceUrl, imageWidth, imageHeight, zoom, offsetX, offsetY, outputType }) => {
+    const image = await new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = () => reject(new Error('Failed to decode selected image.'));
+        img.src = imageSourceUrl;
+    });
+
+    const fitScale = getFitScale(imageWidth, imageHeight, PFP_CROP_VIEWPORT_SIZE) * zoom;
+    const scaledImageX = (PFP_CROP_VIEWPORT_SIZE - (imageWidth * fitScale)) / 2 + offsetX;
+    const scaledImageY = (PFP_CROP_VIEWPORT_SIZE - (imageHeight * fitScale)) / 2 + offsetY;
+
+    const sourceX = clamp((-scaledImageX) / fitScale, 0, imageWidth);
+    const sourceY = clamp((-scaledImageY) / fitScale, 0, imageHeight);
+    const sourceSize = clamp(PFP_CROP_VIEWPORT_SIZE / fitScale, 1, Math.min(imageWidth, imageHeight));
+    const normalizedSourceX = clamp(sourceX, 0, imageWidth - sourceSize);
+    const normalizedSourceY = clamp(sourceY, 0, imageHeight - sourceSize);
+
+    const canvas = document.createElement('canvas');
+    canvas.width = 512;
+    canvas.height = 512;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('Unable to process image.');
+
+    ctx.drawImage(
+        image,
+        normalizedSourceX,
+        normalizedSourceY,
+        sourceSize,
+        sourceSize,
+        0,
+        0,
+        canvas.width,
+        canvas.height,
+    );
+
+    const finalType = outputType && outputType !== 'image/gif'
+        ? outputType
+        : FALLBACK_PFP_OUTPUT_MIME_TYPE;
+
+    const blob = await new Promise((resolve, reject) => {
+        canvas.toBlob((createdBlob) => {
+            if (createdBlob) {
+                resolve(createdBlob);
+            } else {
+                reject(new Error('Failed to generate cropped image.'));
+            }
+        }, finalType, 0.92);
+    });
+
+    return { blob, outputType: finalType };
+};
+
+const replaceFileExtension = (filename, mimeType) => {
+    const extensionByMime = {
+        'image/jpeg': 'jpg',
+        'image/png': 'png',
+        'image/webp': 'webp',
+    };
+    const targetExtension = extensionByMime[mimeType] || 'png';
+    const baseName = filename.includes('.') ? filename.replace(/\.[^.]+$/, '') : filename;
+    return `${baseName}.${targetExtension}`;
+};
+
 export default function Profile({ currentUser, setCurrentUser, theme, toggleTheme, hasUnreadNotifications }) {
     const { username } = useParams();
     const navigate = useNavigate();
@@ -81,6 +168,11 @@ export default function Profile({ currentUser, setCurrentUser, theme, toggleThem
 
     const [isEditing, setIsEditing] = useState(false);
     const [pfpFile, setPfpFile] = useState(null);
+    const [pfpPreviewUrl, setPfpPreviewUrl] = useState('');
+    const [pfpImageMeta, setPfpImageMeta] = useState(null);
+    const [cropZoom, setCropZoom] = useState(1);
+    const [cropOffset, setCropOffset] = useState({ x: 0, y: 0 });
+    const [dragStart, setDragStart] = useState(null);
 
     const [activeCommentPostId, setActiveCommentPostId] = useState(null);
     const [commentInputs, setCommentInputs] = useState({});
@@ -148,6 +240,12 @@ export default function Profile({ currentUser, setCurrentUser, theme, toggleThem
             fetchProfile();
         }
     }, [username]);
+
+    useEffect(() => () => {
+        if (pfpPreviewUrl) {
+            URL.revokeObjectURL(pfpPreviewUrl);
+        }
+    }, [pfpPreviewUrl]);
 
     const handleToggleFollow = async () => {
         if (!currentUser) return navigate('/login');
@@ -247,6 +345,76 @@ export default function Profile({ currentUser, setCurrentUser, theme, toggleThem
         }
     };
    
+const handleProfilePicSelection = async (selectedFile) => {
+        if (!selectedFile) {
+            if (pfpPreviewUrl) URL.revokeObjectURL(pfpPreviewUrl);
+            setPfpFile(null);
+            setPfpPreviewUrl('');
+            setPfpImageMeta(null);
+            setCropZoom(1);
+            setCropOffset({ x: 0, y: 0 });
+            return;
+        }
+
+        const normalizedType = (selectedFile.type || '').toLowerCase();
+        if (!SUPPORTED_PFP_MIME_TYPES.has(normalizedType)) {
+            setSaveError('Unsupported profile image type. Please use JPG, JPEG, PNG, WEBP, or GIF.');
+            return;
+        }
+
+        const nextPreviewUrl = URL.createObjectURL(selectedFile);
+        try {
+            const img = await new Promise((resolve, reject) => {
+                const imageEl = new Image();
+                imageEl.onload = () => resolve(imageEl);
+                imageEl.onerror = () => reject(new Error('Invalid or corrupt image file.'));
+                imageEl.src = nextPreviewUrl;
+            });
+
+            if (pfpPreviewUrl) URL.revokeObjectURL(pfpPreviewUrl);
+            setPfpFile(selectedFile);
+            setPfpPreviewUrl(nextPreviewUrl);
+            setPfpImageMeta({
+                width: img.naturalWidth,
+                height: img.naturalHeight,
+                type: normalizedType,
+                name: selectedFile.name || 'profile-image',
+            });
+            setCropZoom(1);
+            setCropOffset({ x: 0, y: 0 });
+            setSaveError('');
+        } catch (error) {
+            URL.revokeObjectURL(nextPreviewUrl);
+            setSaveError(error.message || 'Invalid or corrupt image file.');
+        }
+    };
+
+    const resetProfileEditState = () => {
+        if (pfpPreviewUrl) URL.revokeObjectURL(pfpPreviewUrl);
+        setSaveError('');
+        setPfpFile(null);
+        setPfpPreviewUrl('');
+        setPfpImageMeta(null);
+        setCropZoom(1);
+        setCropOffset({ x: 0, y: 0 });
+
+        const rawGithub = profile?.github_user || '';
+        const githubHandle = rawGithub.replace(/^https?:\/\/(www\.)?github\.com\//, '').replace(/^\/+/, '');
+        setFormData({
+            age: profile?.age || '',
+            grade: profile?.grade || '',
+            interest: profile?.interest || '',
+            bio: profile?.bio || '',
+            githubHandle,
+            linkedinUrl: profile?.linkedin_url || '',
+            customLink1: profile?.custom_link_1 || '',
+            customLink2: profile?.custom_link_2 || '',
+            customLink3: profile?.custom_link_3 || '',
+            customLink4: profile?.custom_link_4 || '',
+            customLink5: profile?.custom_link_5 || '',
+        });
+    };
+
 const handleSaveProfile = async (e) => {
         e.preventDefault();
         setSaveError('');
@@ -267,8 +435,32 @@ const handleSaveProfile = async (e) => {
         data.append('custom_link_4', formData.customLink4 || '');
         data.append('custom_link_5', formData.customLink5 || '');
 
-        if (pfpFile) {
-            data.append('profile_pic', pfpFile);
+        if (pfpFile && pfpPreviewUrl && pfpImageMeta) {
+            try {
+                const constrainedOffset = clampCropOffset(
+                    cropOffset.x,
+                    cropOffset.y,
+                    pfpImageMeta.width,
+                    pfpImageMeta.height,
+                    PFP_CROP_VIEWPORT_SIZE,
+                    cropZoom,
+                );
+                const { blob, outputType } = await cropAvatarFromImage({
+                    imageSourceUrl: pfpPreviewUrl,
+                    imageWidth: pfpImageMeta.width,
+                    imageHeight: pfpImageMeta.height,
+                    zoom: cropZoom,
+                    offsetX: constrainedOffset.x,
+                    offsetY: constrainedOffset.y,
+                    outputType: pfpImageMeta.type,
+                });
+                const croppedName = replaceFileExtension(pfpImageMeta.name, outputType);
+                const croppedFile = new File([blob], croppedName, { type: outputType });
+                data.append('profile_pic', croppedFile);
+            } catch (error) {
+                setSaveError(error.message || 'Failed to process profile image.');
+                return;
+            }
         }
 
         try {
@@ -286,6 +478,12 @@ const handleSaveProfile = async (e) => {
                 }
                 setIsEditing(false);
                 fetchProfile();
+                if (pfpPreviewUrl) URL.revokeObjectURL(pfpPreviewUrl);
+                setPfpFile(null);
+                setPfpPreviewUrl('');
+                setPfpImageMeta(null);
+                setCropZoom(1);
+                setCropOffset({ x: 0, y: 0 });
             } else {
                 const errData = await res.json().catch(() => ({}));
                 setSaveError(errData.error || 'Failed to update profile.');
@@ -294,6 +492,40 @@ const handleSaveProfile = async (e) => {
             console.error('Error updating profile:', err);
             setSaveError('Server error while saving.');
         }
+    };
+
+    const imageScale = pfpImageMeta ? getFitScale(pfpImageMeta.width, pfpImageMeta.height, PFP_CROP_VIEWPORT_SIZE) * cropZoom : 1;
+    const imageRenderWidth = pfpImageMeta ? pfpImageMeta.width * imageScale : 0;
+    const imageRenderHeight = pfpImageMeta ? pfpImageMeta.height * imageScale : 0;
+    const constrainedCropOffset = pfpImageMeta
+        ? clampCropOffset(cropOffset.x, cropOffset.y, pfpImageMeta.width, pfpImageMeta.height, PFP_CROP_VIEWPORT_SIZE, cropZoom)
+        : { x: 0, y: 0 };
+    const imageLeft = (PFP_CROP_VIEWPORT_SIZE - imageRenderWidth) / 2 + constrainedCropOffset.x;
+    const imageTop = (PFP_CROP_VIEWPORT_SIZE - imageRenderHeight) / 2 + constrainedCropOffset.y;
+
+    const startCropDrag = (event) => {
+        if (!pfpImageMeta) return;
+        setDragStart({
+            pointerX: event.clientX,
+            pointerY: event.clientY,
+            originX: constrainedCropOffset.x,
+            originY: constrainedCropOffset.y,
+        });
+    };
+
+    const onCropDrag = (event) => {
+        if (!dragStart || !pfpImageMeta) return;
+        const deltaX = event.clientX - dragStart.pointerX;
+        const deltaY = event.clientY - dragStart.pointerY;
+        const nextOffset = clampCropOffset(
+            dragStart.originX + deltaX,
+            dragStart.originY + deltaY,
+            pfpImageMeta.width,
+            pfpImageMeta.height,
+            PFP_CROP_VIEWPORT_SIZE,
+            cropZoom,
+        );
+        setCropOffset(nextOffset);
     };
 
     const linksList = [
@@ -342,7 +574,7 @@ const handleSaveProfile = async (e) => {
 
                                         {isOwnProfile ? (
                                             !isEditing && (
-                                                <button onClick={() => setIsEditing(true)} className="btn btn-primary" style={{ padding: '0.4rem 1rem', fontSize: '0.85rem' }}>
+                                                <button onClick={() => { setIsEditing(true); resetProfileEditState(); }} className="btn btn-primary" style={{ padding: '0.4rem 1rem', fontSize: '0.85rem' }}>
                                                     Edit Profile
                                                 </button>
                                             )
@@ -421,13 +653,110 @@ const handleSaveProfile = async (e) => {
                                             {saveError && <p style={{ color: '#ef4444', fontSize: '0.85rem' }}>{saveError}</p>}
 
                                             <div>
-                                                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.2rem' }}>Profile Picture (PNG, JPG, GIF)</label>
+                                                <label htmlFor="profile-picture-input" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.2rem' }}>
+                                                    Profile Picture (JPG, JPEG, PNG, WEBP, GIF)
+                                                </label>
                                                 <input
+                                                    id="profile-picture-input"
                                                     type="file"
-                                                    accept="image/*,.gif"
-                                                    onChange={(e) => setPfpFile(e.target.files[0])}
+                                                    accept=".jpg,.jpeg,.png,.webp,.gif,image/jpeg,image/png,image/webp,image/gif"
+                                                    onChange={(e) => handleProfilePicSelection(e.target.files?.[0])}
                                                     style={{ width: '100%', fontSize: '0.85rem' }}
                                                 />
+                                                {pfpImageMeta && pfpPreviewUrl && (
+                                                    <div style={{ marginTop: '0.75rem', display: 'grid', gap: '0.75rem' }}>
+                                                        <p style={{ margin: 0, fontSize: '0.8rem', color: '#64748b' }}>
+                                                            Drag image to reposition. Use zoom controls to frame your avatar.
+                                                        </p>
+                                                        <div
+                                                            role="application"
+                                                            aria-label="Profile photo crop area"
+                                                            onPointerDown={startCropDrag}
+                                                            onPointerMove={onCropDrag}
+                                                            onPointerUp={() => setDragStart(null)}
+                                                            onPointerLeave={() => setDragStart(null)}
+                                                            style={{
+                                                                width: `${PFP_CROP_VIEWPORT_SIZE}px`,
+                                                                height: `${PFP_CROP_VIEWPORT_SIZE}px`,
+                                                                maxWidth: '100%',
+                                                                borderRadius: '50%',
+                                                                border: '2px solid var(--border-color)',
+                                                                margin: '0 auto',
+                                                                position: 'relative',
+                                                                overflow: 'hidden',
+                                                                cursor: dragStart ? 'grabbing' : 'grab',
+                                                                touchAction: 'none',
+                                                                background: '#0f172a',
+                                                            }}
+                                                        >
+                                                            <img
+                                                                src={pfpPreviewUrl}
+                                                                alt="Selected profile crop"
+                                                                draggable={false}
+                                                                style={{
+                                                                    position: 'absolute',
+                                                                    top: `${imageTop}px`,
+                                                                    left: `${imageLeft}px`,
+                                                                    width: `${imageRenderWidth}px`,
+                                                                    height: `${imageRenderHeight}px`,
+                                                                    userSelect: 'none',
+                                                                    pointerEvents: 'none',
+                                                                }}
+                                                            />
+                                                        </div>
+                                                        <div style={{ display: 'grid', gap: '0.4rem' }}>
+                                                            <label htmlFor="profile-crop-zoom" style={{ fontSize: '0.8rem', fontWeight: 600 }}>
+                                                                Zoom
+                                                            </label>
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                                <button
+                                                                    type="button"
+                                                                    aria-label="Zoom out profile photo"
+                                                                    onClick={() => setCropZoom((prev) => clamp(prev - 0.1, PFP_MIN_ZOOM, PFP_MAX_ZOOM))}
+                                                                    style={{ padding: '0.2rem 0.5rem', borderRadius: 'var(--radius)', border: '1px solid var(--border-color)', background: 'transparent', color: 'inherit' }}
+                                                                >
+                                                                    -
+                                                                </button>
+                                                                <input
+                                                                    id="profile-crop-zoom"
+                                                                    type="range"
+                                                                    min={PFP_MIN_ZOOM}
+                                                                    max={PFP_MAX_ZOOM}
+                                                                    step="0.01"
+                                                                    value={cropZoom}
+                                                                    onChange={(e) => setCropZoom(clamp(Number(e.target.value), PFP_MIN_ZOOM, PFP_MAX_ZOOM))}
+                                                                    style={{ flex: 1 }}
+                                                                />
+                                                                <button
+                                                                    type="button"
+                                                                    aria-label="Zoom in profile photo"
+                                                                    onClick={() => setCropZoom((prev) => clamp(prev + 0.1, PFP_MIN_ZOOM, PFP_MAX_ZOOM))}
+                                                                    style={{ padding: '0.2rem 0.5rem', borderRadius: 'var(--radius)', border: '1px solid var(--border-color)', background: 'transparent', color: 'inherit' }}
+                                                                >
+                                                                    +
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                        <div style={{ display: 'grid', justifyContent: 'center', gap: '0.35rem' }}>
+                                                            <span style={{ fontSize: '0.75rem', color: '#64748b', textAlign: 'center' }}>Crop preview</span>
+                                                            <div style={{ width: '80px', height: '80px', borderRadius: '50%', overflow: 'hidden', border: '1px solid var(--border-color)', position: 'relative' }}>
+                                                                <img
+                                                                    src={pfpPreviewUrl}
+                                                                    alt="Final profile photo preview"
+                                                                    draggable={false}
+                                                                    style={{
+                                                                        position: 'absolute',
+                                                                        top: `${(imageTop / PFP_CROP_VIEWPORT_SIZE) * 80}px`,
+                                                                        left: `${(imageLeft / PFP_CROP_VIEWPORT_SIZE) * 80}px`,
+                                                                        width: `${(imageRenderWidth / PFP_CROP_VIEWPORT_SIZE) * 80}px`,
+                                                                        height: `${(imageRenderHeight / PFP_CROP_VIEWPORT_SIZE) * 80}px`,
+                                                                        userSelect: 'none',
+                                                                    }}
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
 
                                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
@@ -514,23 +843,7 @@ const handleSaveProfile = async (e) => {
                                                     type="button" 
                                                     onClick={() => {
                                                         setIsEditing(false);
-                                                        setSaveError('');
-                                                        setPfpFile(null);
-                                                        const rawGithub = profile.github_user || '';
-                                                        const githubHandle = rawGithub.replace(/^https?:\/\/(www\.)?github\.com\//, '').replace(/^\/+/, '');
-                                                        setFormData({
-                                                            age: profile.age || '',
-                                                            grade: profile.grade || '',
-                                                            interest: profile.interest || '',
-                                                            bio: profile.bio || '',
-                                                            githubHandle: githubHandle,
-                                                            linkedinUrl: profile.linkedin_url || '',
-                                                            customLink1: profile.custom_link_1 || '',
-                                                            customLink2: profile.custom_link_2 || '',
-                                                            customLink3: profile.custom_link_3 || '',
-                                                            customLink4: profile.custom_link_4 || '',
-                                                            customLink5: profile.custom_link_5 || '',
-                                                        });
+                                                        resetProfileEditState();
                                                     }} 
                                                     style={{ padding: '0.4rem 1rem', fontSize: '0.85rem', borderRadius: 'var(--radius)', border: '1px solid var(--border-color)', background: 'transparent', color: 'inherit' }}
                                                 >
