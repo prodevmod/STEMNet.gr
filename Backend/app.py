@@ -198,6 +198,22 @@ def get_pagination_params():
     offset = (page - 1) * per_page
     return page, per_page, offset
 
+def get_search_pagination_params():
+    """Separate from get_pagination_params() because search defaults to a
+    smaller per-page count (10) suited to a multi-section preview layout,
+    rather than the 20-per-page used for full-page feeds."""
+    try:
+        page = max(1, int(request.args.get('page', 1)))
+    except (ValueError, TypeError):
+        page = 1
+    try:
+        per_page = int(request.args.get('per_page', 10))
+        per_page = min(max(per_page, 1), 50)
+    except (ValueError, TypeError):
+        per_page = 10
+    offset = (page - 1) * per_page
+    return page, per_page, offset
+
 db_url = os.environ.get("DATABASE_URL", "sqlite:///app.db")
 if db_url.startswith("postgres://"):
     db_url = db_url.replace("postgres://", "postgresql://", 1)
@@ -364,6 +380,28 @@ def remove_or_softdelete_post(db, post_id, reassign_user_id=None):
         return True
 
 class PostgresCursorWrapper:
+    """Thin wrapper so the app's SQLite-style '?' placeholders and
+    cursor.lastrowid usage also work against psycopg2/Postgres.
+
+    ASSUMPTION: any query starting with 'INSERT' (case-insensitive) and not
+    already containing the word 'RETURNING' is treated as a single-row
+    insert, and gets ' RETURNING id;' appended automatically so lastrowid
+    can be read back the same way SQLite's cursor.lastrowid works. This
+    breaks silently if:
+      - you write a multi-row INSERT (INSERT INTO x VALUES (...), (...)) —
+        only the first inserted id is captured into lastrowid, the rest
+        are dropped
+      - an INSERT already has its own RETURNING clause but returns a
+        different column than 'id' — self.lastrowid will read that
+        column's value instead, mislabeled as an id
+      - an INSERT ... SELECT has a WHERE clause containing the literal
+        word 'returning' inside a string/identifier — this would be
+        misdetected as already having a RETURNING clause and skip the
+        auto-append, silently breaking lastrowid
+    If you ever need either pattern above, bypass this wrapper — call
+    db.conn.cursor() directly — rather than relying on the auto-RETURNING
+    behavior here.
+    """
     def __init__(self, cursor):
         self._cursor = cursor
         self.lastrowid = None
@@ -528,6 +566,15 @@ def upgrade_database():
             db.commit()
         except Exception as e:
             print(f"event_attendees table init notice: {e}")
+            if hasattr(db, 'rollback'): db.rollback()
+
+        try:
+            if is_postgres:
+                db.execute("CREATE INDEX IF NOT EXISTS idx_posts_fts ON posts USING GIN (to_tsvector('english', content));")
+                db.execute("CREATE INDEX IF NOT EXISTS idx_groups_fts ON groups USING GIN (to_tsvector('english', name || ' ' || description));")
+                db.commit()
+        except Exception as e:
+            print(f"Full-text search index init notice: {e}")
             if hasattr(db, 'rollback'): db.rollback()
     except Exception as e:
         print(f"Database initialization notice: {e}")
@@ -708,49 +755,108 @@ def logout():
 @app.route('/api/search', methods=['GET'])
 def search():
     query = request.args.get('q', '').strip()
+    result_type = request.args.get('type', '').strip().lower()
 
     if not query:
-        return jsonify({"posts": [], "groups": [], "users": []}), 200
+        return jsonify({
+            "posts": [], "has_more_posts": False,
+            "groups": [], "has_more_groups": False,
+            "users": [], "has_more_users": False,
+            "page": 1
+        }), 200
 
     try:
-        search_term = f"%{query}%"
         db = get_db()
-
+        is_postgres = bool(os.environ.get("DATABASE_URL"))
         current_user_id = session.get('user_id', 0)
+        page, per_page, offset = get_search_pagination_params()
 
-        posts = db.execute('''
-            SELECT posts.*, users.username, users.profile_pic,
-                   (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id) as like_count,
-                   (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id AND likes.user_id = ?) as user_liked
-            FROM posts
-            JOIN users ON posts.user_id = users.id
-            WHERE (posts.content LIKE ? OR posts.category LIKE ?)
-              AND (posts.is_deleted IS NULL OR posts.is_deleted = 0)
-            ORDER BY posts.created_at DESC
-            LIMIT 10
-        ''', (current_user_id, search_term, search_term)).fetchall()
+        response = {"page": page}
 
-        groups = db.execute('''
-            SELECT groups.*, users.username AS owner_username
-            FROM groups
-            JOIN users ON groups.user_id = users.id
-            WHERE groups.name LIKE ? OR groups.description LIKE ?
-            ORDER BY groups.created_at DESC
-            LIMIT 10
-        ''', (search_term, search_term)).fetchall()
+        if not result_type or result_type == 'posts':
+            if is_postgres:
+                posts_rows = db.execute(
+                    '''
+                    SELECT posts.*, users.username, users.profile_pic,
+                           (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id) as like_count,
+                           (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id AND likes.user_id = ?) as user_liked,
+                           ts_rank(to_tsvector('english', posts.content), plainto_tsquery('english', ?)) AS rank
+                    FROM posts
+                    JOIN users ON posts.user_id = users.id
+                    WHERE to_tsvector('english', posts.content) @@ plainto_tsquery('english', ?)
+                      AND (posts.is_deleted IS NULL OR posts.is_deleted = 0)
+                    ORDER BY rank DESC, posts.created_at DESC
+                    LIMIT ? OFFSET ?
+                    ''',
+                    (current_user_id, query, query, per_page + 1, offset)
+                ).fetchall()
+            else:
+                search_term = f"%{query}%"
+                posts_rows = db.execute(
+                    '''
+                    SELECT posts.*, users.username, users.profile_pic,
+                           (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id) as like_count,
+                           (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id AND likes.user_id = ?) as user_liked
+                    FROM posts
+                    JOIN users ON posts.user_id = users.id
+                    WHERE (posts.content LIKE ? OR posts.category LIKE ?)
+                      AND (posts.is_deleted IS NULL OR posts.is_deleted = 0)
+                    ORDER BY posts.created_at DESC
+                    LIMIT ? OFFSET ?
+                    ''',
+                    (current_user_id, search_term, search_term, per_page + 1, offset)
+                ).fetchall()
 
-        users = db.execute('''
-            SELECT id, username, profile_pic, bio, interest
-            FROM users
-            WHERE username LIKE ? OR bio LIKE ? OR interest LIKE ?
-            LIMIT 10
-        ''', (search_term, search_term, search_term)).fetchall()
+            response["has_more_posts"] = len(posts_rows) > per_page
+            response["posts"] = [dict(p) for p in posts_rows[:per_page]]
 
-        return jsonify({
-            "posts": [dict(p) for p in posts],
-            "groups": [dict(g) for g in groups],
-            "users": [dict(u) for u in users]
-        }), 200
+        if not result_type or result_type == 'groups':
+            if is_postgres:
+                groups_rows = db.execute(
+                    '''
+                    SELECT groups.*, users.username AS owner_username,
+                           ts_rank(to_tsvector('english', groups.name || ' ' || groups.description), plainto_tsquery('english', ?)) AS rank
+                    FROM groups
+                    JOIN users ON groups.user_id = users.id
+                    WHERE to_tsvector('english', groups.name || ' ' || groups.description) @@ plainto_tsquery('english', ?)
+                    ORDER BY rank DESC, groups.created_at DESC
+                    LIMIT ? OFFSET ?
+                    ''',
+                    (query, query, per_page + 1, offset)
+                ).fetchall()
+            else:
+                search_term = f"%{query}%"
+                groups_rows = db.execute(
+                    '''
+                    SELECT groups.*, users.username AS owner_username
+                    FROM groups
+                    JOIN users ON groups.user_id = users.id
+                    WHERE groups.name LIKE ? OR groups.description LIKE ?
+                    ORDER BY groups.created_at DESC
+                    LIMIT ? OFFSET ?
+                    ''',
+                    (search_term, search_term, per_page + 1, offset)
+                ).fetchall()
+
+            response["has_more_groups"] = len(groups_rows) > per_page
+            response["groups"] = [dict(g) for g in groups_rows[:per_page]]
+
+        if not result_type or result_type == 'users':
+            search_term = f"%{query}%"
+            users_rows = db.execute(
+                '''
+                SELECT id, username, profile_pic, bio, interest
+                FROM users
+                WHERE username LIKE ? OR bio LIKE ? OR interest LIKE ?
+                LIMIT ? OFFSET ?
+                ''',
+                (search_term, search_term, search_term, per_page + 1, offset)
+            ).fetchall()
+
+            response["has_more_users"] = len(users_rows) > per_page
+            response["users"] = [dict(u) for u in users_rows[:per_page]]
+
+        return jsonify(response), 200
 
     except Exception as e:
         print(f"Search error: {e}")
@@ -885,21 +991,18 @@ def get_posts():
 def api_get_single_post(post_id):
     db = get_db()
     current_user_id = g.user["id"] if g.get("user") else 0
+    page, per_page, offset = get_pagination_params()
 
     post = db.execute(
         """
         SELECT posts.*, users.username, users.profile_pic,
                (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id) AS like_count,
-               (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id AND likes.user_id = ?) AS user_liked,
-               (SELECT COUNT(*) FROM posts AS replies WHERE replies.parent_id = posts.id AND (replies.is_deleted IS NULL OR replies.is_deleted = 0)) AS comment_count,
-               (SELECT COUNT(*) FROM event_attendees WHERE event_attendees.post_id = posts.id AND event_attendees.status = 'going') AS going_count,
-               (SELECT COUNT(*) FROM event_attendees WHERE event_attendees.post_id = posts.id AND event_attendees.status = 'interested') AS interested_count,
-               (SELECT status FROM event_attendees WHERE event_attendees.post_id = posts.id AND event_attendees.user_id = ?) AS user_rsvp_status
+               (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id AND likes.user_id = ?) AS user_liked
         FROM posts
         JOIN users ON posts.user_id = users.id
         WHERE posts.id = ?
         """,
-        (current_user_id, current_user_id, post_id)
+        (current_user_id, post_id)
     ).fetchone()
 
     if not post:
@@ -916,15 +1019,19 @@ def api_get_single_post(post_id):
         JOIN users ON posts.user_id = users.id
         WHERE posts.parent_id = ?
         ORDER BY posts.created_at ASC
+        LIMIT ? OFFSET ?
         """,
-        (current_user_id, post_id)
+        (current_user_id, post_id, per_page + 1, offset)
     ).fetchall()
 
-    comments = [dict(row) for row in comments_cursor]
+    has_more_comments = len(comments_cursor) > per_page
+    comments = [dict(row) for row in comments_cursor[:per_page]]
 
     return jsonify({
         "post": post_dict,
-        "comments": comments
+        "comments": comments,
+        "has_more_comments": has_more_comments,
+        "page": page
     }), 200
 
 @app.route("/api/posts/<int:post_id>", methods=["PUT", "POST"])
@@ -1001,6 +1108,7 @@ def api_update_comment(post_id):
 def api_get_post_thread(post_id):
     db = get_db()
     current_user_id = g.user["id"] if g.get("user") else 0
+    page, per_page, offset = get_pagination_params()
 
     post = db.execute(
         """
@@ -1048,16 +1156,20 @@ def api_get_post_thread(post_id):
         JOIN users ON posts.user_id = users.id
         WHERE posts.parent_id = ?
         ORDER BY posts.created_at ASC
+        LIMIT ? OFFSET ?
         """,
-        (current_user_id, post_id)
+        (current_user_id, post_id, per_page + 1, offset)
     ).fetchall()
 
-    replies = [dict(row) for row in replies_cursor]
+    has_more_replies = len(replies_cursor) > per_page
+    replies = [dict(row) for row in replies_cursor[:per_page]]
 
     return jsonify({
         "post": post_dict,
         "parent": parent_post,
-        "replies": replies
+        "replies": replies,
+        "has_more_replies": has_more_replies,
+        "page": page
     }), 200
 
 @app.route("/api/posts/<int:post_id>/edit", methods=["POST", "PUT"])
