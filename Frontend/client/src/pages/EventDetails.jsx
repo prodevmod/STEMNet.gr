@@ -61,51 +61,61 @@ export const ReplyIcon = ({ width = 18, height = 18, className = '', style = {} 
   </svg>
 );
 
-const SafeImage = ({ src, alt, className, width, height, onClick, style, id }) => {
-  const [error, setError] = useState(false);
-  const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+const SafeImage = ({ src, alt, className, style, onClick }) => {
+    const [error, setError] = useState(false);
 
-  const filterStyle = currentTheme === 'dark'
-    ? 'invert(100%) sepia(0%) saturate(7500%) hue-rotate(180deg) brightness(100%) contrast(100%)'
-    : '';
+    const width = style?.width || style?.height || '40px';
+    const height = style?.height || style?.width || '40px';
 
-  const combinedStyle = { ...style, filter: filterStyle };
+    const baseCropStyle = {
+        width: width,
+        height: height,
+        minWidth: width,
+        maxWidth: width,
+        minHeight: height,
+        maxHeight: height,
+        aspectRatio: '1 / 1',
+        borderRadius: '50%',
+        objectFit: 'cover',
+        flexShrink: 0,
+        display: 'inline-block'
+    };
 
-  if (error || !src) {
-    return (
-      <span
-        id={id}
-        className={className}
-        onClick={onClick}
-        style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          fontSize: '0.9rem',
-          cursor: onClick ? 'pointer' : 'auto',
-          fontWeight: 'bold',
-          color: currentTheme === 'dark' ? '#ffffff' : '#111111',
-        }}
-      >
-        {alt}
-      </span>
-    );
-  }
+    if (error || !src) {
+        return (
+            <div
+                className={className}
+                onClick={onClick}
+                style={{
+                    fontWeight: 'bold',
+                    fontSize: '1.25rem',
+                    color: 'var(--text-color)',
+                    backgroundColor: 'var(--border-color)',
+                    userSelect: 'none',
+                    ...baseCropStyle,
+                    ...style
+                }}
+            >
+                {alt ? alt[0].toUpperCase() : 'U'}
+            </div>
+        );
+    }
 
-  return (
-    <img
-      id={id}
-      src={src}
-      alt={alt}
-      className={className}
-      width={width}
-      height={height}
-      onClick={onClick}
-      style={combinedStyle}
-      onError={() => setError(true)}
-    />
-  );
-};
-
+        return (
+            <img
+                src={src}
+                alt={alt}
+                className={className}
+                onClick={onClick}
+                style={{
+                    ...baseCropStyle,
+                    ...style
+                }}
+                onError={() => setError(true)}
+            />
+        );
+    };
+    
 const buildCommentTree = (rawComments, mainPostId) => {
   if (!Array.isArray(rawComments)) return [];
 

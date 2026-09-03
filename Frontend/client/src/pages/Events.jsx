@@ -5,46 +5,61 @@ import likedIcon from '../assets/liked.svg';
 import likeIcon from '../assets/like.svg';
 import commentIcon from '../assets/comment.svg';
 
-const SafeImage = ({ src, alt, className, width, height, onClick, style, id }) => {
-  const [error, setError] = useState(false);
-  const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+const SafeImage = ({ src, alt, className, style, onClick }) => {
+    const [error, setError] = useState(false);
 
-  if (error || !src) {
-    return (
-      <span 
-        id={id}
-        className={className} 
-        onClick={onClick}
-        style={{ 
-          ...style, 
-          display: 'inline-flex', 
-          alignItems: 'center', 
-          fontSize: '0.9rem', 
-          cursor: onClick ? 'pointer' : 'auto', 
-          fontWeight: 'bold', 
-          color: currentTheme === 'dark' ? '#ffffff' : '#111111' 
-        }}
-      >
-        {alt}
-      </span>
-    );
-  }
+    const width = style?.width || style?.height || '40px';
+    const height = style?.height || style?.width || '40px';
 
-  return (
-    <img 
-      id={id}
-      src={src} 
-      alt={alt} 
-      className={className} 
-      width={width} 
-      height={height} 
-      onClick={onClick}
-      style={style}
-      onError={() => setError(true)} 
-    />
-  );
-};
+    const baseCropStyle = {
+        width: width,
+        height: height,
+        minWidth: width,
+        maxWidth: width,
+        minHeight: height,
+        maxHeight: height,
+        aspectRatio: '1 / 1',
+        borderRadius: '50%',
+        objectFit: 'cover',
+        flexShrink: 0,
+        display: 'inline-block'
+    };
 
+    if (error || !src) {
+        return (
+            <div
+                className={className}
+                onClick={onClick}
+                style={{
+                    fontWeight: 'bold',
+                    fontSize: '1.25rem',
+                    color: 'var(--text-color)',
+                    backgroundColor: 'var(--border-color)',
+                    userSelect: 'none',
+                    ...baseCropStyle,
+                    ...style
+                }}
+            >
+                {alt ? alt[0].toUpperCase() : 'U'}
+            </div>
+        );
+    }
+
+        return (
+            <img
+                src={src}
+                alt={alt}
+                className={className}
+                onClick={onClick}
+                style={{
+                    ...baseCropStyle,
+                    ...style
+                }}
+                onError={() => setError(true)}
+            />
+        );
+    };
+    
 export default function Events({ currentUser, theme, toggleTheme, hasUnreadNotifications }) {
     const [posts, setPosts] = useState([]);
     const [loading, setLoading] = useState(true);
