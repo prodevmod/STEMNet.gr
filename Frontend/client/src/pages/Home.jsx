@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
+import PostMedia from '../components/PostMedia';
+import ReplyComposer from '../components/ReplyComposer';
 
 const globAssets = import.meta.glob('../assets/*', { eager: true, import: 'default' });
 
@@ -64,36 +66,22 @@ const renderTextWithLinks = (text) => {
 const SafeImage = ({ src, alt, className, style, onClick }) => {
     const [error, setError] = useState(false);
 
-    const width = style?.width || style?.height || '40px';
-    const height = style?.height || style?.width || '40px';
-
-    const baseCropStyle = {
-        width: width,
-        height: height,
-        minWidth: width,
-        maxWidth: width,
-        minHeight: height,
-        maxHeight: height,
-        aspectRatio: '1 / 1',
-        borderRadius: '50%',
-        objectFit: 'cover',
-        flexShrink: 0,
-        display: 'inline-block'
-    };
-
     if (error || !src) {
         return (
             <div
                 className={className}
                 onClick={onClick}
                 style={{
-                    fontWeight: 'bold',
+                    ...style,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
                     fontSize: '1.25rem',
+                    fontWeight: 'bold',
                     color: 'var(--text-color)',
                     backgroundColor: 'var(--border-color)',
-                    userSelect: 'none',
-                    ...baseCropStyle,
-                    ...style
+                    borderRadius: '50%',
+                    userSelect: 'none'
                 }}
             >
                 {alt ? alt[0].toUpperCase() : 'U'}
@@ -101,21 +89,18 @@ const SafeImage = ({ src, alt, className, style, onClick }) => {
         );
     }
 
-        return (
-            <img
-                src={src}
-                alt={alt}
-                className={className}
-                onClick={onClick}
-                style={{
-                    ...baseCropStyle,
-                    ...style
-                }}
-                onError={() => setError(true)}
-            />
-        );
-    };
-    
+    return (
+        <img
+            src={src}
+            alt={alt}
+            className={className}
+            onClick={onClick}
+            style={style}
+            onError={() => setError(true)}
+        />
+    );
+};
+
 export default function Home({ currentUser, setCurrentUser, theme, toggleTheme, hasUnreadNotifications }) {
     const navigate = useNavigate();
 
@@ -128,6 +113,7 @@ export default function Home({ currentUser, setCurrentUser, theme, toggleTheme, 
 
     const [activeCommentPostId, setActiveCommentPostId] = useState(null);
     const [commentInputs, setCommentInputs] = useState({});
+    const [submitting, setSubmitting] = useState(false);
 
     const fetchPosts = async (pageNum = 1, append = false) => {
         if (append) setLoadingMore(true); else setLoading(true);
@@ -190,13 +176,14 @@ export default function Home({ currentUser, setCurrentUser, theme, toggleTheme, 
         }
     };
 
-    const handleAddComment = async (postId, e) => {
+    const handleAddComment = async (e, postId) => {
         e.preventDefault();
         if (!currentUser) return navigate('/login');
 
         const text = (commentInputs[postId] || '').trim();
         if (!text) return;
 
+        setSubmitting(true);
         const formData = new FormData();
         formData.append('content', text);
         formData.append('reply_to', postId);
@@ -221,6 +208,8 @@ export default function Home({ currentUser, setCurrentUser, theme, toggleTheme, 
             }
         } catch (err) {
             console.error('Error submitting comment:', err);
+        } finally {
+            setSubmitting(false);
         }
     };
 
@@ -291,24 +280,11 @@ export default function Home({ currentUser, setCurrentUser, theme, toggleTheme, 
                                 }}>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                                            <Link to={`/profile/${authorName}`} style={{ display: 'inline-flex', flexShrink: 0 }}>
-                                                {/* Author Picture locked to 40x40 circle */}
+                                            <Link to={`/profile/${authorName}`} style={{ display: 'inline-flex' }}>
                                                 <SafeImage
                                                     src={authorPic}
                                                     alt={authorName}
-                                                    className="avatar"
-                                                    style={{ 
-                                                        width: '40px', 
-                                                        height: '40px',
-                                                        minWidth: '40px',
-                                                        minHeight: '40px',
-                                                        maxWidth: '40px',
-                                                        maxHeight: '40px',
-                                                        aspectRatio: '1 / 1',
-                                                        objectFit: 'cover',
-                                                        borderRadius: '50%',
-                                                        flexShrink: 0
-                                                    }}
+                                                    style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover' }}
                                                 />
                                             </Link>
                                             <Link to={`/profile/${authorName}`} style={{ color: 'var(--primary-color)', fontWeight: 'bold', textDecoration: 'none' }}>
@@ -347,33 +323,7 @@ export default function Home({ currentUser, setCurrentUser, theme, toggleTheme, 
                                         </p>
                                     )}
 
-                                    {postImage && (
-                                        <div style={{
-                                            marginBottom: '0.75rem',
-                                            width: '100%',
-                                            display: 'flex',
-                                            justifyContent: 'center',
-                                            backgroundColor: 'rgba(0,0,0,0.02)',
-                                            borderRadius: '8px',
-                                            overflow: 'hidden'
-                                        }}>
-                                            <img
-                                                src={postImage}
-                                                alt="Post attachment"
-                                                style={{
-                                                    maxWidth: '100%',
-                                                    height: 'auto',
-                                                    maxHeight: '600px',
-                                                    objectFit: 'contain',
-                                                    display: 'block',
-                                                    borderRadius: '8px'
-                                                }}
-                                                onError={(e) => {
-                                                    e.currentTarget.parentElement.style.display = 'none';
-                                                }}
-                                            />
-                                        </div>
-                                    )}
+                                    <PostMedia src={postImage} maxHeight={500} />
 
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', fontSize: '0.85rem', borderTop: '1px solid var(--border-color)', paddingTop: '0.75rem', marginTop: '0.5rem' }}>
                                         <button
@@ -420,48 +370,15 @@ export default function Home({ currentUser, setCurrentUser, theme, toggleTheme, 
                                     </div>
 
                                     {isReplying && (
-                                        <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px dashed var(--border-color)' }}>
-                                            <form onSubmit={(e) => handleAddComment(post.id, e)} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                                                <input
-                                                    type="text"
-                                                    placeholder="Write a reply..."
-                                                    value={commentInputs[post.id] || ''}
-                                                    onChange={(e) => setCommentInputs({ ...commentInputs, [post.id]: e.target.value })}
-                                                    style={{
-                                                        width: '100%',
-                                                        padding: '0.6rem 0.8rem',
-                                                        fontSize: '0.9rem',
-                                                        borderRadius: 'var(--radius)',
-                                                        border: '1px solid var(--border-color)',
-                                                        background: 'var(--card-bg)',
-                                                        color: 'inherit'
-                                                    }}
-                                                    autoFocus
-                                                />
-                                                <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => handleCancelReply(post.id)}
-                                                        style={{
-                                                            padding: '0.4rem 0.8rem',
-                                                            fontSize: '0.85rem',
-                                                            background: 'transparent',
-                                                            color: 'var(--text-color)',
-                                                            border: '1px solid var(--border-color)',
-                                                            borderRadius: 'var(--radius)',
-                                                            cursor: 'pointer'
-                                                        }}>
-                                                        Cancel
-                                                    </button>
-                                                    <button
-                                                        type="submit"
-                                                        className="btn btn-primary"
-                                                        style={{ padding: '0.4rem 1.2rem', fontSize: '0.85rem' }}>
-                                                        Reply
-                                                    </button>
-                                                </div>
-                                            </form>
-                                        </div>
+                                        <ReplyComposer
+                                            value={commentInputs[post.id] || ''}
+                                            onChange={(val) => setCommentInputs({ ...commentInputs, [post.id]: val })}
+                                            onSubmit={(e) => handleAddComment(e, post.id)}
+                                            onCancel={() => handleCancelReply(post.id)}
+                                            submitting={submitting}
+                                            theme={theme}
+                                            placeholder={`Reply to @${authorName}...`}
+                                        />
                                     )}
                                 </div>
                             );

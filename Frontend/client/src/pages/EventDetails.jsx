@@ -1,6 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
+import PostMedia from '../components/PostMedia';
+import ReplyComposer from '../components/ReplyComposer';
+import RsvpButtons from '../components/RsvpButtons';
 
 export const LikeIcon = ({ width = 18, height = 18, className = '', style = {} }) => (
   <svg
@@ -41,69 +44,6 @@ export const LikedIcon = ({ width = 18, height = 18, className = '', style = {},
   );
 };
 
-export const ReplyIcon = ({ width = 18, height = 18, className = '', style = {} }) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width={width}
-    height={height}
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2.2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    className={className}
-    style={{ color: 'inherit', ...style }}
-  >
-    <path d="M23 18a2 2 0 0 1-2 2H6l-4 3V3a2 2 0 0 1 2-2h17a2 2 0 0 1 2 2z" />
-    <path d="M9.5 8l-3 3 3 3" />
-    <path d="M15.5 8l3 3-3 3" />
-  </svg>
-);
-
-const SafeImage = ({ src, alt, className, width, height, onClick, style, id }) => {
-  const [error, setError] = useState(false);
-  const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
-
-  const filterStyle = currentTheme === 'dark'
-    ? 'invert(100%) sepia(0%) saturate(7500%) hue-rotate(180deg) brightness(100%) contrast(100%)'
-    : '';
-
-  const combinedStyle = { ...style, filter: filterStyle };
-
-  if (error || !src) {
-    return (
-      <span
-        id={id}
-        className={className}
-        onClick={onClick}
-        style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          fontSize: '0.9rem',
-          cursor: onClick ? 'pointer' : 'auto',
-          fontWeight: 'bold',
-          color: currentTheme === 'dark' ? '#ffffff' : '#111111',
-        }}
-      >
-        {alt}
-      </span>
-    );
-  }
-
-  return (
-    <img
-      id={id}
-      src={src}
-      alt={alt}
-      className={className}
-      onClick={onClick}
-      style={{ display: 'block', width: '100%', height: 'auto', objectFit: 'contain', ...combinedStyle }}
-      onError={() => setError(true)}
-    />
-  );
-};
-
 const buildCommentTree = (rawComments, mainPostId) => {
   if (!Array.isArray(rawComments)) return [];
 
@@ -135,22 +75,12 @@ const buildCommentTree = (rawComments, mainPostId) => {
   return rootComments;
 };
 
-const renderTextWithLinks = (text) => {
-  return text;
+const renderTextWithLinks = (text) => text;
+
+const resolveMediaUrl = (path) => {
+  if (!path) return '';
+  return path.startsWith('http') ? path : `/static/${path}`;
 };
-
-export const GoingIcon = ({ width = 18, height = 18, className = '', style = {} }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width={width} height={height} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} style={{ color: 'inherit', ...style }}>
-    <path d="M21 10v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h8" />
-    <polyline points="7 10 11 14 21 4" />
-  </svg>
-);
-
-export const InterestedIcon = ({ width = 18, height = 18, className = '', style = {} }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width={width} height={height} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} style={{ color: 'inherit', ...style }}>
-    <path d="M12 20l-6.16 3.24 1.18-6.88L2 10.76l6.92-1.01L12 3l3.08 6.75L22 10.76l-5.02 5.6 1.18 6.88z" />
-  </svg>
-);
 
 export default function EventDetails({ currentUser, setCurrentUser, theme, toggleTheme, hasUnreadNotifications }) {
   const params = useParams();
@@ -163,34 +93,10 @@ export default function EventDetails({ currentUser, setCurrentUser, theme, toggl
   const [error, setError] = useState(null);
 
   const [commentContent, setCommentContent] = useState('');
+  const [showReplyForm, setShowReplyForm] = useState(false);
   const [replyToId, setReplyToId] = useState(null);
   const [replyContent, setReplyContent] = useState('');
   const [submitting, setSubmitting] = useState(false);
-
-  const isDarkMode = theme === 'dark';
-  const dynamicTextColor = isDarkMode ? '#ffffff' : '#111111';
-
-  const [deletingEvent, setDeletingEvent] = useState(false);
-
-  const handleDeleteEvent = async () => {
-      if (!window.confirm('Are you sure you want to delete this event?')) return;
-      setDeletingEvent(true);
-      try {
-          const res = await fetch(`/api/posts/${postId}/delete`, {
-              method: 'DELETE',
-              credentials: 'include',
-          });
-          if (res.ok) {
-              navigate('/events');
-          } else {
-              alert('Failed to delete the event.');
-          }
-      } catch (err) {
-          console.error('Error deleting event:', err);
-      } finally {
-          setDeletingEvent(false);
-      }
-  };
 
   const fetchPostDetails = useCallback(async () => {
     if (!postId) {
@@ -232,102 +138,50 @@ export default function EventDetails({ currentUser, setCurrentUser, theme, toggl
       alert('Please log in to like posts.');
       return;
     }
-
     if (!post) return;
 
     const isCurrentlyLiked = Boolean(post.user_liked);
-    const newLikedState = !isCurrentlyLiked;
     const currentLikeCount = Number(post.like_count) || 0;
-    const optimisticCount = newLikedState ? currentLikeCount + 1 : Math.max(0, currentLikeCount - 1);
+    const optimisticCount = !isCurrentlyLiked ? currentLikeCount + 1 : Math.max(0, currentLikeCount - 1);
 
-    setPost(prev => ({
-      ...prev,
-      like_count: optimisticCount,
-      user_liked: newLikedState ? 1 : 0
-    }));
+    setPost(prev => ({ ...prev, like_count: optimisticCount, user_liked: !isCurrentlyLiked ? 1 : 0 }));
 
     try {
-      const response = await fetch(`/api/posts/${postId}/like`, {
-        method: 'POST',
-        credentials: 'include'
-      });
-
+      const response = await fetch(`/api/posts/${postId}/like`, { method: 'POST', credentials: 'include' });
       if (!response.ok) throw new Error('Failed to toggle like');
-
-      const data = await response.json();
-      const serverCount = data.count ?? data.like_count ?? optimisticCount;
-      const serverLiked = data.liked ?? data.user_liked ?? newLikedState;
-
-      setPost(prev => ({
-        ...prev,
-        like_count: Number(serverCount),
-        user_liked: serverLiked ? 1 : 0
-      }));
     } catch (err) {
       console.error('Fetch error:', err);
-      setPost(prev => ({
-        ...prev,
-        like_count: currentLikeCount,
-        user_liked: isCurrentlyLiked ? 1 : 0
-      }));
+      setPost(prev => ({ ...prev, like_count: currentLikeCount, user_liked: isCurrentlyLiked ? 1 : 0 }));
     }
   };
 
-    const handleRsvp = async (status) => {
-      if (!currentUser) {
-        alert('Please log in to RSVP.');
-        return;
+  const handleRsvp = async (status) => {
+    if (!currentUser) {
+      alert('Please log in to RSVP.');
+      return;
+    }
+    try {
+      const res = await fetch(`/api/events/${postId}/rsvp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ status }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setPost((prev) => ({
+          ...prev,
+          user_rsvp_status: data.user_status,
+          going_count: data.going_count,
+          interested_count: data.interested_count,
+        }));
       }
-      if (!post) return;
+    } catch (err) {
+      console.error('RSVP error:', err);
+    }
+  };
 
-      const prevStatus = post.user_rsvp_status;
-      const goingCount = Number(post.going_count) || 0;
-      const interestedCount = Number(post.interested_count) || 0;
-
-      let newGoing = goingCount;
-      let newInterested = interestedCount;
-      let newStatus = prevStatus;
-
-      if (prevStatus === status) {
-        // toggle off
-        newStatus = null;
-        if (status === 'going') newGoing = Math.max(0, goingCount - 1);
-        else newInterested = Math.max(0, interestedCount - 1);
-      } else {
-        newStatus = status;
-        if (status === 'going') {
-          newGoing = goingCount + 1;
-          if (prevStatus === 'interested') newInterested = Math.max(0, interestedCount - 1);
-        } else {
-          newInterested = interestedCount + 1;
-          if (prevStatus === 'going') newGoing = Math.max(0, goingCount - 1);
-        }
-      }
-
-      setPost(prev => ({ ...prev, user_rsvp_status: newStatus, going_count: newGoing, interested_count: newInterested }));
-
-      try {
-        const res = await fetch(`/api/events/${postId}/rsvp`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({ status }),
-        });
-
-        if (res.ok) {
-          const data = await res.json();
-          setPost(prev => ({ ...prev, user_rsvp_status: data.user_status, going_count: data.going_count, interested_count: data.interested_count }));
-        } else {
-          // revert to server state on failure
-          await fetchPostDetails();
-        }
-      } catch (err) {
-        console.error('RSVP error:', err);
-        await fetchPostDetails();
-      }
-    };
-
-    const toggleCommentLike = async (commentId) => {
+  const toggleCommentLike = async (commentId) => {
     if (!currentUser) {
       alert('Please log in to like comments.');
       return;
@@ -394,6 +248,7 @@ export default function EventDetails({ currentUser, setCurrentUser, theme, toggl
           setReplyToId(null);
         } else {
           setCommentContent('');
+          setShowReplyForm(false);
         }
         await fetchPostDetails();
       } else {
@@ -406,7 +261,7 @@ export default function EventDetails({ currentUser, setCurrentUser, theme, toggl
     }
   };
 
-const renderCommentItem = (comment) => (
+  const renderCommentItem = (comment) => (
     <div
       key={comment.id}
       className="card"
@@ -418,59 +273,27 @@ const renderCommentItem = (comment) => (
         marginBottom: '0.75rem',
       }}
     >
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: '0.5rem',
-        }}
-      >
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
         <Link
           to={`/profile/${comment.username}`}
-          style={{
-            fontWeight: 'bold',
-            textDecoration: 'none',
-            color: 'var(--text-primary)',
-            fontSize: '0.85rem',
-          }}
+          style={{ fontWeight: 'bold', textDecoration: 'none', color: 'var(--text-primary)', fontSize: '0.85rem' }}
         >
           @{comment.username}
         </Link>
         <small style={{ color: 'gray' }}>{comment.created_at}</small>
       </div>
 
-
-      <p style={{
-        margin: 0,
-        whiteSpace: 'pre-line',
-        wordBreak: 'break-word',
-        fontSize: '0.9rem',
-        marginBottom: '0.5rem',
-        color: 'var(--text-primary)',
-      }}>
+      <p style={{ margin: 0, whiteSpace: 'pre-line', wordBreak: 'break-word', fontSize: '0.9rem', marginBottom: '0.5rem', color: 'var(--text-primary)' }}>
         {renderTextWithLinks(comment.content)}
       </p>
 
-      <div style={{
-        display: 'flex',
-        gap: '1.25rem',
-        alignItems: 'center',
-        marginTop: '0.5rem',
-      }}>
+      <PostMedia src={resolveMediaUrl(comment.media_path)} maxHeight={300} />
+
+      <div style={{ display: 'flex', gap: '1.25rem', alignItems: 'center', marginTop: '0.5rem' }}>
         <button
           type="button"
           onClick={() => toggleCommentLike(comment.id)}
-          style={{
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.4rem',
-            padding: 0,
-            color: 'var(--text-primary)',
-          }}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem', padding: 0, color: 'var(--text-primary)' }}
         >
           {comment.user_liked ? (
             <LikedIcon width="16" height="16" theme={theme} />
@@ -481,82 +304,28 @@ const renderCommentItem = (comment) => (
             {Number(comment.like_count) > 0 ? comment.like_count : 'Like'}
           </span>
         </button>
+
         <button
           type="button"
           onClick={() => setReplyToId(replyToId === comment.id ? null : comment.id)}
           title="Reply"
           aria-label="Reply"
-          style={{
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            padding: 0,
-            color: 'var(--text-primary)',
-          }}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: 0, color: 'var(--text-primary)', fontSize: '0.85rem' }}
         >
-          <ReplyIcon width="16" height="16" />
+          Reply
         </button>
       </div>
 
       {replyToId === comment.id && (
-        <div
-          style={{
-            marginTop: '0.75rem',
-            paddingTop: '0.75rem',
-            borderTop: '1px solid var(--border-color)',
-          }}
-        >
-          <form
-            onSubmit={(e) => handleCreateComment(e, comment.id)}
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '0.5rem',
-            }}
-          >
-            <textarea
-              placeholder={`Reply to @${comment.username}...`}
-              value={replyContent}
-              onChange={(e) => setReplyContent(e.target.value)}
-              style={{
-                width: '100%',
-                minHeight: '60px',
-                padding: '0.5rem',
-                borderRadius: 'var(--radius)',
-                border: '1px solid var(--border-color)',
-                fontSize: '0.9rem',
-              }}
-            />
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
-              <button
-                type="button"
-                onClick={() => setReplyToId(null)}
-                style={{
-                  background: 'transparent',
-                  border: 'none',
-                  color: 'gray',
-                  cursor: 'pointer',
-                  fontSize: '0.85rem',
-                }}
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={submitting || !replyContent.trim()}
-                className="btn btn-primary"
-                style={{
-                  padding: '0.3rem 0.75rem',
-                  fontSize: '0.85rem',
-                }}
-              >
-                {submitting ? 'Sending...' : 'Reply'}
-              </button>
-            </div>
-          </form>
-        </div>
+        <ReplyComposer
+          value={replyContent}
+          onChange={setReplyContent}
+          onSubmit={(e) => handleCreateComment(e, comment.id)}
+          onCancel={() => setReplyToId(null)}
+          submitting={submitting}
+          theme={theme}
+          placeholder={`Reply to @${comment.username}...`}
+        />
       )}
 
       {comment.replies && comment.replies.length > 0 && (
@@ -569,291 +338,94 @@ const renderCommentItem = (comment) => (
 
   return (
     <div>
-        <Navbar currentUser={currentUser} setCurrentUser={setCurrentUser} theme={theme} toggleTheme={toggleTheme} hasUnreadNotifications={hasUnreadNotifications} />
-          <main className="app-main-container" style={{ maxWidth: '800px', margin: '2rem auto', padding: '0 1rem' }}>
-            <button
-              onClick={() => navigate(-1)}
-              className="back-nav-btn"
-            >
-              ← Back to Events
-            </button>
+      <Navbar currentUser={currentUser} setCurrentUser={setCurrentUser} theme={theme} toggleTheme={toggleTheme} hasUnreadNotifications={hasUnreadNotifications} />
+      <main className="app-main-container" style={{ maxWidth: '800px', margin: '2rem auto', padding: '0 1rem' }}>
+        <button
+          onClick={() => navigate(-1)}
+          style={{ background: 'none', border: 'none', color: theme === 'dark' ? '#ccff00' : '#000000', cursor: 'pointer', marginBottom: '1rem', fontWeight: 'bold' }}
+        >
+          ← Back to Events
+        </button>
+
         {loading ? (
-          <div
-            className="card"
-            style={{
-              textAlign: 'center',
-              padding: '3rem',
-              color: 'var(--primary-color, #ccff00)',
-            }}
-          >
+          <div className="card" style={{ textAlign: 'center', padding: '3rem', color: 'var(--primary-color, #ccff00)' }}>
             Loading event details...
           </div>
         ) : error || !post ? (
-          <div
-            className="card"
-            style={{
-              textAlign: 'center',
-              padding: '3rem',
-              background: 'var(--card-bg)',
-              border: '1px solid var(--border-color)',
-              borderRadius: 'var(--radius)',
-            }}
-          >
+          <div className="card" style={{ textAlign: 'center', padding: '3rem', background: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius)' }}>
             <p style={{ color: '#64748b' }}>{error || 'Event not found.'}</p>
           </div>
         ) : (
           <>
-          <div
-              className="post-card"
-              style={{
-                background: 'var(--card-bg, #fff)',
-                border: '1px solid var(--border-color)',
-                borderRadius: 'var(--radius)',
-                padding: '1.5rem',
-                marginBottom: '1.5rem',
-              }}
-            >
+            <div className="post-card" style={{ background: 'var(--card-bg, #fff)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius)', padding: '1.5rem', marginBottom: '1.5rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                
-                {/* Username and Date */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                  <Link
-                    to={`/profile/${post.username}`}
-                    className="username"
-                    style={{ fontWeight: 'bold', textDecoration: 'none', color: 'var(--text-primary)' }}
-                  >
-                    @{post.username}
-                  </Link>
-                  <small style={{ color: 'gray' }}>{post.created_at}</small>
-                </div>
-
-                {/* Main Event Edit/Delete Buttons */}
-                {currentUser && post.username === currentUser.username && (
-                  <div style={{ display: 'flex', gap: '0.75rem' }}>
-                    <button
-                      onClick={() => navigate(`/post/edit/${postId}`)}
-                      style={{
-                        padding: '0.4rem 1rem',
-                        background: 'transparent',
-                        color: theme === 'dark' ? '#ccff00' : '#000000',
-                        border: `1px solid ${theme === 'dark' ? '#ccff00' : '#000000'}`,
-                        borderRadius: '4px',
-                        cursor: 'pointer',
-                        fontWeight: 500,
-                        fontSize: '0.85rem',
-                      }}
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={handleDeleteEvent}
-                      disabled={deletingEvent}
-                      style={{
-                        padding: '0.4rem 1rem',
-                        background: '#ef4444',
-                        color: '#ffffff',
-                        border: 'none',
-                        borderRadius: '4px',
-                        cursor: 'pointer',
-                        fontWeight: 500,
-                        fontSize: '0.85rem',
-                      }}
-                    >
-                      {deletingEvent ? 'Deleting...' : 'Delete'}
-                    </button>
-                  </div>
-                )}
+                <Link to={`/profile/${post.username}`} style={{ fontWeight: 'bold', textDecoration: 'none', color: 'var(--text-primary)' }}>
+                  @{post.username}
+                </Link>
+                <small style={{ color: 'gray' }}>{post.created_at}</small>
               </div>
 
               {post.event_type && (
-                <div
-                  className="force-dark-text"
-                  style={{
-                    background: '#f0fdf4',
-                    border: '1px solid #bbf7d0',
-                    padding: '0.75rem 1rem',
-                    borderRadius: 'var(--radius)',
-                    marginTop: '10px',
-                    marginBottom: '10px',
-                  }}
-                >
+                <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', padding: '0.75rem 1rem', borderRadius: 'var(--radius)', marginTop: '10px', marginBottom: '10px', color: '#111' }}>
                   <div style={{ fontWeight: '700', fontSize: '1.1rem', marginBottom: '4px' }}>{post.event_type}</div>
-                  <div
-                    style={{
-                      fontSize: '0.95rem',
-                      display: 'flex',
-                      gap: '1.5rem',
-                      flexWrap: 'wrap',
-                    }}
-                  >
-                    <span>
-                      <strong>Time:</strong> {post.event_time}
-                    </span>
-                    <span>
-                      <strong>Location:</strong> {post.event_location}
-                    </span>
+                  <div style={{ fontSize: '0.95rem', display: 'flex', gap: '1.5rem', flexWrap: 'wrap' }}>
+                    <span><strong>Time:</strong> {post.event_time}</span>
+                    <span><strong>Location:</strong> {post.event_location}</span>
                   </div>
                 </div>
               )}
 
-              <p
-                style={{
-                  marginTop: '10px',
-                  marginBottom: '1rem',
-                  color: 'var(--text-primary)',
-                  whiteSpace: 'pre-line',
-                  fontSize: '1.05rem',
-                }}
-              >
+              <p style={{ marginTop: '10px', marginBottom: '1rem', color: 'var(--text-primary)', whiteSpace: 'pre-line', fontSize: '1.05rem' }}>
                 {post.content}
               </p>
 
-              {post.media_path && (
-                <div
-                  style={{
-                    marginBottom: '1rem',
-                    borderRadius: 'var(--radius)',
-                    overflow: 'hidden',
-                    maxHeight: '450px',
-                  }}
-                >
-                  {post.media_path.match(/\.(mp4|webm)$/i) ? (
-                                      <video controls style={{ width: '100%', height: 'auto', maxHeight: '600px', objectFit: 'contain', display: 'block' }}>
-                      <source
-                        src={post.media_path.startsWith('http') ? post.media_path : `/static/${post.media_path}`}
-                        type="video/mp4"
-                      />
-                    </video>
-                  ) : (
-                    <SafeImage
-                      src={post.media_path.startsWith('http') ? post.media_path : `/static/${post.media_path}`}
-                      alt="Event media"
-                                        style={{ width: '100%', height: 'auto', maxHeight: '600px', objectFit: 'contain' }}
-                    />
-                  )}
-                </div>
-              )}
+              <PostMedia src={resolveMediaUrl(post.media_path)} maxHeight={450} />
 
-              <div
-                style={{
-                  display: 'flex',
-                  gap: '1.5rem',
-                  alignItems: 'center',
-                  borderTop: '1px solid var(--border-color)',
-                  paddingTop: '0.75rem',
-                  marginTop: '0.5rem',
-                }}
-              >
+              <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center', flexWrap: 'wrap', borderTop: '1px solid var(--border-color)', paddingTop: '0.75rem', marginTop: '0.5rem' }}>
                 <button
                   type="button"
                   onClick={toggleLike}
-                  className="post-action-btn"
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.5rem',
-                    color: dynamicTextColor,
-                  }}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'inherit' }}
                 >
                   {post.user_liked ? (
                     <LikedIcon width="18" height="18" theme={theme} />
                   ) : (
                     <LikeIcon width="18" height="18" />
                   )}
-                  <span>
-                    {Number(post.like_count) > 0 ? Number(post.like_count) : 'Like'}
-                  </span>
+                  <span>{Number(post.like_count) > 0 ? Number(post.like_count) : 'Like'}</span>
                 </button>
+
+                <RsvpButtons
+                  goingCount={Number(post.going_count) || 0}
+                  interestedCount={Number(post.interested_count) || 0}
+                  userStatus={post.user_rsvp_status}
+                  onRsvp={handleRsvp}
+                />
 
                 <button
                   type="button"
-                  onClick={() => handleRsvp('going')}
-                  className="post-action-btn"
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.5rem',
-                    color: post.user_rsvp_status === 'going' ? '#22c55e' : 'inherit',
-                  }}
+                  onClick={() => setShowReplyForm((prev) => !prev)}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', fontSize: 'inherit' }}
                 >
-                  <GoingIcon width="18" height="18" style={{ color: post.user_rsvp_status === 'going' ? '#22c55e' : 'inherit' }} />
-                  <span>{post.going_count > 0 ? `Going (${post.going_count})` : 'Going'}</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => handleRsvp('interested')}
-                  className="post-action-btn"
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.5rem',
-                    color: post.user_rsvp_status === 'interested' ? '#3b82f6' : 'inherit',
-                  }}
-                >
-                  <InterestedIcon width="18" height="18" style={{ color: post.user_rsvp_status === 'interested' ? '#3b82f6' : 'inherit' }} />
-                  <span>{post.interested_count > 0 ? `Interested (${post.interested_count})` : 'Interested'}</span>
+                  {Number(post.comment_count) > 0 ? Number(post.comment_count) : 'Reply'}
                 </button>
               </div>
             </div>
 
-            <div
-              style={{
-                background: 'var(--card-bg, #fff)',
-                border: '1px solid var(--border-color)',
-                borderRadius: 'var(--radius)',
-                padding: '1.25rem',
-                marginBottom: '1.5rem',
-              }}
-            >
-              <h3 style={{ marginBottom: '0.75rem', fontSize: '1.1rem', color: 'var(--text-primary)' }}>Discussion</h3>
-              <form
-                onSubmit={(e) => handleCreateComment(e, null)}
-                style={{ marginBottom: '0' }}
-              >
-                <textarea
-                  placeholder={currentUser ? 'Write a reply...' : 'Log in to leave a reply...'}
+            {showReplyForm && (
+              <div style={{ background: 'var(--card-bg, #fff)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius)', padding: '1.25rem', marginBottom: '1.5rem' }}>
+                <h3 style={{ marginTop: 0, marginBottom: '0.75rem', fontSize: '1.1rem', color: 'var(--text-primary)' }}>Discussion</h3>
+                <ReplyComposer
                   value={commentContent}
-                  onChange={(e) => setCommentContent(e.target.value)}
-                  disabled={!currentUser || submitting}
-                  style={{
-                    width: '100%',
-                    minHeight: '80px',
-                    marginBottom: '0.75rem',
-                    padding: '0.75rem',
-                    borderRadius: 'var(--radius)',
-                    border: '1px solid var(--border-color)',
-                  }}
+                  onChange={setCommentContent}
+                  onSubmit={(e) => handleCreateComment(e, null)}
+                  onCancel={() => setShowReplyForm(false)}
+                  submitting={submitting}
+                  theme={theme}
+                  placeholder={currentUser ? 'Write a reply...' : 'Log in to leave a reply...'}
                 />
-                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                  <button
-                    type="submit"
-                    disabled={!currentUser || !commentContent.trim() || submitting}
-                    className="btn btn-primary"
-                    style={{
-                      padding: '0.5rem 1rem',
-                      fontSize: '0.9rem',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '0.5rem',
-                      fontWeight: 'bold',
-                    }}
-                  >
-                    <ReplyIcon width="16" height="16" />
-                    <span>{submitting ? 'Posting...' : 'Post Reply'}</span>
-                  </button>
-                </div>
-              </form>
-            </div>
+              </div>
+            )}
 
             <div className="comments-section">
               {comments.length === 0 ? (
