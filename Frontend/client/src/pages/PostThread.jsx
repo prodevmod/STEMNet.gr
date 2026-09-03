@@ -2,6 +2,13 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 
+import likeIcon from '../assets/like.svg';
+import likedIcon from '../assets/liked.svg';
+import commentIcon from '../assets/comment.svg';
+
+// ==========================================
+// UTILS & HELPERS
+// ==========================================
 const resolveImageUrl = (url) => {
     if (!url || typeof url !== 'string') return '';
     const trimmed = url.trim();
@@ -65,24 +72,19 @@ const renderTextWithLinks = (text) => {
     });
 };
 
-const getReplyLabel = (count) => {
-    const replyCount = Number(count) || 0;
-    return replyCount > 0 ? `Reply (${replyCount})` : 'Reply';
-};
-
+// ==========================================
+// MAIN COMPONENT
+// ==========================================
 export default function PostThread({ currentUser, setCurrentUser, theme, toggleTheme, hasUnreadNotifications }) {
     const params = useParams();
     const postId = params.postId || params.id;
-
+    
     const navigate = useNavigate();
     const [threadData, setThreadData] = useState(null);
-    const [rawReplies, setRawReplies] = useState([]);
-    const [repliesPage, setRepliesPage] = useState(1);
-    const [hasMoreReplies, setHasMoreReplies] = useState(false);
-    const [loadingMoreReplies, setLoadingMoreReplies] = useState(false);
+    const [comments, setComments] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
-
+    
     const [commentContent, setCommentContent] = useState('');
     const [replyToId, setReplyToId] = useState(null);
     const [replyContent, setReplyContent] = useState('');
@@ -102,10 +104,8 @@ export default function PostThread({ currentUser, setCurrentUser, theme, toggleT
             if (res.ok) {
                 const data = await res.json();
                 setThreadData(data);
-                const replies = data.replies || data.comments || [];
-                setRawReplies(replies);
-                setHasMoreReplies(Boolean(data.has_more_replies));
-                setRepliesPage(1);
+                const rawReplies = data.replies || data.comments || [];
+                setComments(buildCommentTree(rawReplies, postId));
             } else {
                 setError('Post thread not found.');
             }
@@ -120,27 +120,6 @@ export default function PostThread({ currentUser, setCurrentUser, theme, toggleT
     useEffect(() => {
         fetchThread();
     }, [fetchThread]);
-
-    const handleLoadMoreReplies = async () => {
-        setLoadingMoreReplies(true);
-        try {
-            const nextPage = repliesPage + 1;
-            const res = await fetch(`/api/posts/${postId}/thread?page=${nextPage}`, { credentials: 'include' });
-            if (res.ok) {
-                const data = await res.json();
-                const newReplies = data.replies || data.comments || [];
-                setRawReplies((prev) => [...prev, ...newReplies]);
-                setHasMoreReplies(Boolean(data.has_more_replies));
-                setRepliesPage(nextPage);
-            }
-        } catch (err) {
-            console.error('Error loading more replies:', err);
-        } finally {
-            setLoadingMoreReplies(false);
-        }
-    };
-
-    const comments = buildCommentTree(rawReplies, postId);
 
     const toggleMainPostLike = async () => {
         if (!currentUser) {
@@ -180,18 +159,25 @@ export default function PostThread({ currentUser, setCurrentUser, theme, toggleT
             return;
         }
 
-        setRawReplies((prev) => prev.map((item) => {
-            if (String(item.id) === String(commentId)) {
-                const currentlyLiked = Boolean(item.user_liked);
-                const count = Number(item.like_count) || 0;
-                return {
-                    ...item,
-                    user_liked: !currentlyLiked ? 1 : 0,
-                    like_count: !currentlyLiked ? count + 1 : Math.max(0, count - 1)
-                };
-            }
-            return item;
-        }));
+        const updateTargetComment = (nodeList) => {
+            return nodeList.map(item => {
+                if (String(item.id) === String(commentId)) {
+                    const currentlyLiked = Boolean(item.user_liked);
+                    const count = Number(item.like_count) || 0;
+                    return {
+                        ...item,
+                        user_liked: !currentlyLiked ? 1 : 0,
+                        like_count: !currentlyLiked ? count + 1 : Math.max(0, count - 1)
+                    };
+                }
+                if (item.replies && item.replies.length > 0) {
+                    return { ...item, replies: updateTargetComment(item.replies) };
+                }
+                return item;
+            });
+        };
+
+        setComments(prevComments => updateTargetComment(prevComments));
 
         try {
             const response = await fetch(`/api/posts/${commentId}/like`, {
@@ -207,7 +193,7 @@ export default function PostThread({ currentUser, setCurrentUser, theme, toggleT
 
     const handleCreateComment = async (e, parentId = null) => {
         if (e) e.preventDefault();
-
+        
         if (!currentUser) {
             alert('Please log in to reply.');
             return;
@@ -249,15 +235,15 @@ export default function PostThread({ currentUser, setCurrentUser, theme, toggleT
 
     const handleDeletePost = async () => {
         if (!window.confirm("Are you sure you want to delete this post?")) return;
-
+        
         try {
             const res = await fetch(`/api/posts/${postId}/delete`, {
-                method: 'DELETE',
+                method: 'DELETE', 
                 credentials: 'include'
             });
-
+            
             if (res.ok) {
-                navigate('/');
+                navigate('/'); 
             } else {
                 alert('Failed to delete the post. Please try again.');
             }
@@ -303,7 +289,6 @@ export default function PostThread({ currentUser, setCurrentUser, theme, toggleT
     const renderCommentItem = (comment) => {
         const replyImage = getPostImage(comment);
         const isCommentOwner = currentUser && currentUser.username === comment.username;
-        const childReplyCount = comment.replies ? comment.replies.length : 0;
 
         return (
             <div
@@ -319,6 +304,7 @@ export default function PostThread({ currentUser, setCurrentUser, theme, toggleT
                     boxSizing: 'border-box'
                 }}
             >
+                {/* Header: Username Left, Date Right */}
                 <div
                     style={{
                         display: 'flex',
@@ -367,6 +353,7 @@ export default function PostThread({ currentUser, setCurrentUser, theme, toggleT
                     </div>
                 )}
 
+                {/* Action Bar: Like & Reply (Far Left) | Edit & Delete (Far Right via marginLeft auto) */}
                 <div
                     style={{
                         display: 'flex',
@@ -391,14 +378,18 @@ export default function PostThread({ currentUser, setCurrentUser, theme, toggleT
                                 fontSize: '0.85rem',
                             }}
                         >
-                            <span>{comment.user_liked ? '★' : '☆'}</span>
+                            <img 
+                                src={comment.user_liked ? likedIcon : likeIcon} 
+                                alt={comment.user_liked ? 'Liked' : 'Like'} 
+                                style={{ width: '18px', height: '18px', display: 'block' }} 
+                            />
                             <span>{Number(comment.like_count) > 0 ? comment.like_count : 'Like'}</span>
                         </button>
 
                         <button
                             type="button"
                             onClick={() => setReplyToId(replyToId === comment.id ? null : comment.id)}
-                            title={getReplyLabel(childReplyCount)}
+                            title="Reply"
                             style={{
                                 background: 'none',
                                 border: 'none',
@@ -411,7 +402,12 @@ export default function PostThread({ currentUser, setCurrentUser, theme, toggleT
                                 fontSize: '0.85rem',
                             }}
                         >
-                            <span>{getReplyLabel(childReplyCount)}</span>
+                            <img 
+                                src={commentIcon} 
+                                alt="Reply" 
+                                style={{ width: '18px', height: '18px', display: 'block' }} 
+                            />
+                            <span>Reply</span>
                         </button>
                     </div>
 
@@ -522,7 +518,7 @@ export default function PostThread({ currentUser, setCurrentUser, theme, toggleT
     };
 
     if (loading) return <div style={{ textAlign: 'center', padding: '3rem', color: theme === 'dark' ? '#f3f4f6' : '#1e293b' }}>Loading thread...</div>;
-
+    
     if (error || !threadData) {
         return (
             <>
@@ -538,20 +534,19 @@ export default function PostThread({ currentUser, setCurrentUser, theme, toggleT
     const { post, parent } = threadData;
     const postImage = getPostImage(post);
     const isOwner = currentUser && currentUser.username === post.username;
-    const mainReplyCount = comments ? comments.length : 0;
 
     return (
         <>
             <Navbar currentUser={currentUser} setCurrentUser={setCurrentUser} theme={theme} toggleTheme={toggleTheme} hasUnreadNotifications={hasUnreadNotifications} />
             <main style={{ maxWidth: '800px', margin: '0 auto', padding: '1.5rem 1rem' }}>
-                <button
-                    onClick={() => navigate(-1)}
-                    style={{
-                        background: 'none',
-                        border: 'none',
+                <button 
+                    onClick={() => navigate(-1)} 
+                    style={{ 
+                        background: 'none', 
+                        border: 'none', 
                         color: theme === 'dark' ? '#ccff00' : '#000000',
-                        cursor: 'pointer',
-                        marginBottom: '1.25rem',
+                        cursor: 'pointer', 
+                        marginBottom: '1.25rem', 
                         fontSize: '0.95rem',
                         fontWeight: '500',
                         padding: '0'
@@ -570,7 +565,9 @@ export default function PostThread({ currentUser, setCurrentUser, theme, toggleT
                     </div>
                 )}
 
+                {/* Main Post Card */}
                 <div className="card" style={{ padding: '1.25rem', backgroundColor: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: '8px', marginBottom: '1.5rem', width: '100%', boxSizing: 'border-box' }}>
+                    {/* Header */}
                     <div style={{ display: 'flex', width: '100%', alignItems: 'center', marginBottom: '0.75rem' }}>
                         <Link to={`/profile/${post.username}`} style={{ fontWeight: 'bold', color: 'var(--primary-color)', textDecoration: 'none' }}>
                             @{post.username}
@@ -581,13 +578,14 @@ export default function PostThread({ currentUser, setCurrentUser, theme, toggleT
                     </div>
 
                     {post.content && <p style={{ whiteSpace: 'pre-line', wordBreak: 'break-word', color: theme === 'dark' ? '#f3f4f6' : '#1e293b' }}>{renderTextWithLinks(post.content)}</p>}
-
+                    
                     {postImage && (
                         <div style={{ marginTop: '0.75rem', display: 'flex', justifyContent: 'center', borderRadius: '8px', overflow: 'hidden', background: theme === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)' }}>
                             <img src={postImage} alt="Attachment" style={{ maxWidth: '100%', height: 'auto', maxHeight: '600px', objectFit: 'contain' }} />
                         </div>
                     )}
 
+                    {/* Main Post Bottom Bar */}
                     <div
                         style={{
                             display: 'flex',
@@ -614,14 +612,18 @@ export default function PostThread({ currentUser, setCurrentUser, theme, toggleT
                                     fontSize: '0.9rem',
                                 }}
                             >
-                                <span>{post.user_liked ? '★' : '☆'}</span>
+                                <img 
+                                    src={post.user_liked ? likedIcon : likeIcon} 
+                                    alt={post.user_liked ? 'Liked' : 'Like'} 
+                                    style={{ width: '18px', height: '18px', display: 'block' }} 
+                                />
                                 <span>{Number(post.like_count) > 0 ? post.like_count : 'Like'}</span>
                             </button>
 
                             <button
                                 type="button"
                                 onClick={() => setShowMainReplyForm(prev => !prev)}
-                                title={getReplyLabel(mainReplyCount)}
+                                title="Reply"
                                 style={{
                                     background: 'none',
                                     border: 'none',
@@ -634,17 +636,22 @@ export default function PostThread({ currentUser, setCurrentUser, theme, toggleT
                                     fontSize: '0.9rem',
                                 }}
                             >
-                                    <span>{getReplyLabel(mainReplyCount)}</span>
+                                <img 
+                                    src={commentIcon} 
+                                    alt="Reply" 
+                                    style={{ width: '18px', height: '18px', display: 'block' }} 
+                                />
+                                <span>Reply</span>
                             </button>
                         </div>
 
                         {isOwner && (
                             <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-                                <button
+                                <button 
                                     onClick={() => navigate(`/post/edit/${postId}`)}
-                                    style={{
-                                        padding: '0.4rem 1rem',
-                                        backgroundColor: 'transparent',
+                                    style={{ 
+                                        padding: '0.4rem 1rem', 
+                                        backgroundColor: 'transparent', 
                                         color: theme === 'dark' ? '#ccff00' : '#000000',
                                         border: '1px solid ' + (theme === 'dark' ? '#ccff00' : '#000000'),
                                         borderRadius: '4px',
@@ -655,12 +662,12 @@ export default function PostThread({ currentUser, setCurrentUser, theme, toggleT
                                 >
                                     Edit
                                 </button>
-                                <button
+                                <button 
                                     onClick={handleDeletePost}
-                                    style={{
-                                        padding: '0.4rem 1rem',
-                                        backgroundColor: '#ef4444',
-                                        color: '#ffffff',
+                                    style={{ 
+                                        padding: '0.4rem 1rem', 
+                                        backgroundColor: '#ef4444', 
+                                        color: '#ffffff', 
                                         border: 'none',
                                         borderRadius: '4px',
                                         cursor: 'pointer',
@@ -675,6 +682,7 @@ export default function PostThread({ currentUser, setCurrentUser, theme, toggleT
                     </div>
                 </div>
 
+                {/* Main Post Reply Input (toggled via Reply button) */}
                 {showMainReplyForm && (
                     <form onSubmit={(e) => handleCreateComment(e)} style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>
                         <input
@@ -693,19 +701,7 @@ export default function PostThread({ currentUser, setCurrentUser, theme, toggleT
                 <h3 style={{ color: theme === 'dark' ? '#f3f4f6' : '#1e293b' }}>Replies</h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '1rem' }}>
                     {comments && comments.length > 0 ? (
-                        <>
-                            {comments.map((comment) => renderCommentItem(comment))}
-                            {hasMoreReplies && (
-                                <button
-                                    onClick={handleLoadMoreReplies}
-                                    disabled={loadingMoreReplies}
-                                    className="btn btn-primary"
-                                    style={{ alignSelf: 'center', padding: '0.5rem 1.25rem', marginTop: '0.5rem' }}
-                                >
-                                    {loadingMoreReplies ? 'Loading...' : 'Load More Replies'}
-                                </button>
-                            )}
-                        </>
+                        comments.map((comment) => renderCommentItem(comment))
                     ) : (
                         <p style={helperTextStyle}>No replies yet. Be the first to reply!</p>
                     )}
