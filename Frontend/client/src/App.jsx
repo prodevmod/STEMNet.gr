@@ -106,7 +106,9 @@ function App() {
           <Route path="/settings" element={<Settings currentUser={currentUser} setCurrentUser={setCurrentUser} theme={theme} toggleTheme={toggleTheme} hasUnreadNotifications={hasUnreadNotifications} />} />
           <Route path="/reset-password" element={<ResetPassword theme={theme} toggleTheme={toggleTheme} />} />
           <Route path="/500" element={<ServerError />} />
-          
+          <Route path="/groups/:groupId/edit" element={ <EditGroup currentUser={currentUser} setCurrentUser={setCurrentUser} theme={theme} toggleTheme={toggleTheme} hasUnreadNotifications={hasUnreadNotifications} />
+  }
+/>
           {/* Catch-all route MUST remain at the bottom */}
           <Route path="*" element={<NotFound />} />
         </Routes>

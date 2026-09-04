@@ -61,11 +61,8 @@ export default function GroupPosts({
       });
 
       if (!res.ok) {
-        if (res.status === 404) {
-          setError('Group not found.');
-        } else {
-          setError('Failed to load group details.');
-        }
+        if (res.status === 404) setError('Group not found.');
+        else setError('Failed to load group details.');
         setGroup(null);
         setPosts([]);
         return;
@@ -95,11 +92,9 @@ export default function GroupPosts({
       alert('Please log in to post in this group.');
       return;
     }
-
     if (!postContent.trim() && !postImageFile) return;
 
     setSubmitting(true);
-
     const formData = new FormData();
     formData.append('content', postContent.trim());
     formData.append('group_id', groupId);
@@ -138,18 +133,42 @@ export default function GroupPosts({
         credentials: 'include'
       });
 
-      if (res.ok) {
-        await fetchGroupData();
-      } else {
-        alert('Failed to delete post.');
-      }
+      if (res.ok) await fetchGroupData();
+      else alert('Failed to delete post.');
     } catch (err) {
       console.error('Error deleting post:', err);
       alert('An error occurred while deleting the post.');
     }
   };
 
+  const handleEditGroup = () => {
+    navigate(`/groups/${groupId}/edit`);
+  };
+
+  const handleDeleteGroup = async () => {
+    if (!window.confirm('Are you sure you want to delete this group? This will remove all posts in it.')) return;
+
+    try {
+      const res = await fetch(`${API_BASE}/api/groups/${groupId}/delete`, {
+        method: 'DELETE',
+        credentials: 'include'
+      });
+
+      if (res.ok) {
+        navigate('/groups');
+      } else {
+        const data = await res.json().catch(() => ({}));
+        alert(data.error || 'Failed to delete group.');
+      }
+    } catch (err) {
+      console.error('Error deleting group:', err);
+      alert('An error occurred while deleting the group.');
+    }
+  };
+
   const isDark = theme === 'dark';
+  const groupOwnerUsername = group?.creator_username || group?.username;
+  const isGroupOwner = Boolean(currentUser && groupOwnerUsername && currentUser.username === groupOwnerUsername);
 
   const actionTextStyle = {
     background: 'none',
@@ -159,8 +178,6 @@ export default function GroupPosts({
     fontSize: '0.85rem',
     fontWeight: '500'
   };
-
-  const editTextColor = isDark ? '#ccff00' : '#0f172a';
 
   if (loading) {
     return (
@@ -172,9 +189,7 @@ export default function GroupPosts({
           toggleTheme={toggleTheme}
           hasUnreadNotifications={hasUnreadNotifications}
         />
-        <div style={{ textAlign: 'center', padding: '4rem', color: 'var(--text-primary)' }}>
-          Loading group...
-        </div>
+        <div style={{ textAlign: 'center', padding: '4rem', color: 'var(--text-primary)' }}>Loading group...</div>
       </div>
     );
   }
@@ -191,9 +206,7 @@ export default function GroupPosts({
         />
         <main style={{ maxWidth: '800px', margin: '2rem auto', padding: '0 1rem', textAlign: 'center' }}>
           <p style={{ color: '#ef4444', marginBottom: '1rem' }}>{error || 'Group not found'}</p>
-          <button onClick={() => navigate('/groups')} className="btn btn-primary">
-            Back to Groups
-          </button>
+          <button onClick={() => navigate('/groups')} className="btn btn-primary">Back to Groups</button>
         </main>
       </div>
     );
@@ -226,56 +239,44 @@ export default function GroupPosts({
           ← Back to Groups
         </button>
 
-        <div
-          className="card"
-          style={{
-            background: 'var(--card-bg, #fff)',
-            border: '1px solid var(--border-color)',
-            borderRadius: 'var(--radius)',
-            padding: '1.5rem',
-            marginBottom: '1.5rem'
-          }}
-        >
+        <div className="card" style={{ background: 'var(--card-bg, #fff)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius)', padding: '1.5rem', marginBottom: '1.5rem' }}>
           <h2 style={{ margin: '0 0 0.5rem 0', color: 'var(--text-primary)' }}>{group.name}</h2>
           <p style={{ margin: '0 0 0.75rem 0', fontSize: '0.9rem', color: '#64748b' }}>
-            Created by{' '}
-            <Link to={`/profile/${group.creator_username || group.username}`}>
-              @{group.creator_username || group.username}
-            </Link>
+            Created by <Link to={`/profile/${groupOwnerUsername}`}>@{groupOwnerUsername}</Link>
           </p>
           <p style={{ margin: 0, color: 'var(--text-primary)', fontSize: '0.95rem', lineHeight: '1.5' }}>
             {group.description}
           </p>
+
+          {isGroupOwner && (
+            <div style={{ marginTop: '1rem', display: 'flex', gap: '0.9rem', alignItems: 'center' }}>
+              <button
+                type="button"
+                onClick={handleEditGroup}
+                style={{ ...actionTextStyle, color: isDark ? '#ccff00' : '#0f172a' }}
+              >
+                Edit Group
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteGroup}
+                style={{ ...actionTextStyle, color: '#ef4444' }}
+              >
+                Delete Group
+              </button>
+            </div>
+          )}
         </div>
 
         {currentUser ? (
-          <div
-            className="card"
-            style={{
-              background: 'var(--card-bg, #fff)',
-              border: '1px solid var(--border-color)',
-              borderRadius: 'var(--radius)',
-              padding: '1.25rem',
-              marginBottom: '1.5rem'
-            }}
-          >
+          <div className="card" style={{ background: 'var(--card-bg, #fff)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius)', padding: '1.25rem', marginBottom: '1.5rem' }}>
             <form onSubmit={handleCreateGroupPost}>
               <textarea
                 value={postContent}
                 onChange={(e) => setPostContent(e.target.value)}
                 placeholder={`Share an update with ${group.name}...`}
                 rows="3"
-                style={{
-                  width: '100%',
-                  padding: '0.75rem',
-                  borderRadius: '4px',
-                  border: '1px solid var(--border-color)',
-                  background: 'var(--input-bg, transparent)',
-                  color: 'var(--text-primary)',
-                  resize: 'vertical',
-                  boxSizing: 'border-box',
-                  marginBottom: '0.75rem'
-                }}
+                style={{ width: '100%', padding: '0.75rem', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--input-bg, transparent)', color: 'var(--text-primary)', resize: 'vertical', boxSizing: 'border-box', marginBottom: '0.75rem' }}
               />
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
                 <input
@@ -291,17 +292,7 @@ export default function GroupPosts({
             </form>
           </div>
         ) : (
-          <div
-            className="card"
-            style={{
-              textAlign: 'center',
-              padding: '1rem',
-              marginBottom: '1.5rem',
-              background: 'var(--card-bg, #fff)',
-              border: '1px solid var(--border-color)',
-              borderRadius: 'var(--radius)'
-            }}
-          >
+          <div className="card" style={{ textAlign: 'center', padding: '1rem', marginBottom: '1.5rem', background: 'var(--card-bg, #fff)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius)' }}>
             <p style={{ margin: 0, color: '#64748b', fontSize: '0.9rem' }}>
               Please <Link to="/login">log in</Link> to participate or post in this group.
             </p>
@@ -314,29 +305,12 @@ export default function GroupPosts({
             posts.map((post, index) => {
               const postImage = getPostImage(post);
               const postId = normalizePostId(post);
-              const isOwner = currentUser && currentUser.username === post.username;
+              const isPostOwner = currentUser && currentUser.username === post.username;
 
               return (
-                <div
-                  key={`group-post-${post?.id ?? post?.post_id ?? index}`}
-                  className="card"
-                  style={{
-                    background: 'var(--card-bg, #fff)',
-                    border: '1px solid var(--border-color)',
-                    borderRadius: 'var(--radius)',
-                    padding: '1.25rem'
-                  }}
-                >
+                <div key={`group-post-${post?.id ?? post?.post_id ?? index}`} className="card" style={{ background: 'var(--card-bg, #fff)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius)', padding: '1.25rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', marginBottom: '0.5rem' }}>
-                    <Link
-                      to={`/profile/${post.username}`}
-                      style={{
-                        fontWeight: 'bold',
-                        color: 'var(--primary-color)',
-                        textDecoration: 'none',
-                        fontSize: '0.9rem'
-                      }}
-                    >
+                    <Link to={`/profile/${post.username}`} style={{ fontWeight: 'bold', color: 'var(--primary-color)', textDecoration: 'none', fontSize: '0.9rem' }}>
                       @{post.username}
                     </Link>
                     {post.created_at && (
@@ -346,15 +320,7 @@ export default function GroupPosts({
                     )}
                   </div>
 
-                  <p
-                    style={{
-                      margin: '0.5rem 0',
-                      whiteSpace: 'pre-line',
-                      color: 'var(--text-primary)',
-                      fontSize: '0.95rem',
-                      wordBreak: 'break-word'
-                    }}
-                  >
+                  <p style={{ margin: '0.5rem 0', whiteSpace: 'pre-line', color: 'var(--text-primary)', fontSize: '0.95rem', wordBreak: 'break-word' }}>
                     {post.content}
                   </p>
 
@@ -362,27 +328,19 @@ export default function GroupPosts({
 
                   <div style={{ marginTop: '0.85rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
                     {postId ? (
-                      <Link
-                        to={`/post/${postId}`}
-                        style={{
-                          fontSize: '0.85rem',
-                          textDecoration: 'none',
-                          color: 'var(--primary-color)',
-                          fontWeight: '500'
-                        }}
-                      >
+                      <Link to={`/post/${postId}`} style={{ fontSize: '0.85rem', textDecoration: 'none', color: 'var(--primary-color)', fontWeight: '500' }}>
                         View Thread & Comments →
                       </Link>
                     ) : (
                       <span style={{ fontSize: '0.85rem', color: '#94a3b8' }}>Thread unavailable</span>
                     )}
 
-                    {isOwner && postId && (
+                    {isPostOwner && postId && (
                       <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.9rem', alignItems: 'center' }}>
                         <button
                           type="button"
                           onClick={() => navigate(`/post/edit/${postId}`)}
-                          style={{ ...actionTextStyle, color: editTextColor }}
+                          style={{ ...actionTextStyle, color: isDark ? '#ccff00' : '#0f172a' }}
                         >
                           Edit
                         </button>
@@ -400,16 +358,7 @@ export default function GroupPosts({
               );
             })
           ) : (
-            <div
-              className="card"
-              style={{
-                textAlign: 'center',
-                padding: '2.5rem',
-                background: 'var(--card-bg, #fff)',
-                border: '1px solid var(--border-color)',
-                borderRadius: 'var(--radius)'
-              }}
-            >
+            <div className="card" style={{ textAlign: 'center', padding: '2.5rem', background: 'var(--card-bg, #fff)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius)' }}>
               <p style={{ color: '#64748b', margin: 0 }}>
                 No posts in this group yet. Be the first to start a discussion!
               </p>
