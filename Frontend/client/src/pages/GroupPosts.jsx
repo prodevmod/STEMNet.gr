@@ -45,6 +45,12 @@ export default function GroupPosts({
   const [postImageFile, setPostImageFile] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
+  // Edit Group State
+  const [isEditingGroup, setIsEditingGroup] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [editSubmitting, setEditSubmitting] = useState(false);
+
   const fetchGroupData = useCallback(async () => {
     if (!groupId) {
       setError('Invalid Group ID.');
@@ -56,7 +62,6 @@ export default function GroupPosts({
     setError('');
 
     try {
-      // Single source of truth: this endpoint returns BOTH group and posts
       const res = await fetch(`${API_BASE}/api/groups/${groupId}`, {
         credentials: 'include'
       });
@@ -73,8 +78,14 @@ export default function GroupPosts({
       }
 
       const data = await res.json();
-      setGroup(data.group || null);
+      const groupData = data.group || null;
+      setGroup(groupData);
       setPosts(Array.isArray(data.posts) ? data.posts : []);
+
+      if (groupData) {
+        setEditName(groupData.name || '');
+        setEditDescription(groupData.description || '');
+      }
     } catch (err) {
       console.error('Error loading group data:', err);
       setError('Could not load community group.');
@@ -128,6 +139,60 @@ export default function GroupPosts({
     }
   };
 
+  const handleUpdateGroup = async (e) => {
+    e.preventDefault();
+    if (!editName.trim() || !editDescription.trim()) {
+      alert('Name and description are required.');
+      return;
+    }
+
+    setEditSubmitting(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/groups/${groupId}/edit`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: editName.trim(), description: editDescription.trim() }),
+        credentials: 'include'
+      });
+
+      if (res.ok) {
+        setIsEditingGroup(false);
+        await fetchGroupData();
+      } else {
+        const data = await res.json();
+        alert(data.error || 'Failed to update group.');
+      }
+    } catch (err) {
+      console.error('Error updating group:', err);
+      alert('An error occurred while updating the group.');
+    } finally {
+      setEditSubmitting(false);
+    }
+  };
+
+  const handleDeleteGroup = async () => {
+    if (!window.confirm('Are you sure you want to delete this group? All posts inside it will also be deleted.')) {
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_BASE}/api/groups/${groupId}/delete`, {
+        method: 'DELETE',
+        credentials: 'include'
+      });
+
+      if (res.ok) {
+        navigate('/groups');
+      } else {
+        const data = await res.json();
+        alert(data.error || 'Failed to delete group.');
+      }
+    } catch (err) {
+      console.error('Error deleting group:', err);
+      alert('An error occurred while deleting the group.');
+    }
+  };
+
   if (loading) {
     return (
       <div>
@@ -164,6 +229,10 @@ export default function GroupPosts({
       </div>
     );
   }
+
+  // Determine if current user is the owner of the group
+  // Adjust based on whether your API returns group.user_id matching currentUser.id or similar fields
+  const isOwner = currentUser && (group.user_id === currentUser.id || group.username === currentUser.username);
 
   return (
     <div>
@@ -202,13 +271,67 @@ export default function GroupPosts({
             marginBottom: '1.5rem'
           }}
         >
-          <h2 style={{ margin: '0 0 0.5rem 0', color: 'var(--text-primary)' }}>{group.name}</h2>
-          <p style={{ margin: '0 0 0.75rem 0', fontSize: '0.9rem', color: '#64748b' }}>
-            Created by <Link to={`/profile/${group.creator_username || group.username}`}>@{group.creator_username || group.username}</Link>
-          </p>
-          <p style={{ margin: 0, color: 'var(--text-primary)', fontSize: '0.95rem', lineHeight: '1.5' }}>
-            {group.description}
-          </p>
+          {isEditingGroup ? (
+            <form onSubmit={handleUpdateGroup}>
+              <h3 style={{ margin: '0 0 1rem 0', color: 'var(--text-primary)' }}>Edit Group</h3>
+              <div style={{ marginBottom: '0.75rem' }}>
+                <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.25rem', color: 'var(--text-primary)' }}>Group Name</label>
+                <input
+                  type="text"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--input-bg, transparent)', color: 'var(--text-primary)', boxSizing: 'border-box' }}
+                />
+              </div>
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.25rem', color: 'var(--text-primary)' }}>Description</label>
+                <textarea
+                  value={editDescription}
+                  onChange={(e) => setEditDescription(e.target.value)}
+                  rows="3"
+                  style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--input-bg, transparent)', color: 'var(--text-primary)', resize: 'vertical', boxSizing: 'border-box' }}
+                />
+              </div>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <button type="submit" disabled={editSubmitting} className="btn btn-primary" style={{ padding: '0.4rem 1rem', fontSize: '0.9rem' }}>
+                  {editSubmitting ? 'Saving...' : 'Save Changes'}
+                </button>
+                <button type="button" onClick={() => setIsEditingGroup(false)} style={{ padding: '0.4rem 1rem', fontSize: '0.9rem', background: 'transparent', border: '1px solid var(--border-color)', color: 'var(--text-primary)', borderRadius: '4px', cursor: 'pointer' }}>
+                  Cancel
+                </button>
+              </div>
+            </form>
+          ) : (
+            <>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div>
+                  <h2 style={{ margin: '0 0 0.5rem 0', color: 'var(--text-primary)' }}>{group.name}</h2>
+                  <p style={{ margin: '0 0 0.75rem 0', fontSize: '0.9rem', color: '#64748b' }}>
+                    Created by <Link to={`/profile/${group.creator_username || group.username}`}>@{group.creator_username || group.username}</Link>
+                  </p>
+                </div>
+                {isOwner && (
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <button
+                      onClick={() => setIsEditingGroup(true)}
+                      style={{ padding: '0.35rem 0.75rem', fontSize: '0.85rem', background: 'transparent', border: '1px solid var(--border-color)', color: 'var(--text-primary)', borderRadius: '4px', cursor: 'pointer' }}
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={handleDeleteGroup}
+                      style={{ padding: '0.35rem 0.75rem', fontSize: '0.85rem', background: '#ef4444', border: 'none', color: '#fff', borderRadius: '4px', cursor: 'pointer' }}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                )}
+              </div>
+              <p style={{ margin: 0, color: 'var(--text-primary)', fontSize: '0.95rem', lineHeight: '1.5' }}>
+                {group.description}
+              </p>
+            </>
+          )}
         </div>
 
         {currentUser ? (
