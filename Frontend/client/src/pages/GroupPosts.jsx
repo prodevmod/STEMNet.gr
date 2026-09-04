@@ -13,7 +13,7 @@ const resolveImageUrl = (url) => {
   if (/^(https?:\/\/|data:|blob:)/i.test(trimmed)) return trimmed;
 
   const path = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
-  
+
   const base = API_BASE.endsWith('/') ? API_BASE.slice(0, -1) : API_BASE;
   
   return `${base}${path}`;
@@ -47,10 +47,8 @@ export default function GroupPosts({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  // Post creation state
+  // Post creation state (Text only)
   const [postContent, setPostContent] = useState('');
-  const [postImageFile, setPostImageFile] = useState(null);
-  const [imagePreview, setImagePreview] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
   // Edit Group State
@@ -108,24 +106,6 @@ export default function GroupPosts({
     fetchGroupData();
   }, [fetchGroupData]);
 
-  // Handle file selection and generate a preview URL
-  const handleFileChange = (e) => {
-    const file = e.target.files?.[0] || null;
-    setPostImageFile(file);
-    if (file) {
-      setImagePreview(URL.createObjectURL(file));
-    } else {
-      setImagePreview(null);
-    }
-  };
-
-  const handleClearImage = () => {
-    setPostImageFile(null);
-    setImagePreview(null);
-    const fileInput = document.getElementById('group-post-file-input');
-    if (fileInput) fileInput.value = '';
-  };
-
   const handleCreateGroupPost = async (e) => {
     e.preventDefault();
 
@@ -134,13 +114,12 @@ export default function GroupPosts({
       return;
     }
 
-    if (!postContent.trim() && !postImageFile) return;
+    if (!postContent.trim()) return;
 
     setSubmitting(true);
     const formData = new FormData();
     formData.append('content', postContent.trim());
     formData.append('group_id', groupId);
-    if (postImageFile) formData.append('image', postImageFile);
 
     try {
       const res = await fetch(`${API_BASE}/api/posts/create`, {
@@ -156,8 +135,6 @@ export default function GroupPosts({
 
       // Reset form after success
       setPostContent('');
-      handleClearImage();
-      
       await fetchGroupData();
     } catch (err) {
       console.error('Error creating post:', err);
@@ -390,47 +367,8 @@ export default function GroupPosts({
                 }}
               />
               
-              {imagePreview && (
-                <div style={{ position: 'relative', display: 'inline-block', marginBottom: '1rem' }}>
-                  <img 
-                    src={imagePreview} 
-                    alt="Attachment preview" 
-                    style={{ maxWidth: '100%', maxHeight: '200px', borderRadius: '8px', border: '1px solid var(--border-color)' }}
-                  />
-                  <button
-                    type="button"
-                    onClick={handleClearImage}
-                    style={{
-                      position: 'absolute',
-                      top: '4px',
-                      right: '4px',
-                      background: 'rgba(0, 0, 0, 0.6)',
-                      color: '#fff',
-                      border: 'none',
-                      borderRadius: '50%',
-                      width: '24px',
-                      height: '24px',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: '12px'
-                    }}
-                  >
-                    ✕
-                  </button>
-                </div>
-              )}
-
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
-                <input
-                  id="group-post-file-input"
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFileChange}
-                  style={{ fontSize: '0.85rem', color: 'var(--text-primary)' }}
-                />
-                <button type="submit" disabled={submitting} className="btn btn-primary" style={{ padding: '0.5rem 1.25rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                <button type="submit" disabled={submitting || !postContent.trim()} className="btn btn-primary" style={{ padding: '0.5rem 1.25rem' }}>
                   {submitting ? 'Posting...' : 'Post to Group'}
                 </button>
               </div>
