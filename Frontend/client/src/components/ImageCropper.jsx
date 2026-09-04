@@ -47,32 +47,52 @@ export default function ImageCropper({ file, onCancel, onCropped }) {
         if (!size.w || !size.h) return { x, y };
         const dispW = size.w * s;
         const dispH = size.h * s;
-        const minX = Math.min(0, CONTAINER_SIZE - dispW);
-        const minY = Math.min(0, CONTAINER_SIZE - dispH);
-        return {
-            x: Math.max(minX, Math.min(0, x)),
-            y: Math.max(minY, Math.min(0, y)),
-        };
+        
+        let newX = x;
+        let newY = y;
+
+        // If the scaled image is smaller than the container, lock it to the center
+        // Otherwise, allow panning but prevent dragging out of bounds
+        if (dispW <= CONTAINER_SIZE) {
+            newX = (CONTAINER_SIZE - dispW) / 2;
+        } else {
+            const minX = CONTAINER_SIZE - dispW;
+            newX = Math.max(minX, Math.min(0, x));
+        }
+
+        if (dispH <= CONTAINER_SIZE) {
+            newY = (CONTAINER_SIZE - dispH) / 2;
+        } else {
+            const minY = CONTAINER_SIZE - dispH;
+            newY = Math.max(minY, Math.min(0, y));
+        }
+
+        return { x: newX, y: newY };
     }, []);
 
     const handleImageLoad = (e) => {
         const w = e.target.naturalWidth;
         const h = e.target.naturalHeight;
         const size = { w, h };
-        // "contain" scale — the whole image is visible at load, nothing is
-        // pre-cropped into a square. The user zooms in from here if/when
-        // they actually want to crop tighter.
-        const initialFit = Math.min(CONTAINER_SIZE / w, CONTAINER_SIZE / h);
+        
+        // Calculate bounds for zoom
+        const containFit = Math.min(CONTAINER_SIZE / w, CONTAINER_SIZE / h);
+        const calculatedMinScale = Math.min(1, containFit); // Let user zoom out entirely, even if image is huge
+        const calculatedMaxScale = Math.max(4, containFit * 4, 1);
+        
+        // Start at true original native size
+        const initialScale = 1;
 
         setNaturalSize(size);
-        setMinScale(initialFit);
-        setMaxScale(initialFit * 4);
-        setScale(initialFit);
+        setMinScale(calculatedMinScale);
+        setMaxScale(calculatedMaxScale);
+        setScale(initialScale);
+        
         setPos(
             clampPos(
-                (CONTAINER_SIZE - w * initialFit) / 2,
-                (CONTAINER_SIZE - h * initialFit) / 2,
-                initialFit,
+                (CONTAINER_SIZE - w * initialScale) / 2,
+                (CONTAINER_SIZE - h * initialScale) / 2,
+                initialScale,
                 size
             )
         );
@@ -246,8 +266,11 @@ export default function ImageCropper({ file, onCancel, onCropped }) {
                                 position: 'absolute',
                                 left: 0,
                                 top: 0,
-                                width: naturalSize.w || 'auto',
-                                height: naturalSize.h || 'auto',
+                                // By explicitly setting dimensions and dropping max rules, we fix the visual/math CSS sync offset issue
+                                width: naturalSize.w ? `${naturalSize.w}px` : 'auto',
+                                height: naturalSize.h ? `${naturalSize.h}px` : 'auto',
+                                maxWidth: 'none',
+                                maxHeight: 'none',
                                 transform: `translate(${pos.x}px, ${pos.y}px) scale(${scale})`,
                                 transformOrigin: '0 0',
                                 userSelect: 'none',
