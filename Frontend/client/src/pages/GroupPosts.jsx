@@ -41,8 +41,10 @@ export default function GroupPosts({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  // Post Creation State
   const [postContent, setPostContent] = useState('');
   const [postImageFile, setPostImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
   // Edit Group State
@@ -100,6 +102,19 @@ export default function GroupPosts({
     fetchGroupData();
   }, [fetchGroupData]);
 
+  // Handle Image File Selection & Preview
+  const handleFileChange = (e) => {
+    const file = e.target.files?.[0] || null;
+    setPostImageFile(file);
+    
+    if (file) {
+      const previewUrl = URL.createObjectURL(file);
+      setImagePreview(previewUrl);
+    } else {
+      setImagePreview(null);
+    }
+  };
+
   const handleCreateGroupPost = async (e) => {
     e.preventDefault();
 
@@ -130,6 +145,7 @@ export default function GroupPosts({
 
       setPostContent('');
       setPostImageFile(null);
+      setImagePreview(null);
       await fetchGroupData();
     } catch (err) {
       console.error('Error creating post:', err);
@@ -139,6 +155,7 @@ export default function GroupPosts({
     }
   };
 
+  // Handle Edit Group
   const handleUpdateGroup = async (e) => {
     e.preventDefault();
     if (!editName.trim() || !editDescription.trim()) {
@@ -170,6 +187,7 @@ export default function GroupPosts({
     }
   };
 
+  // Handle Delete Group
   const handleDeleteGroup = async () => {
     if (!window.confirm('Are you sure you want to delete this group? All posts inside it will also be deleted.')) {
       return;
@@ -196,16 +214,8 @@ export default function GroupPosts({
   if (loading) {
     return (
       <div>
-        <Navbar
-          currentUser={currentUser}
-          setCurrentUser={setCurrentUser}
-          theme={theme}
-          toggleTheme={toggleTheme}
-          hasUnreadNotifications={hasUnreadNotifications}
-        />
-        <div style={{ textAlign: 'center', padding: '4rem', color: 'var(--text-primary)' }}>
-          Loading group...
-        </div>
+        <Navbar currentUser={currentUser} setCurrentUser={setCurrentUser} theme={theme} toggleTheme={toggleTheme} hasUnreadNotifications={hasUnreadNotifications} />
+        <div style={{ textAlign: 'center', padding: '4rem', color: 'var(--text-primary)' }}>Loading group...</div>
       </div>
     );
   }
@@ -213,64 +223,32 @@ export default function GroupPosts({
   if (error || !group) {
     return (
       <div>
-        <Navbar
-          currentUser={currentUser}
-          setCurrentUser={setCurrentUser}
-          theme={theme}
-          toggleTheme={toggleTheme}
-          hasUnreadNotifications={hasUnreadNotifications}
-        />
+        <Navbar currentUser={currentUser} setCurrentUser={setCurrentUser} theme={theme} toggleTheme={toggleTheme} hasUnreadNotifications={hasUnreadNotifications} />
         <main style={{ maxWidth: '800px', margin: '2rem auto', padding: '0 1rem', textAlign: 'center' }}>
           <p style={{ color: '#ef4444', marginBottom: '1rem' }}>{error || 'Group not found'}</p>
-          <button onClick={() => navigate('/groups')} className="btn btn-primary">
-            Back to Groups
-          </button>
+          <button onClick={() => navigate('/groups')} className="btn btn-primary">Back to Groups</button>
         </main>
       </div>
     );
   }
 
   // Determine if current user is the owner of the group
-  // Adjust based on whether your API returns group.user_id matching currentUser.id or similar fields
-  const isOwner = currentUser && (group.user_id === currentUser.id || group.username === currentUser.username);
+  const isOwner = currentUser && (group.user_id === currentUser.id || group.username === currentUser.username || group.creator_username === currentUser.username);
 
   return (
     <div>
-      <Navbar
-        currentUser={currentUser}
-        setCurrentUser={setCurrentUser}
-        theme={theme}
-        toggleTheme={toggleTheme}
-        hasUnreadNotifications={hasUnreadNotifications}
-      />
+      <Navbar currentUser={currentUser} setCurrentUser={setCurrentUser} theme={theme} toggleTheme={toggleTheme} hasUnreadNotifications={hasUnreadNotifications} />
 
       <main className="app-main-container" style={{ maxWidth: '800px', margin: '2rem auto', padding: '0 1rem' }}>
         <button
           onClick={() => navigate('/groups')}
-          style={{
-            background: 'none',
-            border: 'none',
-            color: theme === 'dark' ? '#ccff00' : '#000000',
-            cursor: 'pointer',
-            marginBottom: '1rem',
-            fontSize: '0.95rem',
-            fontWeight: '500',
-            padding: 0
-          }}
+          style={{ background: 'none', border: 'none', color: theme === 'dark' ? '#ccff00' : '#000000', cursor: 'pointer', marginBottom: '1rem', fontSize: '0.95rem', fontWeight: '500', padding: 0 }}
         >
           ← Back to Groups
         </button>
 
-        <div
-          className="card"
-          style={{
-            background: 'var(--card-bg, #fff)',
-            border: '1px solid var(--border-color)',
-            borderRadius: 'var(--radius)',
-            padding: '1.5rem',
-            marginBottom: '1.5rem'
-          }}
-        >
+        {/* Group Details & Edit Form */}
+        <div className="card" style={{ background: 'var(--card-bg, #fff)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius)', padding: '1.5rem', marginBottom: '1.5rem' }}>
           {isEditingGroup ? (
             <form onSubmit={handleUpdateGroup}>
               <h3 style={{ margin: '0 0 1rem 0', color: 'var(--text-primary)' }}>Edit Group</h3>
@@ -334,40 +312,40 @@ export default function GroupPosts({
           )}
         </div>
 
+        {/* Create Post Form with Attachment Preview */}
         {currentUser ? (
-          <div
-            className="card"
-            style={{
-              background: 'var(--card-bg, #fff)',
-              border: '1px solid var(--border-color)',
-              borderRadius: 'var(--radius)',
-              padding: '1.25rem',
-              marginBottom: '1.5rem'
-            }}
-          >
+          <div className="card" style={{ background: 'var(--card-bg, #fff)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius)', padding: '1.25rem', marginBottom: '1.5rem' }}>
             <form onSubmit={handleCreateGroupPost}>
               <textarea
                 value={postContent}
                 onChange={(e) => setPostContent(e.target.value)}
                 placeholder={`Share an update with ${group.name}...`}
                 rows="3"
-                style={{
-                  width: '100%',
-                  padding: '0.75rem',
-                  borderRadius: '4px',
-                  border: '1px solid var(--border-color)',
-                  background: 'var(--input-bg, transparent)',
-                  color: 'var(--text-primary)',
-                  resize: 'vertical',
-                  boxSizing: 'border-box',
-                  marginBottom: '0.75rem'
-                }}
+                style={{ width: '100%', padding: '0.75rem', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--input-bg, transparent)', color: 'var(--text-primary)', resize: 'vertical', boxSizing: 'border-box', marginBottom: '0.75rem' }}
               />
+              
+              {/* Image Preview Block */}
+              {imagePreview && (
+                <div style={{ marginBottom: '1rem', position: 'relative', display: 'inline-block' }}>
+                  <img src={imagePreview} alt="Attachment preview" style={{ maxWidth: '100%', maxHeight: '200px', borderRadius: '8px', objectFit: 'contain' }} />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPostImageFile(null);
+                      setImagePreview(null);
+                    }}
+                    style={{ position: 'absolute', top: '5px', right: '5px', background: 'rgba(0,0,0,0.6)', color: '#fff', border: 'none', borderRadius: '50%', width: '25px', height: '25px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
+
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
                 <input
                   type="file"
                   accept="image/*"
-                  onChange={(e) => setPostImageFile(e.target.files?.[0] || null)}
+                  onChange={handleFileChange}
                   style={{ fontSize: '0.85rem', color: 'var(--text-primary)' }}
                 />
                 <button type="submit" disabled={submitting} className="btn btn-primary" style={{ padding: '0.5rem 1.25rem' }}>
@@ -377,23 +355,14 @@ export default function GroupPosts({
             </form>
           </div>
         ) : (
-          <div
-            className="card"
-            style={{
-              textAlign: 'center',
-              padding: '1rem',
-              marginBottom: '1.5rem',
-              background: 'var(--card-bg, #fff)',
-              border: '1px solid var(--border-color)',
-              borderRadius: 'var(--radius)'
-            }}
-          >
+          <div className="card" style={{ textAlign: 'center', padding: '1rem', marginBottom: '1.5rem', background: 'var(--card-bg, #fff)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius)' }}>
             <p style={{ margin: 0, color: '#64748b', fontSize: '0.9rem' }}>
               Please <Link to="/login">log in</Link> to participate or post in this group.
             </p>
           </div>
         )}
 
+        {/* Group Posts Feed */}
         <h3 style={{ color: 'var(--text-primary)', marginBottom: '1rem' }}>Group Discussions</h3>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           {posts.length > 0 ? (
@@ -402,21 +371,9 @@ export default function GroupPosts({
               const postId = normalizePostId(post);
 
               return (
-                <div
-                  key={`group-post-${post?.id ?? post?.post_id ?? Math.random()}`}
-                  className="card"
-                  style={{
-                    background: 'var(--card-bg, #fff)',
-                    border: '1px solid var(--border-color)',
-                    borderRadius: 'var(--radius)',
-                    padding: '1.25rem'
-                  }}
-                >
+                <div key={`group-post-${post?.id ?? post?.post_id ?? Math.random()}`} className="card" style={{ background: 'var(--card-bg, #fff)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius)', padding: '1.25rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', marginBottom: '0.5rem' }}>
-                    <Link
-                      to={`/profile/${post.username}`}
-                      style={{ fontWeight: 'bold', color: 'var(--primary-color)', textDecoration: 'none', fontSize: '0.9rem' }}
-                    >
+                    <Link to={`/profile/${post.username}`} style={{ fontWeight: 'bold', color: 'var(--primary-color)', textDecoration: 'none', fontSize: '0.9rem' }}>
                       @{post.username}
                     </Link>
                     {post.created_at && (
@@ -434,10 +391,7 @@ export default function GroupPosts({
 
                   <div style={{ marginTop: '0.75rem', display: 'flex', gap: '1rem' }}>
                     {postId ? (
-                      <Link
-                        to={`/post/${postId}`}
-                        style={{ fontSize: '0.85rem', textDecoration: 'none', color: 'var(--primary-color)', fontWeight: '500' }}
-                      >
+                      <Link to={`/post/${postId}`} style={{ fontSize: '0.85rem', textDecoration: 'none', color: 'var(--primary-color)', fontWeight: '500' }}>
                         View Thread & Comments →
                       </Link>
                     ) : (
@@ -448,16 +402,7 @@ export default function GroupPosts({
               );
             })
           ) : (
-            <div
-              className="card"
-              style={{
-                textAlign: 'center',
-                padding: '2.5rem',
-                background: 'var(--card-bg, #fff)',
-                border: '1px solid var(--border-color)',
-                borderRadius: 'var(--radius)'
-              }}
-            >
+            <div className="card" style={{ textAlign: 'center', padding: '2.5rem', background: 'var(--card-bg, #fff)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius)' }}>
               <p style={{ color: '#64748b', margin: 0 }}>
                 No posts in this group yet. Be the first to start a discussion!
               </p>
