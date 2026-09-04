@@ -366,11 +366,11 @@ export default function EventDetails({ currentUser, setCurrentUser, theme, toggl
               </div>
 
               {post.event_type && (
-                <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', padding: '0.75rem 1rem', borderRadius: 'var(--radius)', marginTop: '10px', marginBottom: '10px', color: '#111' }}>
-                  <div style={{ fontWeight: '700', fontSize: '1.1rem', marginBottom: '4px' }}>{post.event_type}</div>
-                  <div style={{ fontSize: '0.95rem', display: 'flex', gap: '1.5rem', flexWrap: 'wrap' }}>
-                    <span><strong>Time:</strong> {post.event_time}</span>
-                    <span><strong>Location:</strong> {post.event_location}</span>
+                <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', padding: '0.75rem 1rem', borderRadius: 'var(--radius)', marginTop: '10px', marginBottom: '10px', color: '#000000' }}>
+                  <div style={{ fontWeight: '700', fontSize: '1.1rem', marginBottom: '4px', color: '#000000' }}>{post.event_type}</div>
+                  <div style={{ fontSize: '0.95rem', display: 'flex', gap: '1.5rem', flexWrap: 'wrap', color: '#000000' }}>
+                    <span style={{ color: '#000000' }}><strong style={{ color: '#000000' }}>Time:</strong> {post.event_time}</span>
+                    <span style={{ color: '#000000' }}><strong style={{ color: '#000000' }}>Location:</strong> {post.event_location}</span>
                   </div>
                 </div>
               )}
