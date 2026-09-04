@@ -112,7 +112,9 @@ export default function Events({ currentUser, theme, toggleTheme, hasUnreadNotif
         setSubmitting(true);
         const formData = new FormData();
         formData.append('content', replyContent);
-        formData.append('reply_to', parentPostId);
+        // Appending both variants to ensure compatibility with your backend model
+        formData.append('reply_to', parentPostId); 
+        formData.append('parent_id', parentPostId);
 
         try {
             const res = await fetch('/api/posts/create', {
@@ -183,8 +185,12 @@ export default function Events({ currentUser, theme, toggleTheme, hasUnreadNotif
                                     <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', padding: '0.75rem 1rem', borderRadius: 'var(--radius)', marginTop: '10px', marginBottom: '10px', color: '#000000' }}>
                                         <div style={{ fontWeight: 700, fontSize: '1rem', marginBottom: '4px', color: '#000000' }}>{post.event_type}</div>
                                         <div style={{ fontSize: '0.9rem', display: 'flex', gap: '1.5rem', flexWrap: 'wrap', color: '#000000' }}>
-                                            <span style={{ color: '#000000' }}><strong style={{ color: '#000000' }}>Time:</strong> {post.event_time}</span>
-                                            <span style={{ color: '#000000' }}><strong style={{ color: '#000000' }}>Location:</strong> {post.event_location}</span>
+                                            <span style={{ color: '#000000' }}>
+                                                <strong style={{ color: '#000000' }}>Time:</strong> <span style={{ color: '#000000' }}>{post.event_time}</span>
+                                            </span>
+                                            <span style={{ color: '#000000' }}>
+                                                <strong style={{ color: '#000000' }}>Location:</strong> <span style={{ color: '#000000' }}>{post.event_location}</span>
+                                            </span>
                                         </div>
                                     </div>
                                 )}

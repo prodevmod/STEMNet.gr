@@ -44,6 +44,24 @@ export const LikedIcon = ({ width = 18, height = 18, className = '', style = {},
   );
 };
 
+export const CommentIcon = ({ width = 18, height = 18, className = '', style = {} }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width={width}
+    height={height}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    style={{ color: 'inherit', ...style }}
+  >
+    <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+  </svg>
+);
+
 const buildCommentTree = (rawComments, mainPostId) => {
   if (!Array.isArray(rawComments)) return [];
 
@@ -234,6 +252,7 @@ export default function EventDetails({ currentUser, setCurrentUser, theme, toggl
     const formData = new FormData();
     formData.append('content', textToSend.trim());
     formData.append('reply_to', parentId || postId);
+    formData.append('parent_id', parentId || postId); // Attached both for compatibility
 
     try {
       const res = await fetch('/api/posts/create', {
@@ -310,9 +329,10 @@ export default function EventDetails({ currentUser, setCurrentUser, theme, toggl
           onClick={() => setReplyToId(replyToId === comment.id ? null : comment.id)}
           title="Reply"
           aria-label="Reply"
-          style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: 0, color: 'var(--text-primary)', fontSize: '0.85rem' }}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem', padding: 0, color: 'var(--text-primary)', fontSize: '0.85rem' }}
         >
-          Reply
+          <CommentIcon width="16" height="16" />
+          <span>Reply</span>
         </button>
       </div>
 
@@ -369,8 +389,12 @@ export default function EventDetails({ currentUser, setCurrentUser, theme, toggl
                 <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', padding: '0.75rem 1rem', borderRadius: 'var(--radius)', marginTop: '10px', marginBottom: '10px', color: '#000000' }}>
                   <div style={{ fontWeight: '700', fontSize: '1.1rem', marginBottom: '4px', color: '#000000' }}>{post.event_type}</div>
                   <div style={{ fontSize: '0.95rem', display: 'flex', gap: '1.5rem', flexWrap: 'wrap', color: '#000000' }}>
-                    <span style={{ color: '#000000' }}><strong style={{ color: '#000000' }}>Time:</strong> {post.event_time}</span>
-                    <span style={{ color: '#000000' }}><strong style={{ color: '#000000' }}>Location:</strong> {post.event_location}</span>
+                    <span style={{ color: '#000000' }}>
+                      <strong style={{ color: '#000000' }}>Time:</strong> <span style={{ color: '#000000' }}>{post.event_time}</span>
+                    </span>
+                    <span style={{ color: '#000000' }}>
+                      <strong style={{ color: '#000000' }}>Location:</strong> <span style={{ color: '#000000' }}>{post.event_location}</span>
+                    </span>
                   </div>
                 </div>
               )}
@@ -405,9 +429,10 @@ export default function EventDetails({ currentUser, setCurrentUser, theme, toggl
                 <button
                   type="button"
                   onClick={() => setShowReplyForm((prev) => !prev)}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', fontSize: 'inherit' }}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'inherit' }}
                 >
-                  {Number(post.comment_count) > 0 ? Number(post.comment_count) : 'Reply'}
+                  <CommentIcon width="18" height="18" />
+                  <span>{Number(post.comment_count) > 0 ? Number(post.comment_count) : 'Reply'}</span>
                 </button>
               </div>
             </div>
