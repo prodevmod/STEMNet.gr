@@ -258,17 +258,11 @@ export default function Profile({ currentUser, setCurrentUser, theme, toggleThem
     const handleFileSelected = (e) => {
         const file = e.target.files[0];
         if (!file) return;
-
-        if (file.type === 'image/gif') {
-            setPfpFile(file);
-            setPfpPreviewUrl(URL.createObjectURL(file));
-        } else {
-            setPendingFile(file);
-            setShowCropper(true);
-        }
+        setPendingFile(file);
+        setShowCropper(true);
         e.target.value = '';
     };
-
+    
     const handleCropCancel = () => {
         setShowCropper(false);
         setPendingFile(null);
