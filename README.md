@@ -8,6 +8,9 @@ Before reviewing the project, please create an account and test the logged-in ex
 - Verify the account through the inbox link.
 - Please test core authenticated flows: posting, replying, groups, notifications, profile links, and settings.
 
+## If YOU HATE BEING JOLLY AND U ARE SCARED I AM GONNA STILL YOUR DATA REVIEW THE VID IG
+[![Watch the Video][https://youtu.be/_8i4aKSSZo](https://youtu.be/_8i4aKSSZo8)]
+
 Most of the work and platform value is in the authenticated part of STEMNet, so testing only the public view won’t reflect the real product.
 
 <img width="1895" height="1005" alt="image" src="https://github.com/user-attachments/assets/7411cc41-4fd3-4239-8abf-cfa13a3ea384" />
