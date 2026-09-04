@@ -12,7 +12,7 @@ STEMNet.gr or STEMNET GREECE or even STEMNET (Global) is a vision for every unde
 whatever they can for others alike to learn from, through this medium. 
 
 ---
-<img width="1881" height="910" alt="image" src="https://github.com/user-attachments/assets/94f65073-1fbd-4c40-ad18-3f9f032a44ff" />
+<img width="1881" height="1008" alt="image" src="https://github.com/user-attachments/assets/c144f444-eff1-47db-b25e-a45d1adb59e1" />
 
 ## The vision
 
@@ -24,7 +24,8 @@ whatever they can for others alike to learn from, through this medium.
 * Every student can acces the STEM EXTRAS page with open/free resources to actually start building and learning about their stem passion.
 
 ---
-<img width="1881" height="1007" alt="image" src="https://github.com/user-attachments/assets/080da211-bc90-41f8-8e47-7fccfdb131ac" />
+<img width="1878" height="1012" alt="image" src="https://github.com/user-attachments/assets/96710c33-350c-48fe-adcb-0b88d58435fc" />
+
 
 ## Basic structure
 This project is still an MVP so although it is functional and can probably handle a couple handred of users it is not using the most viable and efficient framework:
@@ -67,7 +68,8 @@ This project is still an MVP so although it is functional and can probably handl
     - /stem-extras: Additional STEM resources page.
 
 ---
-<img width="1874" height="1005" alt="image" src="https://github.com/user-attachments/assets/833eafe2-063b-4c2c-b9e8-a81f7badd8af" />
+<img width="1884" height="1006" alt="image" src="https://github.com/user-attachments/assets/4945168e-81cd-43df-a7c1-d6dc4a890c13" />
+
 
 ## Installation
 
