@@ -203,6 +203,27 @@ export default function EventDetails({ currentUser, setCurrentUser, theme, toggl
     }
   };
 
+  // ADDED: Delete handler for the main event post
+  const handleDeletePost = async () => {
+    if (!window.confirm("Are you sure you want to delete this event?")) return;
+    
+    try {
+      const res = await fetch(`/api/posts/${postId}/delete`, {
+        method: 'DELETE', 
+        credentials: 'include'
+      });
+      
+      if (res.ok) {
+        navigate('/'); // Redirect to events/home feed after deletion
+      } else {
+        alert('Failed to delete the event. Please try again.');
+      }
+    } catch (err) {
+      console.error('Error deleting event:', err);
+      alert('An error occurred while deleting the event.');
+    }
+  };
+
   const renderCommentItem = (comment) => (
     <div
       key={comment.id}
@@ -275,6 +296,9 @@ export default function EventDetails({ currentUser, setCurrentUser, theme, toggl
     </div>
   );
 
+  // ADDED: Check if the current user is the author of this post
+  const isPostOwner = currentUser && post && currentUser.username === post.username;
+
   return (
     <div>
       <Navbar currentUser={currentUser} setCurrentUser={setCurrentUser} theme={theme} toggleTheme={toggleTheme} hasUnreadNotifications={hasUnreadNotifications} />
@@ -342,6 +366,42 @@ export default function EventDetails({ currentUser, setCurrentUser, theme, toggl
                   <SafeIcon src={commentIcon} alt="Reply" style={{ width: '18px', height: '18px' }} />
                   <span>{Number(post.comment_count) > 0 ? Number(post.comment_count) : 'Reply'}</span>
                 </button>
+                
+                {/* ADDED: Edit and Delete buttons aligned to the right */}
+                {isPostOwner && (
+                    <div style={{ marginLeft: 'auto', display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                        <button
+                            type="button"
+                            onClick={() => navigate(`/post/edit/${post.id}`)}
+                            style={{
+                                background: 'none',
+                                border: 'none',
+                                color: theme === 'dark' ? '#ccff00' : '#000000',
+                                cursor: 'pointer',
+                                fontSize: '0.9rem',
+                                fontWeight: '600',
+                                padding: 0
+                            }}
+                        >
+                            Edit
+                        </button>
+                        <button
+                            type="button"
+                            onClick={handleDeletePost}
+                            style={{
+                                background: 'none',
+                                border: 'none',
+                                color: '#ef4444',
+                                cursor: 'pointer',
+                                fontSize: '0.9rem',
+                                fontWeight: '600',
+                                padding: 0
+                            }}
+                        >
+                            Delete
+                        </button>
+                    </div>
+                )}
               </div>
             </div>
 
