@@ -65,6 +65,12 @@ MANUAL_BLOCKED_DOMAINS = {
     "redtube.com", "youporngay.com", "hentaihaven.xxx"
 }
 
+ALLOWED_DOMAINS = {
+    "github.com", "linkedin.com", "twitter.com", "x.com",
+    "instagram.com", "youtube.com", "facebook.com", "gitlab.com",
+    "google.com", "drive.google.com", "discord.com", "discordapp.com"
+}
+
 _blocked_domains_cache = None
 _blocked_domains_cache_time = 0
 BLOCKED_DOMAINS_CACHE_TTL = 3600
@@ -84,7 +90,12 @@ def fetch_urlhaus_blocklist():
                 try:
                     parsed = urlparse(line)
                     if parsed.netloc:
-                        domains.add(parsed.netloc.lower())
+                        domain = parsed.netloc.lower()
+                        if domain.startswith("www."):
+                            domain = domain[4:]
+
+                        if domain not in ALLOWED_DOMAINS:
+                            domains.add(domain)
                 except Exception:
                     continue
             return domains
@@ -1386,13 +1397,10 @@ def edit_profile():
     github_user = ""
     if raw_github:
         raw_github = raw_github.lstrip("@")
-        
         if "github.com/" in raw_github:
             raw_github = raw_github.split("github.com/")[-1]
-
         raw_github = raw_github.strip("/").split("/")[0].split("?")[0].split("#")[0]
-
-        github_user = raw_github.strip()
+        github_user = re.sub(r'[^a-zA-Z0-9-]', '', raw_github).strip('-')
 
     linkedin_url = data.get("linkedin_url", "").strip()
     custom_link_1 = data.get("custom_link_1", "").strip()
@@ -1401,12 +1409,12 @@ def edit_profile():
     custom_link_4 = data.get("custom_link_4", "").strip()
     custom_link_5 = data.get("custom_link_5", "").strip()
 
-    github_check_url = f"https://github.com/{github_user}" if github_user else ""
-    
-    for link_key, link_value in [("github_user", github_check_url), ("linkedin_url", linkedin_url),
-                                  ("custom_link_1", custom_link_1), ("custom_link_2", custom_link_2),
-                                  ("custom_link_3", custom_link_3), ("custom_link_4", custom_link_4),
-                                  ("custom_link_5", custom_link_5)]:
+    for link_key, link_value in [
+        ("linkedin_url", linkedin_url),
+        ("custom_link_1", custom_link_1), ("custom_link_2", custom_link_2),
+        ("custom_link_3", custom_link_3), ("custom_link_4", custom_link_4),
+        ("custom_link_5", custom_link_5)
+    ]:
         if link_value and is_blocked_url(link_value):
             return jsonify({"error": f"The link you entered for {link_key.replace('_', ' ')} is not allowed."}), 400
 
