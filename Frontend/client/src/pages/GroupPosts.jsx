@@ -56,7 +56,6 @@ export default function GroupPosts({
     setError('');
 
     try {
-      // Single source of truth: this endpoint returns BOTH group and posts
       const res = await fetch(`${API_BASE}/api/groups/${groupId}`, {
         credentials: 'include'
       });
@@ -100,6 +99,7 @@ export default function GroupPosts({
     if (!postContent.trim() && !postImageFile) return;
 
     setSubmitting(true);
+
     const formData = new FormData();
     formData.append('content', postContent.trim());
     formData.append('group_id', groupId);
@@ -127,6 +127,40 @@ export default function GroupPosts({
       setSubmitting(false);
     }
   };
+
+  const handleDeletePost = async (postId) => {
+    if (!postId) return;
+    if (!window.confirm('Are you sure you want to delete this post?')) return;
+
+    try {
+      const res = await fetch(`${API_BASE}/api/posts/${postId}/delete`, {
+        method: 'DELETE',
+        credentials: 'include'
+      });
+
+      if (res.ok) {
+        await fetchGroupData();
+      } else {
+        alert('Failed to delete post.');
+      }
+    } catch (err) {
+      console.error('Error deleting post:', err);
+      alert('An error occurred while deleting the post.');
+    }
+  };
+
+  const isDark = theme === 'dark';
+
+  const actionTextStyle = {
+    background: 'none',
+    border: 'none',
+    cursor: 'pointer',
+    padding: 0,
+    fontSize: '0.85rem',
+    fontWeight: '500'
+  };
+
+  const editTextColor = isDark ? '#ccff00' : '#0f172a';
 
   if (loading) {
     return (
@@ -181,7 +215,7 @@ export default function GroupPosts({
           style={{
             background: 'none',
             border: 'none',
-            color: theme === 'dark' ? '#ccff00' : '#000000',
+            color: isDark ? '#ccff00' : '#000000',
             cursor: 'pointer',
             marginBottom: '1rem',
             fontSize: '0.95rem',
@@ -204,7 +238,10 @@ export default function GroupPosts({
         >
           <h2 style={{ margin: '0 0 0.5rem 0', color: 'var(--text-primary)' }}>{group.name}</h2>
           <p style={{ margin: '0 0 0.75rem 0', fontSize: '0.9rem', color: '#64748b' }}>
-            Created by <Link to={`/profile/${group.creator_username || group.username}`}>@{group.creator_username || group.username}</Link>
+            Created by{' '}
+            <Link to={`/profile/${group.creator_username || group.username}`}>
+              @{group.creator_username || group.username}
+            </Link>
           </p>
           <p style={{ margin: 0, color: 'var(--text-primary)', fontSize: '0.95rem', lineHeight: '1.5' }}>
             {group.description}
@@ -274,13 +311,14 @@ export default function GroupPosts({
         <h3 style={{ color: 'var(--text-primary)', marginBottom: '1rem' }}>Group Discussions</h3>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           {posts.length > 0 ? (
-            posts.map((post) => {
+            posts.map((post, index) => {
               const postImage = getPostImage(post);
               const postId = normalizePostId(post);
+              const isOwner = currentUser && currentUser.username === post.username;
 
               return (
                 <div
-                  key={`group-post-${post?.id ?? post?.post_id ?? Math.random()}`}
+                  key={`group-post-${post?.id ?? post?.post_id ?? index}`}
                   className="card"
                   style={{
                     background: 'var(--card-bg, #fff)',
@@ -292,7 +330,12 @@ export default function GroupPosts({
                   <div style={{ display: 'flex', alignItems: 'center', marginBottom: '0.5rem' }}>
                     <Link
                       to={`/profile/${post.username}`}
-                      style={{ fontWeight: 'bold', color: 'var(--primary-color)', textDecoration: 'none', fontSize: '0.9rem' }}
+                      style={{
+                        fontWeight: 'bold',
+                        color: 'var(--primary-color)',
+                        textDecoration: 'none',
+                        fontSize: '0.9rem'
+                      }}
                     >
                       @{post.username}
                     </Link>
@@ -303,22 +346,54 @@ export default function GroupPosts({
                     )}
                   </div>
 
-                  <p style={{ margin: '0.5rem 0', whiteSpace: 'pre-line', color: 'var(--text-primary)', fontSize: '0.95rem' }}>
+                  <p
+                    style={{
+                      margin: '0.5rem 0',
+                      whiteSpace: 'pre-line',
+                      color: 'var(--text-primary)',
+                      fontSize: '0.95rem',
+                      wordBreak: 'break-word'
+                    }}
+                  >
                     {post.content}
                   </p>
 
                   <PostMedia src={postImage} maxHeight={400} />
 
-                  <div style={{ marginTop: '0.75rem', display: 'flex', gap: '1rem' }}>
+                  <div style={{ marginTop: '0.85rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
                     {postId ? (
                       <Link
                         to={`/post/${postId}`}
-                        style={{ fontSize: '0.85rem', textDecoration: 'none', color: 'var(--primary-color)', fontWeight: '500' }}
+                        style={{
+                          fontSize: '0.85rem',
+                          textDecoration: 'none',
+                          color: 'var(--primary-color)',
+                          fontWeight: '500'
+                        }}
                       >
                         View Thread & Comments →
                       </Link>
                     ) : (
                       <span style={{ fontSize: '0.85rem', color: '#94a3b8' }}>Thread unavailable</span>
+                    )}
+
+                    {isOwner && postId && (
+                      <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.9rem', alignItems: 'center' }}>
+                        <button
+                          type="button"
+                          onClick={() => navigate(`/post/edit/${postId}`)}
+                          style={{ ...actionTextStyle, color: editTextColor }}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeletePost(postId)}
+                          style={{ ...actionTextStyle, color: '#ef4444' }}
+                        >
+                          Delete
+                        </button>
+                      </div>
                     )}
                   </div>
                 </div>
