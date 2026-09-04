@@ -268,138 +268,152 @@ export default function Home({ currentUser, setCurrentUser, theme, toggleTheme, 
 
                 {!loading && posts.length > 0 && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                        {posts.map((post) => {
-                            const postImage = getPostImage(post);
-                            const userLiked = Boolean(post.user_liked);
-                            const totalLikes = Number(post.like_count) || 0;
-                            const commentCount = Number(post.comment_count) || 0;
-                            const postDate = post.created_at ? new Date(post.created_at).toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric' }) : 'Recently';
+                    {posts.map((post) => {
+                        const postImage = getPostImage(post);
+                        const userLiked = Boolean(post.user_liked);
+                        const totalLikes = Number(post.like_count) || 0;
+                        const commentCount = Number(post.comment_count) || 0;
+                        const postDate = post.created_at ? new Date(post.created_at).toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric' }) : 'Recently';
 
-                            const authorName = post.username || 'user';
-                            const authorPic = resolveImageUrl(post.profile_pic);
-                            const isReplying = activeCommentPostId === post.id;
+                        const authorName = post.username || 'user';
+                        const authorPic = resolveImageUrl(post.profile_pic);
+                        const isReplying = activeCommentPostId === post.id;
 
-                            return (
-                                <div key={post.id} className="card" style={{
-                                    padding: '1.25rem',
-                                    backgroundColor: 'var(--card-bg)',
-                                    border: '1px solid var(--border-color)',
-                                    borderRadius: '8px'
-                                }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                                            <Link 
-                                                to={`/profile/${authorName}`} 
-                                                style={{ 
-                                                    display: 'inline-block',
-                                                    width: '40px',
-                                                    height: '40px',
-                                                    borderRadius: '50%',
-                                                    overflow: 'hidden',
-                                                    flexShrink: 0
-                                                }}
-                                            >
-                                                <SafeImage
-                                                    src={authorPic}
-                                                    alt={authorName}
-                                                />
-                                            </Link>
-                                            <Link to={`/profile/${authorName}`} style={{ color: 'var(--primary-color)', fontWeight: 'bold', textDecoration: 'none' }}>
-                                                @{authorName}
-                                            </Link>
-                                        </div>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                                            <span style={{ fontSize: '0.8rem', color: '#64748b' }}>{postDate}</span>
-                                            <Link to={`/post/${post.id}`} title="View thread" style={{ textDecoration: 'none', color: '#64748b', fontSize: '1.1rem' }}>
-                                                →
-                                            </Link>
-                                        </div>
-                                    </div>
-
-                                    {post.parent_content && (
-                                        <div style={{
-                                            border: '1px solid var(--border-color)',
-                                            borderRadius: '8px',
-                                            padding: '0.75rem',
-                                            marginTop: '0.5rem',
-                                            marginBottom: '1rem',
-                                            backgroundColor: 'rgba(0,0,0,0.02)'
-                                        }}>
-                                            <div style={{ fontSize: '0.85rem', color: theme === 'dark' ? '#ccff00' : '#000000', marginBottom: '0.4rem', fontWeight: 'bold' }}>
-                                                @{post.parent_username}
-                                            </div>
-                                            <div style={{ fontSize: '0.9rem', whiteSpace: 'pre-line', wordBreak: 'break-word', color: 'var(--text-color)' }}>
-                                                {renderTextWithLinks(post.parent_content)}
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {post.content && (
-                                        <p style={{ margin: '0 0 0.75rem 0', whiteSpace: 'pre-line', wordBreak: 'break-word' }}>
-                                            {renderTextWithLinks(post.content)}
-                                        </p>
-                                    )}
-
-                                    <PostMedia src={postImage} maxHeight={500} />
-
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', fontSize: '0.85rem', borderTop: '1px solid var(--border-color)', paddingTop: '0.75rem', marginTop: '0.5rem' }}>
-                                        <button
-                                            onClick={() => handleLikePost(post.id)}
-                                            style={{
-                                                background: 'none',
-                                                border: 'none',
-                                                cursor: 'pointer',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                gap: '0.4rem',
-                                                color: 'inherit',
-                                                fontSize: 'inherit',
+                        return (
+                            <div key={post.id} className="card" style={{
+                                padding: '1.25rem',
+                                backgroundColor: 'var(--card-bg)',
+                                border: '1px solid var(--border-color)',
+                                borderRadius: '8px'
+                            }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                        <Link 
+                                            to={`/profile/${authorName}`} 
+                                            style={{ 
+                                                display: 'inline-block',
+                                                width: '40px',
+                                                height: '40px',
+                                                borderRadius: '50%',
+                                                overflow: 'hidden',
+                                                flexShrink: 0
                                             }}
                                         >
-                                            <img
-                                                src={userLiked ? likedIcon : unlikedIcon}
-                                                alt={userLiked ? 'Liked' : 'Unliked'}
-                                                style={{ width: '18px', height: '18px', filter: 'var(--icon-filter)' }}
+                                            <SafeImage
+                                                src={authorPic}
+                                                alt={authorName}
                                             />
-                                            <span>{totalLikes}</span>
-                                        </button>
-
-                                        <button
-                                            onClick={() => setActiveCommentPostId(isReplying ? null : post.id)}
-                                            style={{
-                                                background: 'none',
-                                                border: 'none',
-                                                cursor: 'pointer',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                gap: '0.4rem',
-                                                color: isReplying ? 'var(--primary-color)' : 'inherit',
-                                                fontSize: 'inherit',
-                                            }}
-                                        >
-                                            <img
-                                                src={commentIcon}
-                                                alt="Reply"
-                                                style={{ width: '18px', height: '18px', filter: isReplying ? 'none' : 'var(--icon-filter)' }}
-                                            />
-                                            <span>{commentCount > 0 ? `${commentCount}` : 'Reply'}</span>
-                                        </button>
+                                        </Link>
+                                        <Link to={`/profile/${authorName}`} style={{ color: 'var(--primary-color)', fontWeight: 'bold', textDecoration: 'none' }}>
+                                            @{authorName}
+                                        </Link>
                                     </div>
-
-                                    {isReplying && (
-                                        <ReplyComposer
-                                            value={commentInputs[post.id] || ''}
-                                            onChange={(val) => setCommentInputs({ ...commentInputs, [post.id]: val })}
-                                            onSubmit={(e) => handleAddComment(e, post.id)}
-                                            onCancel={() => handleCancelReply(post.id)}
-                                            submitting={submitting}
-                                            theme={theme}
-                                            placeholder={`Reply to @${authorName}...`}
-                                        />
-                                    )}
+                                    
+                                    {/* Updated section: Added Category Tag next to Date */}
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                        {post.category && (
+                                            <span style={{
+                                                fontSize: '0.75rem',
+                                                padding: '0.2rem 0.6rem',
+                                                backgroundColor: 'var(--primary-color)',
+                                                color: '#fff',
+                                                borderRadius: '12px',
+                                                fontWeight: '600'
+                                            }}>
+                                                {post.category}
+                                            </span>
+                                        )}
+                                        <span style={{ fontSize: '0.8rem', color: '#64748b' }}>{postDate}</span>
+                                        <Link to={`/post/${post.id}`} title="View thread" style={{ textDecoration: 'none', color: '#64748b', fontSize: '1.1rem' }}>
+                                            →
+                                        </Link>
+                                    </div>
                                 </div>
-                            );
-                        })}
+
+                                {post.parent_content && (
+                                    <div style={{
+                                        border: '1px solid var(--border-color)',
+                                        borderRadius: '8px',
+                                        padding: '0.75rem',
+                                        marginTop: '0.5rem',
+                                        marginBottom: '1rem',
+                                        backgroundColor: 'rgba(0,0,0,0.02)'
+                                    }}>
+                                        <div style={{ fontSize: '0.85rem', color: theme === 'dark' ? '#ccff00' : '#000000', marginBottom: '0.4rem', fontWeight: 'bold' }}>
+                                            @{post.parent_username}
+                                        </div>
+                                        <div style={{ fontSize: '0.9rem', whiteSpace: 'pre-line', wordBreak: 'break-word', color: 'var(--text-color)' }}>
+                                            {renderTextWithLinks(post.parent_content)}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {post.content && (
+                                    <p style={{ margin: '0 0 0.75rem 0', whiteSpace: 'pre-line', wordBreak: 'break-word' }}>
+                                        {renderTextWithLinks(post.content)}
+                                    </p>
+                                )}
+
+                                <PostMedia src={postImage} maxHeight={500} />
+
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', fontSize: '0.85rem', borderTop: '1px solid var(--border-color)', paddingTop: '0.75rem', marginTop: '0.5rem' }}>
+                                    <button
+                                        onClick={() => handleLikePost(post.id)}
+                                        style={{
+                                            background: 'none',
+                                            border: 'none',
+                                            cursor: 'pointer',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '0.4rem',
+                                            color: 'inherit',
+                                            fontSize: 'inherit',
+                                        }}
+                                    >
+                                        <img
+                                            src={userLiked ? likedIcon : unlikedIcon}
+                                            alt={userLiked ? 'Liked' : 'Unliked'}
+                                            style={{ width: '18px', height: '18px', filter: 'var(--icon-filter)' }}
+                                        />
+                                        <span>{totalLikes}</span>
+                                    </button>
+
+                                    <button
+                                        onClick={() => setActiveCommentPostId(isReplying ? null : post.id)}
+                                        style={{
+                                            background: 'none',
+                                            border: 'none',
+                                            cursor: 'pointer',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '0.4rem',
+                                            color: isReplying ? 'var(--primary-color)' : 'inherit',
+                                            fontSize: 'inherit',
+                                        }}
+                                    >
+                                        <img
+                                            src={commentIcon}
+                                            alt="Reply"
+                                            style={{ width: '18px', height: '18px', filter: isReplying ? 'none' : 'var(--icon-filter)' }}
+                                        />
+                                        <span>{commentCount > 0 ? `${commentCount}` : 'Reply'}</span>
+                                    </button>
+                                </div>
+
+                                {isReplying && (
+                                    <ReplyComposer
+                                        value={commentInputs[post.id] || ''}
+                                        onChange={(val) => setCommentInputs({ ...commentInputs, [post.id]: val })}
+                                        onSubmit={(e) => handleAddComment(e, post.id)}
+                                        onCancel={() => handleCancelReply(post.id)}
+                                        submitting={submitting}
+                                        theme={theme}
+                                        placeholder={`Reply to @${authorName}...`}
+                                    />
+                                )}
+                            </div>
+                        );
+                    })}
 
                         {hasMore && (
                             <button
