@@ -1669,30 +1669,62 @@ def get_groups():
 @app.route("/api/groups/<int:group_id>", methods=["GET"])
 def get_group_details(group_id):
     db = get_db()
-    group = db.execute("SELECT groups.*, users.username AS creator_username FROM groups JOIN users ON groups.user_id = users.id WHERE groups.id = ?", (group_id,)).fetchone()
+    group = db.execute(
+        """
+        SELECT
+            groups.*,
+            users.username AS creator_username
+        FROM groups
+        JOIN users ON groups.user_id = users.id
+        WHERE groups.id = ?
+        """,
+        (group_id,),
+    ).fetchone()
+
     if not group:
         return jsonify({"error": "Group not found"}), 404
 
     current_user_id = g.user["id"] if g.get("user") else 0
+
     posts = db.execute(
         """
-        SELECT posts.*, users.username, users.profile_pic,
-               (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id) AS like_count,
-               (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id AND likes.user_id = ?) AS user_liked,
-               (SELECT COUNT(*) FROM posts AS replies WHERE replies.parent_id = posts.id AND (replies.is_deleted IS NULL OR replies.is_deleted = 0)) AS comment_count
+        SELECT
+            posts.id AS post_id,
+            posts.*,                      -- keeps existing fields for compatibility
+            users.username,
+            users.profile_pic,
+            (
+              SELECT COUNT(*)
+              FROM likes
+              WHERE likes.post_id = posts.id
+            ) AS like_count,
+            (
+              SELECT COUNT(*)
+              FROM likes
+              WHERE likes.post_id = posts.id AND likes.user_id = ?
+            ) AS user_liked,
+            (
+              SELECT COUNT(*)
+              FROM posts AS replies
+              WHERE replies.parent_id = posts.id
+                AND (replies.is_deleted IS NULL OR replies.is_deleted = 0)
+            ) AS comment_count
         FROM posts
         JOIN users ON posts.user_id = users.id
         WHERE posts.group_id = ?
           AND (posts.is_deleted IS NULL OR posts.is_deleted = 0)
         ORDER BY posts.created_at DESC
         """,
-        (current_user_id, group_id)
+        (current_user_id, group_id),
     ).fetchall()
 
-    return jsonify({
-        "group": dict(group),
-        "posts": [dict(p) for p in posts]
-    }), 200
+    return jsonify(
+        {
+            "group": dict(group),
+            "posts": [dict(p) for p in posts],
+        }
+    ), 200
+
 
 @app.route("/api/groups/<int:group_id>/edit", methods=["POST", "PUT"])
 @login_required
@@ -1707,17 +1739,22 @@ def edit_group(group_id):
     data = request.get_json(silent=True) or request.form
     name = (data.get("name") or "").strip()
     description = (data.get("description") or "").strip()
+
     if not name or not description:
         return jsonify({"error": "Name and description are required."}), 400
 
     try:
-        db.execute("UPDATE groups SET name = ?, description = ? WHERE id = ?", (name, description, group_id))
+        db.execute(
+            "UPDATE groups SET name = ?, description = ? WHERE id = ?",
+            (name, description, group_id),
+        )
         db.commit()
         return jsonify({"success": True, "message": "Group updated."}), 200
     except Exception as e:
         db.rollback()
         app.logger.error(f"Edit group error: {e}")
         return jsonify({"error": "Failed to update group."}), 500
+
 
 @app.route("/api/groups/<int:group_id>/delete", methods=["POST", "DELETE"])
 @login_required
@@ -1733,6 +1770,7 @@ def delete_group(group_id):
         post_rows = db.execute("SELECT id FROM posts WHERE group_id = ?", (group_id,)).fetchall()
         for row in post_rows:
             remove_or_softdelete_post(db, row["id"])
+
         db.execute("DELETE FROM groups WHERE id = ?", (group_id,))
         db.commit()
         return jsonify({"success": True, "message": "Group deleted."}), 200
@@ -1740,7 +1778,7 @@ def delete_group(group_id):
         db.rollback()
         app.logger.error(f"Delete group error: {e}")
         return jsonify({"error": "Failed to delete group."}), 500
-
+    
 @app.route("/api/notifications", methods=["GET"])
 @login_required
 def api_get_notifications():
