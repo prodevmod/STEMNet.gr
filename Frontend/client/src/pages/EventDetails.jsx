@@ -84,7 +84,16 @@ export default function EventDetails({ currentUser, setCurrentUser, theme, toggl
       if (!res.ok) throw new Error('Post not found');
 
       const data = await res.json();
-      const fetchedPost = data.post || data;
+      const rawPost = data.post || data;
+      
+      // Normalize post RSVP state keys
+      const fetchedPost = {
+        ...rawPost,
+        user_rsvp_status: rawPost.user_rsvp_status ?? rawPost.user_status ?? rawPost.rsvp_status ?? null,
+        going_count: Number(rawPost.going_count) || 0,
+        interested_count: Number(rawPost.interested_count) || 0,
+      };
+
       const fetchedComments = data.comments || data.post?.comments || data.replies || [];
 
       setPost(fetchedPost);
@@ -123,29 +132,82 @@ export default function EventDetails({ currentUser, setCurrentUser, theme, toggl
     }
   };
 
-  const handleRsvp = async (status) => {
+  const handleRsvp = async (targetStatus) => {
     if (!currentUser) {
       alert('Please log in to RSVP.');
       return;
     }
+    if (!post) return;
+
+    const currentStatus = post.user_rsvp_status || post.user_status || null;
+    const currentGoing = Number(post.going_count) || 0;
+    const currentInterested = Number(post.interested_count) || 0;
+
+    let newStatus = targetStatus;
+    let newGoing = currentGoing;
+    let newInterested = currentInterested;
+
+    // Calculate optimistic state
+    if (currentStatus === targetStatus) {
+      newStatus = null;
+      if (targetStatus === 'going') newGoing = Math.max(0, currentGoing - 1);
+      if (targetStatus === 'interested') newInterested = Math.max(0, currentInterested - 1);
+    } else {
+      if (currentStatus === 'going') newGoing = Math.max(0, currentGoing - 1);
+      if (currentStatus === 'interested') newInterested = Math.max(0, currentInterested - 1);
+
+      if (targetStatus === 'going') newGoing += 1;
+      if (targetStatus === 'interested') newInterested += 1;
+    }
+
+    // Apply optimistic update immediately
+    setPost((prev) => ({
+      ...prev,
+      user_rsvp_status: newStatus,
+      user_status: newStatus,
+      going_count: newGoing,
+      interested_count: newInterested,
+    }));
+
     try {
       const res = await fetch(`/api/events/${postId}/rsvp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ status }),
+        body: JSON.stringify({ status: targetStatus }),
       });
+
       if (res.ok) {
         const data = await res.json();
+        const serverStatus = data.user_status ?? data.user_rsvp_status ?? data.status ?? newStatus;
+        
         setPost((prev) => ({
           ...prev,
-          user_rsvp_status: data.user_status,
-          going_count: data.going_count,
-          interested_count: data.interested_count,
+          user_rsvp_status: serverStatus,
+          user_status: serverStatus,
+          going_count: data.going_count !== undefined ? Number(data.going_count) : newGoing,
+          interested_count: data.interested_count !== undefined ? Number(data.interested_count) : newInterested,
+        }));
+      } else {
+        // Revert on non-200 responses
+        setPost((prev) => ({
+          ...prev,
+          user_rsvp_status: currentStatus,
+          user_status: currentStatus,
+          going_count: currentGoing,
+          interested_count: currentInterested,
         }));
       }
     } catch (err) {
       console.error('RSVP error:', err);
+      // Revert on network failure
+      setPost((prev) => ({
+        ...prev,
+        user_rsvp_status: currentStatus,
+        user_status: currentStatus,
+        going_count: currentGoing,
+        interested_count: currentInterested,
+      }));
     }
   };
 
@@ -364,7 +426,7 @@ export default function EventDetails({ currentUser, setCurrentUser, theme, toggl
                 <RsvpButtons
                   goingCount={Number(post.going_count) || 0}
                   interestedCount={Number(post.interested_count) || 0}
-                  userStatus={post.user_rsvp_status}
+                  userStatus={post.user_rsvp_status || post.user_status}
                   onRsvp={handleRsvp}
                 />
 
