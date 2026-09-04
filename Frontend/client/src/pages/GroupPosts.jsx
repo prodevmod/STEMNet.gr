@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import PostMedia from '../components/PostMedia';
-import ReplyComposer from '../components/ReplyComposer';
+
+const API_BASE = import.meta.env.VITE_API_URL || '';
 
 const resolveImageUrl = (url) => {
     if (!url || typeof url !== 'string') return '';
@@ -20,508 +21,216 @@ const getPostImage = (item) => {
     return resolveImageUrl(raw);
 };
 
-const buildCommentTree = (rawComments, mainPostId) => {
-    if (!Array.isArray(rawComments)) return [];
-
-    const commentMap = {};
-    const rootComments = [];
-    const normalizedMainId = String(mainPostId);
-
-    rawComments.forEach(comment => {
-        const commentId = String(comment.id);
-        commentMap[commentId] = { ...comment, id: commentId, replies: [] };
-    });
-
-    rawComments.forEach(comment => {
-        const commentId = String(comment.id);
-        const parentRaw = comment.reply_to ?? comment.parent_id;
-        const parentId = parentRaw ? String(parentRaw) : null;
-
-        const isTopLevel = !parentId || parentId === normalizedMainId;
-
-        if (isTopLevel) {
-            rootComments.push(commentMap[commentId]);
-        } else if (commentMap[parentId]) {
-            commentMap[parentId].replies.push(commentMap[commentId]);
-        } else {
-            rootComments.push(commentMap[commentId]);
-        }
-    });
-
-    return rootComments;
-};
-
-const renderTextWithLinks = (text) => {
-    if (!text) return null;
-    const urlRegex = /(https?:\/\/[^\s]+)/g;
-    const parts = text.split(urlRegex);
-    return parts.map((part, i) => {
-        if (part.match(urlRegex)) {
-            return (
-                <a key={i} href={part} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary-color)', textDecoration: 'underline', wordBreak: 'break-all' }}>
-                    {part}
-                </a>
-            );
-        }
-        return part;
-    });
-};
-
-export default function PostThread({ currentUser, setCurrentUser, theme, toggleTheme, hasUnreadNotifications }) {
-    const params = useParams();
-    const postId = params.postId || params.id;
-
+export default function GroupPosts({ currentUser, setCurrentUser, theme, toggleTheme, hasUnreadNotifications }) {
+    const { groupId } = useParams();
     const navigate = useNavigate();
-    const [threadData, setThreadData] = useState(null);
-    const [rawReplies, setRawReplies] = useState([]);
-    const [repliesPage, setRepliesPage] = useState(1);
-    const [hasMoreReplies, setHasMoreReplies] = useState(false);
-    const [loadingMoreReplies, setLoadingMoreReplies] = useState(false);
+
+    const [group, setGroup] = useState(null);
+    const [posts, setPosts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
 
-    const [commentContent, setCommentContent] = useState('');
-    const [replyToId, setReplyToId] = useState(null);
-    const [replyContent, setReplyContent] = useState('');
-    const [showMainReplyForm, setShowMainReplyForm] = useState(false);
+    // New Post Form State inside Group
+    const [postContent, setPostContent] = useState('');
+    const [postImageFile, setPostImageFile] = useState(null);
     const [submitting, setSubmitting] = useState(false);
 
-    const fetchThread = useCallback(async () => {
-        if (!postId || postId === 'undefined') {
-            setError('Invalid post ID.');
+    const fetchGroupData = useCallback(async () => {
+        if (!groupId) {
+            setError('Invalid Group ID.');
             setLoading(false);
             return;
         }
 
         setLoading(true);
         try {
-            const res = await fetch(`/api/posts/${postId}/thread`, { credentials: 'include' });
-            if (res.ok) {
-                const data = await res.json();
-                setThreadData(data);
-                const replies = data.replies || data.comments || [];
-                setRawReplies(replies);
-                setHasMoreReplies(Boolean(data.has_more_replies));
-                setRepliesPage(1);
+            // Fetch group details and group posts endpoints
+            const [groupRes, postsRes] = await Promise.all([
+                fetch(`${API_BASE}/api/groups/${groupId}`, { credentials: 'include' }),
+                fetch(`${API_BASE}/api/groups/${groupId}/posts`, { credentials: 'include' })
+            ]);
+
+            if (groupRes.ok) {
+                const groupData = await groupRes.json();
+                setGroup(groupData.group || groupData);
             } else {
-                setError('Post thread not found.');
+                throw new Error('Failed to load group details.');
+            }
+
+            if (postsRes.ok) {
+                const postsData = await postsRes.json();
+                setPosts(postsData.posts || (Array.isArray(postsData) ? postsData : []));
+            } else {
+                setPosts([]);
             }
         } catch (err) {
-            console.error('Error loading thread:', err);
-            setError('Failed to load thread.');
+            console.error('Error loading group data:', err);
+            setError('Could not load community group.');
         } finally {
             setLoading(false);
         }
-    }, [postId]);
+    }, [groupId]);
 
     useEffect(() => {
-        fetchThread();
-    }, [fetchThread]);
+        fetchGroupData();
+    }, [fetchGroupData]);
 
-    const handleLoadMoreReplies = async () => {
-        setLoadingMoreReplies(true);
-        try {
-            const nextPage = repliesPage + 1;
-            const res = await fetch(`/api/posts/${postId}/thread?page=${nextPage}`, { credentials: 'include' });
-            if (res.ok) {
-                const data = await res.json();
-                const newReplies = data.replies || data.comments || [];
-                setRawReplies((prev) => [...prev, ...newReplies]);
-                setHasMoreReplies(Boolean(data.has_more_replies));
-                setRepliesPage(nextPage);
-            }
-        } catch (err) {
-            console.error('Error loading more replies:', err);
-        } finally {
-            setLoadingMoreReplies(false);
-        }
-    };
-
-    const comments = buildCommentTree(rawReplies, postId);
-
-    const toggleMainPostLike = async () => {
+    const handleCreateGroupPost = async (e) => {
+        e.preventDefault();
         if (!currentUser) {
-            alert('Please log in to like posts.');
+            alert('Please log in to post in this group.');
             return;
         }
-
-        setThreadData(prev => {
-            if (!prev || !prev.post) return prev;
-            const currentlyLiked = Boolean(prev.post.user_liked);
-            const count = Number(prev.post.like_count) || 0;
-            return {
-                ...prev,
-                post: {
-                    ...prev.post,
-                    user_liked: !currentlyLiked ? 1 : 0,
-                    like_count: !currentlyLiked ? count + 1 : Math.max(0, count - 1)
-                }
-            };
-        });
-
-        try {
-            const response = await fetch(`/api/posts/${postId}/like`, {
-                method: 'POST',
-                credentials: 'include'
-            });
-            if (!response.ok) throw new Error('Failed to toggle post like');
-        } catch (err) {
-            console.error('Error liking post:', err);
-            fetchThread();
-        }
-    };
-
-    const toggleCommentLike = async (commentId) => {
-        if (!currentUser) {
-            alert('Please log in to like comments.');
-            return;
-        }
-
-        setRawReplies((prev) => prev.map((item) => {
-            if (String(item.id) === String(commentId)) {
-                const currentlyLiked = Boolean(item.user_liked);
-                const count = Number(item.like_count) || 0;
-                return {
-                    ...item,
-                    user_liked: !currentlyLiked ? 1 : 0,
-                    like_count: !currentlyLiked ? count + 1 : Math.max(0, count - 1)
-                };
-            }
-            return item;
-        }));
-
-        try {
-            const response = await fetch(`/api/posts/${commentId}/like`, {
-                method: 'POST',
-                credentials: 'include'
-            });
-            if (!response.ok) throw new Error('Failed to toggle comment like');
-        } catch (err) {
-            console.error('Error liking comment:', err);
-            fetchThread();
-        }
-    };
-
-    const handleCreateComment = async (e, parentId = null) => {
-        if (e) e.preventDefault();
-
-        if (!currentUser) {
-            alert('Please log in to reply.');
-            return;
-        }
-
-        const textToSend = parentId ? replyContent : commentContent;
-        if (!textToSend.trim()) return;
+        if (!postContent.trim() && !postImageFile) return;
 
         setSubmitting(true);
         const formData = new FormData();
-        formData.append('content', textToSend.trim());
-        formData.append('reply_to', parentId || postId);
+        formData.append('content', postContent.trim());
+        formData.append('group_id', groupId);
+        if (postImageFile) {
+            formData.append('image', postImageFile);
+        }
 
         try {
-            const res = await fetch('/api/posts/create', {
+            const res = await fetch(`${API_BASE}/api/posts/create`, {
                 method: 'POST',
                 body: formData,
-                credentials: 'include',
+                credentials: 'include'
             });
 
             if (res.ok) {
-                if (parentId) {
-                    setReplyContent('');
-                    setReplyToId(null);
-                } else {
-                    setCommentContent('');
-                    setShowMainReplyForm(false);
-                }
-                await fetchThread();
+                setPostContent('');
+                setPostImageFile(null);
+                fetchGroupData();
             } else {
-                alert('Failed to post reply.');
+                alert('Failed to create post within the group.');
             }
         } catch (err) {
-            console.error('Error posting reply:', err);
+            console.error('Error creating post:', err);
+            alert('An error occurred while posting.');
         } finally {
             setSubmitting(false);
         }
     };
 
-    const handleDeletePost = async () => {
-        if (!window.confirm("Are you sure you want to delete this post?")) return;
-
-        try {
-            const res = await fetch(`/api/posts/${postId}/delete`, {
-                method: 'DELETE',
-                credentials: 'include'
-            });
-
-            if (res.ok) {
-                navigate('/');
-            } else {
-                alert('Failed to delete the post. Please try again.');
-            }
-        } catch (err) {
-            console.error('Error deleting post:', err);
-            alert('An error occurred while deleting the post.');
-        }
-    };
-
-    const handleDeleteComment = async (commentId) => {
-        if (!window.confirm("Are you sure you want to delete this comment?")) return;
-
-        try {
-            const res = await fetch(`/api/posts/${commentId}/delete`, {
-                method: 'DELETE',
-                credentials: 'include'
-            });
-
-            if (res.ok) {
-                await fetchThread();
-            } else {
-                alert('Failed to delete comment.');
-            }
-        } catch (err) {
-            console.error('Error deleting comment:', err);
-        }
-    };
-
-    const helperTextStyle = {
-        color: theme === 'dark' ? '#94a3b8' : '#64748b',
-        fontSize: '0.9rem',
-    };
-
-    const renderCommentItem = (comment) => {
-        const replyImage = getPostImage(comment);
-        const isCommentOwner = currentUser && currentUser.username === comment.username;
-
+    if (loading) {
         return (
-            <div
-                key={comment.id}
-                className="card"
-                style={{
-                    padding: '1rem',
-                    background: 'var(--card-bg)',
-                    border: '1px solid var(--border-color)',
-                    borderRadius: '6px',
-                    marginBottom: '0.75rem',
-                    width: '100%',
-                    boxSizing: 'border-box'
-                }}
-            >
-                <div style={{ display: 'flex', width: '100%', alignItems: 'center', marginBottom: '0.5rem' }}>
-                    <Link
-                        to={`/profile/${comment.username}`}
-                        style={{ fontWeight: 'bold', textDecoration: 'none', color: 'var(--primary-color)', fontSize: '0.85rem' }}
-                    >
-                        @{comment.username}
-                    </Link>
-                    {comment.created_at && (
-                        <small style={{ marginLeft: 'auto', color: 'gray', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>
-                            {comment.created_at}
-                        </small>
-                    )}
-                </div>
-
-                <p
-                    style={{
-                        margin: '0.4rem 0',
-                        whiteSpace: 'pre-line',
-                        wordBreak: 'break-word',
-                        fontSize: '0.9rem',
-                        color: theme === 'dark' ? '#f3f4f6' : '#1e293b',
-                    }}
-                >
-                    {renderTextWithLinks(comment.content)}
-                </p>
-
-                <PostMedia src={replyImage} maxHeight={300} />
-
-                <div style={{ display: 'flex', width: '100%', alignItems: 'center', marginTop: '0.75rem' }}>
-                    <div style={{ display: 'flex', gap: '1.25rem', alignItems: 'center' }}>
-                        <button
-                            type="button"
-                            onClick={() => toggleCommentLike(comment.id)}
-                            style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem', padding: 0, color: theme === 'dark' ? '#f3f4f6' : '#1e293b', fontSize: '0.85rem' }}
-                        >
-                            <span>{comment.user_liked ? '★' : '☆'}</span>
-                            <span>{Number(comment.like_count) > 0 ? comment.like_count : 'Like'}</span>
-                        </button>
-
-                        <button
-                            type="button"
-                            onClick={() => setReplyToId(replyToId === comment.id ? null : comment.id)}
-                            title="Reply"
-                            style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem', padding: 0, color: theme === 'dark' ? '#f3f4f6' : '#1e293b', fontSize: '0.85rem' }}
-                        >
-                            <span>Reply</span>
-                        </button>
-                    </div>
-
-                    {isCommentOwner && (
-                        <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-                            <button
-                                type="button"
-                                onClick={() => navigate(`/post/edit/${comment.id}`)}
-                                style={{ background: 'none', border: 'none', color: theme === 'dark' ? '#ccff00' : '#000000', cursor: 'pointer', fontSize: '0.85rem', fontWeight: '500', padding: 0 }}
-                            >
-                                Edit
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => handleDeleteComment(comment.id)}
-                                style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '0.85rem', fontWeight: '500', padding: 0 }}
-                            >
-                                Delete
-                            </button>
-                        </div>
-                    )}
-                </div>
-
-                {replyToId === comment.id && (
-                    <ReplyComposer
-                        value={replyContent}
-                        onChange={setReplyContent}
-                        onSubmit={(e) => handleCreateComment(e, comment.id)}
-                        onCancel={() => setReplyToId(null)}
-                        submitting={submitting}
-                        theme={theme}
-                        placeholder={`Reply to @${comment.username}...`}
-                    />
-                )}
-
-                {comment.replies && comment.replies.length > 0 && (
-                    <div style={{ marginTop: '0.75rem', paddingLeft: '1rem', borderLeft: '2px solid var(--border-color)' }}>
-                        {comment.replies.map((reply) => renderCommentItem(reply))}
-                    </div>
-                )}
-            </div>
-        );
-    };
-
-    if (loading) return <div style={{ textAlign: 'center', padding: '3rem', color: theme === 'dark' ? '#f3f4f6' : '#1e293b' }}>Loading thread...</div>;
-
-    if (error || !threadData) {
-        return (
-            <>
+            <div>
                 <Navbar currentUser={currentUser} setCurrentUser={setCurrentUser} theme={theme} toggleTheme={toggleTheme} hasUnreadNotifications={hasUnreadNotifications} />
-                <main style={{ maxWidth: '800px', margin: '0 auto', padding: '1.5rem 1rem', textAlign: 'center' }}>
-                    <p style={{ color: '#ef4444', marginBottom: '1rem' }}>{error || 'Post not found'}</p>
-                    <button onClick={() => navigate('/')} className="btn btn-primary">Go back to Home</button>
-                </main>
-            </>
+                <div style={{ textAlign: 'center', padding: '4rem', color: 'var(--text-primary)' }}>Loading group...</div>
+            </div>
         );
     }
 
-    const { post, parent } = threadData;
-    const postImage = getPostImage(post);
-    const isOwner = currentUser && currentUser.username === post.username;
+    if (error || !group) {
+        return (
+            <div>
+                <Navbar currentUser={currentUser} setCurrentUser={setCurrentUser} theme={theme} toggleTheme={toggleTheme} hasUnreadNotifications={hasUnreadNotifications} />
+                <main style={{ maxWidth: '800px', margin: '2rem auto', padding: '0 1rem', textAlign: 'center' }}>
+                    <p style={{ color: '#ef4444', marginBottom: '1rem' }}>{error || 'Group not found'}</p>
+                    <button onClick={() => navigate('/groups')} className="btn btn-primary">Back to Groups</button>
+                </main>
+            </div>
+        );
+    }
 
     return (
-        <>
+        <div>
             <Navbar currentUser={currentUser} setCurrentUser={setCurrentUser} theme={theme} toggleTheme={toggleTheme} hasUnreadNotifications={hasUnreadNotifications} />
-            <main style={{ maxWidth: '800px', margin: '0 auto', padding: '1.5rem 1rem' }}>
+
+            <main className="app-main-container" style={{ maxWidth: '800px', margin: '2rem auto', padding: '0 1rem' }}>
                 <button
-                    onClick={() => navigate(-1)}
-                    style={{ background: 'none', border: 'none', color: theme === 'dark' ? '#ccff00' : '#000000', cursor: 'pointer', marginBottom: '1.25rem', fontSize: '0.95rem', fontWeight: '500', padding: '0' }}
+                    onClick={() => navigate('/groups')}
+                    style={{ background: 'none', border: 'none', color: theme === 'dark' ? '#ccff00' : '#000000', cursor: 'pointer', marginBottom: '1rem', fontSize: '0.95rem', fontWeight: '500', padding: 0 }}
                 >
-                    ← Back
+                    ← Back to Groups
                 </button>
 
-                {parent && (
-                    <div className="card" style={{ padding: '1rem', opacity: 0.8, marginBottom: '0.75rem', borderLeft: '3px solid var(--primary-color)' }}>
-                        <div style={{ display: 'flex', width: '100%', alignItems: 'center' }}>
-                            <Link to={`/profile/${parent.username}`} style={{ fontWeight: 'bold', color: 'var(--primary-color)', textDecoration: 'none' }}>@{parent.username}</Link>
-                            {parent.created_at && <small style={{ marginLeft: 'auto', color: 'gray', fontSize: '0.8rem' }}>{parent.created_at}</small>}
-                        </div>
-                        <p style={{ margin: '0.5rem 0 0', color: theme === 'dark' ? '#f3f4f6' : '#1e293b' }}>{renderTextWithLinks(parent.content)}</p>
-                    </div>
-                )}
-
-                <div className="card" style={{ padding: '1.25rem', backgroundColor: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: '8px', marginBottom: '1.5rem', width: '100%', boxSizing: 'border-box' }}>
-                    <div style={{ display: 'flex', width: '100%', alignItems: 'center', marginBottom: '0.75rem' }}>
-                        <Link to={`/profile/${post.username}`} style={{ fontWeight: 'bold', color: 'var(--primary-color)', textDecoration: 'none' }}>
-                            @{post.username}
-                        </Link>
-                        {post.created_at && (
-                            <small style={{ marginLeft: 'auto', color: 'gray', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>{post.created_at}</small>
-                        )}
-                    </div>
-
-                    {post.content && <p style={{ whiteSpace: 'pre-line', wordBreak: 'break-word', color: theme === 'dark' ? '#f3f4f6' : '#1e293b' }}>{renderTextWithLinks(post.content)}</p>}
-
-                    <PostMedia src={postImage} maxHeight={600} />
-
-                    <div style={{ display: 'flex', width: '100%', alignItems: 'center', marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid var(--border-color)' }}>
-                        <div style={{ display: 'flex', gap: '1.25rem', alignItems: 'center' }}>
-                            <button
-                                type="button"
-                                onClick={toggleMainPostLike}
-                                style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem', padding: 0, color: theme === 'dark' ? '#f3f4f6' : '#1e293b', fontSize: '0.9rem' }}
-                            >
-                                <span>{post.user_liked ? '★' : '☆'}</span>
-                                <span>{Number(post.like_count) > 0 ? post.like_count : 'Like'}</span>
-                            </button>
-
-                            <button
-                                type="button"
-                                onClick={() => setShowMainReplyForm(prev => !prev)}
-                                title="Reply"
-                                style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem', padding: 0, color: theme === 'dark' ? '#f3f4f6' : '#1e293b', fontSize: '0.9rem' }}
-                            >
-                                <span>Reply</span>
-                            </button>
-                        </div>
-
-                        {isOwner && (
-                            <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-                                <button
-                                    onClick={() => navigate(`/post/edit/${postId}`)}
-                                    style={{ padding: '0.4rem 1rem', backgroundColor: 'transparent', color: theme === 'dark' ? '#ccff00' : '#000000', border: '1px solid ' + (theme === 'dark' ? '#ccff00' : '#000000'), borderRadius: '4px', cursor: 'pointer', fontWeight: '500', fontSize: '0.85rem' }}
-                                >
-                                    Edit
-                                </button>
-                                <button
-                                    onClick={handleDeletePost}
-                                    style={{ padding: '0.4rem 1rem', backgroundColor: '#ef4444', color: '#ffffff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: '500', fontSize: '0.85rem' }}
-                                >
-                                    Delete
-                                </button>
-                            </div>
-                        )}
-                    </div>
+                {/* Group Header Card */}
+                <div className="card" style={{ background: 'var(--card-bg, #fff)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius)', padding: '1.5rem', marginBottom: '1.5rem' }}>
+                    <h2 style={{ margin: '0 0 0.5rem 0', color: 'var(--text-primary)' }}>{group.name}</h2>
+                    <p style={{ margin: '0 0 0.75rem 0', fontSize: '0.9rem', color: '#64748b' }}>
+                        Created by <Link to={`/profile/${group.username}`}>@{group.username}</Link>
+                    </p>
+                    <p style={{ margin: 0, color: 'var(--text-primary)', fontSize: '0.95rem', lineHeight: '1.5' }}>
+                        {group.description}
+                    </p>
                 </div>
 
-                {showMainReplyForm && (
-                    <ReplyComposer
-                        value={commentContent}
-                        onChange={setCommentContent}
-                        onSubmit={(e) => handleCreateComment(e)}
-                        onCancel={() => setShowMainReplyForm(false)}
-                        submitting={submitting}
-                        theme={theme}
-                        placeholder="Post your reply..."
-                    />
+                {/* Create Post inside Group Box */}
+                {currentUser ? (
+                    <div className="card" style={{ background: 'var(--card-bg, #fff)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius)', padding: '1.25rem', marginBottom: '1.5rem' }}>
+                        <form onSubmit={handleCreateGroupPost}>
+                            <textarea
+                                value={postContent}
+                                onChange={(e) => setPostContent(e.target.value)}
+                                placeholder={`Share an update with ${group.name}...`}
+                                rows="3"
+                                style={{ width: '100%', padding: '0.75rem', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--input-bg, transparent)', color: 'var(--text-primary)', resize: 'vertical', boxSizing: 'border-box', marginBottom: '0.75rem' }}
+                            />
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={(e) => setPostImageFile(e.target.files[0])}
+                                    style={{ fontSize: '0.85rem', color: 'var(--text-primary)' }}
+                                />
+                                <button
+                                    type="submit"
+                                    disabled={submitting}
+                                    className="btn btn-primary"
+                                    style={{ padding: '0.5rem 1.25rem' }}
+                                >
+                                    {submitting ? 'Posting...' : 'Post to Group'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                ) : (
+                    <div className="card" style={{ textAlign: 'center', padding: '1rem', marginBottom: '1.5rem', background: 'var(--card-bg, #fff)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius)' }}>
+                        <p style={{ margin: 0, color: '#64748b', fontSize: '0.9rem' }}>
+                            Please <Link to="/login">log in</Link> to participate or post in this group.
+                        </p>
+                    </div>
                 )}
 
-                <h3 style={{ color: theme === 'dark' ? '#f3f4f6' : '#1e293b', marginTop: '1.5rem' }}>Replies</h3>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '1rem' }}>
-                    {comments && comments.length > 0 ? (
-                        <>
-                            {comments.map((comment) => renderCommentItem(comment))}
-                            {hasMoreReplies && (
-                                <button
-                                    onClick={handleLoadMoreReplies}
-                                    disabled={loadingMoreReplies}
-                                    className="btn btn-primary"
-                                    style={{ alignSelf: 'center', padding: '0.5rem 1.25rem', marginTop: '0.5rem' }}
-                                >
-                                    {loadingMoreReplies ? 'Loading...' : 'Load More Replies'}
-                                </button>
-                            )}
-                        </>
+                {/* Group Posts Feed */}
+                <h3 style={{ color: 'var(--text-primary)', marginBottom: '1rem' }}>Group Discussions</h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    {posts.length > 0 ? (
+                        posts.map((post) => {
+                            const postImage = getPostImage(post);
+                            return (
+                                <div key={post.id} className="card" style={{ background: 'var(--card-bg, #fff)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius)', padding: '1.25rem' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', marginBottom: '0.5rem' }}>
+                                        <Link to={`/profile/${post.username}`} style={{ fontWeight: 'bold', color: 'var(--primary-color)', textDecoration: 'none', fontSize: '0.9rem' }}>
+                                            @{post.username}
+                                        </Link>
+                                        {post.created_at && (
+                                            <small style={{ marginLeft: 'auto', color: '#64748b', fontSize: '0.8rem' }}>
+                                                {post.created_at}
+                                            </small>
+                                        )}
+                                    </div>
+                                    <p style={{ margin: '0.5rem 0', whiteSpace: 'pre-line', color: 'var(--text-primary)', fontSize: '0.95rem' }}>
+                                        {post.content}
+                                    </p>
+                                    <PostMedia src={postImage} maxHeight={400} />
+                                    <div style={{ marginTop: '0.75rem', display: 'flex', gap: '1rem' }}>
+                                        <Link to={`/post/${post.id}`} style={{ fontSize: '0.85rem', textDecoration: 'none', color: 'var(--primary-color)', fontWeight: '500' }}>
+                                            View Thread & Comments →
+                                        </Link>
+                                    </div>
+                                </div>
+                            );
+                        })
                     ) : (
-                        <p style={helperTextStyle}>No replies yet. Be the first to reply!</p>
+                        <div className="card" style={{ textAlign: 'center', padding: '2.5rem', background: 'var(--card-bg, #fff)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius)' }}>
+                            <p style={{ color: '#64748b', margin: 0 }}>No posts in this group yet. Be the first to start a discussion!</p>
+                        </div>
                     )}
                 </div>
             </main>
-        </>
+        </div>
     );
 }
