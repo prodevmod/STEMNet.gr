@@ -1023,3 +1023,11 @@ div.avatar {
     line-height: normal !important;
     padding: 0 !important;
 }
+
+:root[data-theme="light"] {
+  --icon-filter: brightness(0) saturate(100%);
+}
+
+:root[data-theme="dark"] {
+  --icon-filter: brightness(0) saturate(100%) invert(1);
+}

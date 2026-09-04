@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { parseGIF, decompressFrames } from 'gifuct-js';
-import GIF from 'gif.js';
+import { GIFEncoder, quantize, applyPalette } from 'gifenc';
 
 const CONTAINER_SIZE = 280;
 const OUTPUT_SIZE = 500;
@@ -43,8 +43,6 @@ export default function ImageCropper({ file, onCancel, onCropped }) {
         return () => { cancelled = true; };
     }, [file, isGif]);
 
-    // Clamp the top-left position (in container px, at the given scale) so the
-    // scaled image never leaves a gap inside the circular crop container.
     const clampPos = useCallback((x, y, s, size) => {
         if (!size.w || !size.h) return { x, y };
         const dispW = size.w * s;
@@ -61,19 +59,20 @@ export default function ImageCropper({ file, onCancel, onCropped }) {
         const w = e.target.naturalWidth;
         const h = e.target.naturalHeight;
         const size = { w, h };
-        // The minimum zoom that still fully covers the circular container
-        // on its shorter axis (so no empty gap ever shows).
-        const initialMin = Math.max(CONTAINER_SIZE / w, CONTAINER_SIZE / h);
+        // "contain" scale — the whole image is visible at load, nothing is
+        // pre-cropped into a square. The user zooms in from here if/when
+        // they actually want to crop tighter.
+        const initialFit = Math.min(CONTAINER_SIZE / w, CONTAINER_SIZE / h);
 
         setNaturalSize(size);
-        setMinScale(initialMin);
-        setMaxScale(initialMin * 4);
-        setScale(initialMin);
+        setMinScale(initialFit);
+        setMaxScale(initialFit * 4);
+        setScale(initialFit);
         setPos(
             clampPos(
-                (CONTAINER_SIZE - w * initialMin) / 2,
-                (CONTAINER_SIZE - h * initialMin) / 2,
-                initialMin,
+                (CONTAINER_SIZE - w * initialFit) / 2,
+                (CONTAINER_SIZE - h * initialFit) / 2,
+                initialFit,
                 size
             )
         );
@@ -99,8 +98,6 @@ export default function ImageCropper({ file, onCancel, onCropped }) {
     const handleZoomChange = (e) => {
         if (!imageLoaded) return;
         const newScale = parseFloat(e.target.value);
-        // Keep the point currently at the center of the container fixed
-        // while zooming, so zooming feels anchored rather than jumpy.
         const centerSourceX = (CONTAINER_SIZE / 2 - pos.x) / scale;
         const centerSourceY = (CONTAINER_SIZE / 2 - pos.y) / scale;
         const newX = CONTAINER_SIZE / 2 - centerSourceX * newScale;
@@ -109,8 +106,6 @@ export default function ImageCropper({ file, onCancel, onCropped }) {
         setPos(clampPos(newX, newY, newScale, naturalSize));
     };
 
-    // Everything downstream (both the static-image and GIF crop paths) reads
-    // the crop rectangle in *source image pixel space* from this one place.
     const getCropGeometry = () => {
         const sourceX = -pos.x / scale;
         const sourceY = -pos.y / scale;
@@ -147,9 +142,6 @@ export default function ImageCropper({ file, onCancel, onCropped }) {
         const { frames, logicalWidth, logicalHeight } = gifFramesRef.current;
         const { sourceX, sourceY, sourceSize } = getCropGeometry();
 
-        // The <img> we display may be scaled by the browser relative to the
-        // GIF's logical (LSD) dimensions if they differ — convert crop
-        // coordinates from displayed-image space into logical GIF space.
         const dispScaleX = naturalSize.w / logicalWidth;
         const dispScaleY = naturalSize.h / logicalHeight;
 
@@ -163,13 +155,7 @@ export default function ImageCropper({ file, onCancel, onCropped }) {
         cropCanvas.height = OUTPUT_SIZE;
         const cropCtx = cropCanvas.getContext('2d');
 
-        const gifEncoder = new GIF({
-            workers: 2,
-            quality: 10,
-            width: OUTPUT_SIZE,
-            height: OUTPUT_SIZE,
-            workerScript: '/gif-worker/gif.worker.js',
-        });
+        const gif = GIFEncoder();
 
         setProcessingLabel(`Cropping ${frames.length} frames...`);
 
@@ -198,17 +184,25 @@ export default function ImageCropper({ file, onCancel, onCropped }) {
             cropCtx.clearRect(0, 0, OUTPUT_SIZE, OUTPUT_SIZE);
             cropCtx.drawImage(compositeCanvas, srcX, srcY, srcSize, srcSize, 0, 0, OUTPUT_SIZE, OUTPUT_SIZE);
 
-            gifEncoder.addFrame(cropCtx, { copy: true, delay: frame.delay || 100 });
+            const { data } = cropCtx.getImageData(0, 0, OUTPUT_SIZE, OUTPUT_SIZE);
+            const palette = quantize(data, 256);
+            const index = applyPalette(data, palette);
+
+            gif.writeFrame(index, OUTPUT_SIZE, OUTPUT_SIZE, {
+                palette,
+                delay: frame.delay || 100,
+            });
+
             setProcessingLabel(`Cropping frame ${i + 1} of ${frames.length}...`);
+            if (i % 3 === 0) {
+                await new Promise((resolve) => setTimeout(resolve, 0));
+            }
         }
 
-        gifEncoder.on('finished', (blob) => {
-            setProcessing(false);
-            onCropped(new File([blob], file.name, { type: 'image/gif' }));
-        });
-
-        setProcessingLabel('Encoding animated GIF...');
-        gifEncoder.render();
+        gif.finish();
+        const bytes = gif.bytes();
+        setProcessing(false);
+        onCropped(new File([bytes], file.name, { type: 'image/gif' }));
     };
 
     const handleConfirm = () => {
