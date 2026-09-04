@@ -314,9 +314,10 @@ export default function Home({ currentUser, setCurrentUser, theme, toggleTheme, 
                                         {post.category && (
                                             <span style={{
                                                 fontSize: '0.75rem',
-                                                padding: '0.2rem 0.6rem',
+                                                padding: '0.15rem 0.6rem',
                                                 backgroundColor: 'var(--primary-color)',
-                                                color: '#fff',
+                                                color: '#000000', // Forced black text
+                                                border: theme === 'dark' ? '1px solid #ffffff' : '1px solid #000000', // Dynamic outline
                                                 borderRadius: '12px',
                                                 fontWeight: '600'
                                             }}>
