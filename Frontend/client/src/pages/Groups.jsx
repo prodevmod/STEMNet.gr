@@ -2,7 +2,9 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 
-export default function Groups({ currentUser, theme, toggleTheme, hasUnreadNotifications }) {
+const API_BASE = import.meta.env.VITE_API_URL || '';
+
+export default function Groups({ currentUser, setCurrentUser, theme, toggleTheme, hasUnreadNotifications }) {
   const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -11,7 +13,7 @@ export default function Groups({ currentUser, theme, toggleTheme, hasUnreadNotif
 
   const fetchGroups = (pageNum = 1, append = false) => {
     if (append) setLoadingMore(true); else setLoading(true);
-    fetch(`/api/groups?page=${pageNum}`, { credentials: 'include' })
+    fetch(`${API_BASE}/api/groups?page=${pageNum}`, { credentials: 'include' })
       .then((res) => {
         if (!res.ok) throw new Error('Failed to fetch groups');
         return res.json();
@@ -61,7 +63,7 @@ export default function Groups({ currentUser, theme, toggleTheme, hasUnreadNotif
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           {loading ? (
-            <div className="card" style={{ textAlign: 'center', padding: '3rem', color: '#ccff00' }}>
+            <div className="card" style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-primary)' }}>
               Loading community groups...
             </div>
           ) : groups.length === 0 ? (
