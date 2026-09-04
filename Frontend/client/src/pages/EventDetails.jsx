@@ -4,63 +4,15 @@ import Navbar from '../components/Navbar';
 import PostMedia from '../components/PostMedia';
 import ReplyComposer from '../components/ReplyComposer';
 import RsvpButtons from '../components/RsvpButtons';
+import commentIcon from '../assets/comment.svg';
+import likedIcon from '../assets/liked.svg';
+import likeIcon from '../assets/like.svg';
 
-export const LikeIcon = ({ width = 18, height = 18, className = '', style = {} }) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width={width}
-    height={height}
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    className={className}
-    style={{ color: 'inherit', ...style }}
-  >
-    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-  </svg>
-);
-
-export const LikedIcon = ({ width = 18, height = 18, className = '', style = {}, theme = 'light' }) => {
-  const iconColor = theme === 'dark' ? '#ffffff' : '#000000';
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width={width}
-      height={height}
-      viewBox="0 0 24 24"
-      fill={iconColor}
-      stroke={iconColor}
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-      style={style}
-    >
-      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-    </svg>
-  );
+const SafeIcon = ({ src, alt, style }) => {
+  const [error, setError] = useState(false);
+  if (error) return <span style={{ fontSize: '0.85rem' }}>{alt}</span>;
+  return <img src={src} alt={alt} style={style} onError={() => setError(true)} />;
 };
-
-export const CommentIcon = ({ width = 18, height = 18, className = '', style = {} }) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width={width}
-    height={height}
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    className={className}
-    style={{ color: 'inherit', ...style }}
-  >
-    <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
-  </svg>
-);
 
 const buildCommentTree = (rawComments, mainPostId) => {
   if (!Array.isArray(rawComments)) return [];
@@ -69,12 +21,12 @@ const buildCommentTree = (rawComments, mainPostId) => {
   const rootComments = [];
   const normalizedMainId = String(mainPostId);
 
-  rawComments.forEach(comment => {
+  rawComments.forEach((comment) => {
     const commentId = String(comment.id);
     commentMap[commentId] = { ...comment, id: commentId, replies: [] };
   });
 
-  rawComments.forEach(comment => {
+  rawComments.forEach((comment) => {
     const commentId = String(comment.id);
     const parentRaw = comment.reply_to ?? comment.parent_id;
     const parentId = parentRaw ? String(parentRaw) : null;
@@ -92,8 +44,6 @@ const buildCommentTree = (rawComments, mainPostId) => {
 
   return rootComments;
 };
-
-const renderTextWithLinks = (text) => text;
 
 const resolveMediaUrl = (path) => {
   if (!path) return '';
@@ -162,14 +112,14 @@ export default function EventDetails({ currentUser, setCurrentUser, theme, toggl
     const currentLikeCount = Number(post.like_count) || 0;
     const optimisticCount = !isCurrentlyLiked ? currentLikeCount + 1 : Math.max(0, currentLikeCount - 1);
 
-    setPost(prev => ({ ...prev, like_count: optimisticCount, user_liked: !isCurrentlyLiked ? 1 : 0 }));
+    setPost((prev) => ({ ...prev, like_count: optimisticCount, user_liked: !isCurrentlyLiked ? 1 : 0 }));
 
     try {
       const response = await fetch(`/api/posts/${postId}/like`, { method: 'POST', credentials: 'include' });
       if (!response.ok) throw new Error('Failed to toggle like');
     } catch (err) {
       console.error('Fetch error:', err);
-      setPost(prev => ({ ...prev, like_count: currentLikeCount, user_liked: isCurrentlyLiked ? 1 : 0 }));
+      setPost((prev) => ({ ...prev, like_count: currentLikeCount, user_liked: isCurrentlyLiked ? 1 : 0 }));
     }
   };
 
@@ -206,14 +156,14 @@ export default function EventDetails({ currentUser, setCurrentUser, theme, toggl
     }
 
     const updateTargetComment = (nodeList) => {
-      return nodeList.map(item => {
+      return nodeList.map((item) => {
         if (String(item.id) === String(commentId)) {
           const currentlyLiked = Boolean(item.user_liked);
           const count = Number(item.like_count) || 0;
           return {
             ...item,
             user_liked: !currentlyLiked ? 1 : 0,
-            like_count: !currentlyLiked ? count + 1 : Math.max(0, count - 1)
+            like_count: !currentlyLiked ? count + 1 : Math.max(0, count - 1),
           };
         }
         if (item.replies && item.replies.length > 0) {
@@ -223,12 +173,12 @@ export default function EventDetails({ currentUser, setCurrentUser, theme, toggl
       });
     };
 
-    setComments(prevComments => updateTargetComment(prevComments));
+    setComments((prevComments) => updateTargetComment(prevComments));
 
     try {
       const response = await fetch(`/api/posts/${commentId}/like`, {
         method: 'POST',
-        credentials: 'include'
+        credentials: 'include',
       });
       if (!response.ok) throw new Error('Failed to toggle comment like');
     } catch (err) {
@@ -252,7 +202,7 @@ export default function EventDetails({ currentUser, setCurrentUser, theme, toggl
     const formData = new FormData();
     formData.append('content', textToSend.trim());
     formData.append('reply_to', parentId || postId);
-    formData.append('parent_id', parentId || postId); // Attached both for compatibility
+    formData.append('parent_id', parentId || postId);
 
     try {
       const res = await fetch('/api/posts/create', {
@@ -303,7 +253,7 @@ export default function EventDetails({ currentUser, setCurrentUser, theme, toggl
       </div>
 
       <p style={{ margin: 0, whiteSpace: 'pre-line', wordBreak: 'break-word', fontSize: '0.9rem', marginBottom: '0.5rem', color: 'var(--text-primary)' }}>
-        {renderTextWithLinks(comment.content)}
+        {comment.content}
       </p>
 
       <PostMedia src={resolveMediaUrl(comment.media_path)} maxHeight={300} />
@@ -314,11 +264,7 @@ export default function EventDetails({ currentUser, setCurrentUser, theme, toggl
           onClick={() => toggleCommentLike(comment.id)}
           style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem', padding: 0, color: 'var(--text-primary)' }}
         >
-          {comment.user_liked ? (
-            <LikedIcon width="16" height="16" theme={theme} />
-          ) : (
-            <LikeIcon width="16" height="16" />
-          )}
+          <SafeIcon src={comment.user_liked ? likedIcon : likeIcon} alt="Like" style={{ width: '16px', height: '16px' }} />
           <span style={{ fontSize: '0.85rem' }}>
             {Number(comment.like_count) > 0 ? comment.like_count : 'Like'}
           </span>
@@ -331,7 +277,7 @@ export default function EventDetails({ currentUser, setCurrentUser, theme, toggl
           aria-label="Reply"
           style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem', padding: 0, color: 'var(--text-primary)', fontSize: '0.85rem' }}
         >
-          <CommentIcon width="16" height="16" />
+          <SafeIcon src={commentIcon} alt="Reply" style={{ width: '16px', height: '16px' }} />
           <span>Reply</span>
         </button>
       </div>
@@ -361,8 +307,8 @@ export default function EventDetails({ currentUser, setCurrentUser, theme, toggl
       <Navbar currentUser={currentUser} setCurrentUser={setCurrentUser} theme={theme} toggleTheme={toggleTheme} hasUnreadNotifications={hasUnreadNotifications} />
       <main className="app-main-container" style={{ maxWidth: '800px', margin: '2rem auto', padding: '0 1rem' }}>
         <button
+          className="back-nav-btn"
           onClick={() => navigate(-1)}
-          style={{ background: 'none', border: 'none', color: theme === 'dark' ? '#ccff00' : '#000000', cursor: 'pointer', marginBottom: '1rem', fontWeight: 'bold' }}
         >
           ← Back to Events
         </button>
@@ -386,14 +332,14 @@ export default function EventDetails({ currentUser, setCurrentUser, theme, toggl
               </div>
 
               {post.event_type && (
-                <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', padding: '0.75rem 1rem', borderRadius: 'var(--radius)', marginTop: '10px', marginBottom: '10px', color: '#000000' }}>
-                  <div style={{ fontWeight: '700', fontSize: '1.1rem', marginBottom: '4px', color: '#000000' }}>{post.event_type}</div>
-                  <div style={{ fontSize: '0.95rem', display: 'flex', gap: '1.5rem', flexWrap: 'wrap', color: '#000000' }}>
-                    <span style={{ color: '#000000' }}>
-                      <strong style={{ color: '#000000' }}>Time:</strong> <span style={{ color: '#000000' }}>{post.event_time}</span>
+                <div className="force-dark-text" style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', padding: '0.75rem 1rem', borderRadius: 'var(--radius)', marginTop: '10px', marginBottom: '10px' }}>
+                  <div style={{ fontWeight: '700', fontSize: '1.1rem', marginBottom: '4px' }}>{post.event_type}</div>
+                  <div style={{ fontSize: '0.95rem', display: 'flex', gap: '1.5rem', flexWrap: 'wrap' }}>
+                    <span>
+                      <strong>Time:</strong> {post.event_time}
                     </span>
-                    <span style={{ color: '#000000' }}>
-                      <strong style={{ color: '#000000' }}>Location:</strong> <span style={{ color: '#000000' }}>{post.event_location}</span>
+                    <span>
+                      <strong>Location:</strong> {post.event_location}
                     </span>
                   </div>
                 </div>
@@ -411,11 +357,7 @@ export default function EventDetails({ currentUser, setCurrentUser, theme, toggl
                   onClick={toggleLike}
                   style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'inherit' }}
                 >
-                  {post.user_liked ? (
-                    <LikedIcon width="18" height="18" theme={theme} />
-                  ) : (
-                    <LikeIcon width="18" height="18" />
-                  )}
+                  <SafeIcon src={post.user_liked ? likedIcon : likeIcon} alt="Like" style={{ width: '18px', height: '18px' }} />
                   <span>{Number(post.like_count) > 0 ? Number(post.like_count) : 'Like'}</span>
                 </button>
 
@@ -431,7 +373,7 @@ export default function EventDetails({ currentUser, setCurrentUser, theme, toggl
                   onClick={() => setShowReplyForm((prev) => !prev)}
                   style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'inherit' }}
                 >
-                  <CommentIcon width="18" height="18" />
+                  <SafeIcon src={commentIcon} alt="Reply" style={{ width: '18px', height: '18px' }} />
                   <span>{Number(post.comment_count) > 0 ? Number(post.comment_count) : 'Reply'}</span>
                 </button>
               </div>

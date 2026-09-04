@@ -181,19 +181,19 @@ export default function Events({ currentUser, theme, toggleTheme, hasUnreadNotif
                                     </small>
                                 </div>
 
-                                {post.event_type && (
-                                    <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', padding: '0.75rem 1rem', borderRadius: 'var(--radius)', marginTop: '10px', marginBottom: '10px', color: '#000000' }}>
-                                        <div style={{ fontWeight: 700, fontSize: '1rem', marginBottom: '4px', color: '#000000' }}>{post.event_type}</div>
-                                        <div style={{ fontSize: '0.9rem', display: 'flex', gap: '1.5rem', flexWrap: 'wrap', color: '#000000' }}>
-                                            <span style={{ color: '#000000' }}>
-                                                <strong style={{ color: '#000000' }}>Time:</strong> <span style={{ color: '#000000' }}>{post.event_time}</span>
-                                            </span>
-                                            <span style={{ color: '#000000' }}>
-                                                <strong style={{ color: '#000000' }}>Location:</strong> <span style={{ color: '#000000' }}>{post.event_location}</span>
-                                            </span>
+                                    {post.event_type && (
+                                        <div className="force-dark-text" style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', padding: '0.75rem 1rem', borderRadius: 'var(--radius)', marginTop: '10px', marginBottom: '10px' }}>
+                                            <div style={{ fontWeight: 700, fontSize: '1rem', marginBottom: '4px' }}>{post.event_type}</div>
+                                            <div style={{ fontSize: '0.9rem', display: 'flex', gap: '1.5rem', flexWrap: 'wrap' }}>
+                                                <span>
+                                                    <strong>Time:</strong> {post.event_time}
+                                                </span>
+                                                <span>
+                                                    <strong>Location:</strong> {post.event_location}
+                                                </span>
+                                            </div>
                                         </div>
-                                    </div>
-                                )}
+                                    )}
 
                                 <p style={{ marginTop: '10px', marginBottom: '0.75rem', color: 'var(--text-primary)', whiteSpace: 'pre-line' }}>{post.content}</p>
 
