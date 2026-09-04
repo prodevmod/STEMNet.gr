@@ -307,20 +307,21 @@ export default function Home({ currentUser, setCurrentUser, theme, toggleTheme, 
                                         <Link to={`/profile/${authorName}`} style={{ color: 'var(--primary-color)', fontWeight: 'bold', textDecoration: 'none' }}>
                                             @{authorName}
                                         </Link>
-                                    </div>
-                                    
-                                    {/* Updated section: Added Category Tag next to Date */}
+                                    </div>                                  
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                                         {post.category && (
-                                            <span style={{
-                                                fontSize: '0.75rem',
-                                                padding: '0.15rem 0.6rem',
-                                                backgroundColor: 'var(--primary-color)',
-                                                color: '#000000', // Forced black text
-                                                border: theme === 'dark' ? '1px solid #ffffff' : '1px solid #000000', // Dynamic outline
-                                                borderRadius: '12px',
-                                                fontWeight: '600'
-                                            }}>
+                                            <span 
+                                                className="force-dark-text" 
+                                                style={{
+                                                    fontSize: '0.75rem',
+                                                    padding: '0.15rem 0.6rem',
+                                                    backgroundColor: 'var(--primary-color)',
+                                                    color: '#000000',
+                                                    border: theme === 'dark' ? '1px solid #ffffff' : '1px solid #000000',
+                                                    borderRadius: '12px',
+                                                    fontWeight: '600'
+                                                }}
+                                            >
                                                 {post.category}
                                             </span>
                                         )}
