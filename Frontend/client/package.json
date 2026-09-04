@@ -13,6 +13,7 @@
     "@capacitor/android": "^8.5.0",
     "axios": "^1.19.0",
     "gif.js": "^0.2.0",
+    "gifenc": "^1.0.3",
     "gifuct-js": "^2.1.2",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
