@@ -1,78 +1,118 @@
-# STEMNet.gr — V1
+## For STARDANCERS:
+Guys when reviewing my project please make an account if you dont want to share your real info atleast use a fake email generator and login from the inbox cause rly all the dedication i ve put into this project is in that page after logging in
 
-## For Reviewers (Important)
+# STEMNET GREECE
+Be me:
+* 15yo
+* Just finished th cs50 course
+* Equiped with basic and primal Full-Stack knoledge
+* In a country that thru it s school curriculum doesn't promote STEM or advanced problem-solving and creative thinking for students (Greece)
 
-Before reviewing the project, please create an account and test the logged-in experience.
+STEMNet.gr or STEMNET GREECE or even STEMNET (Global) is a vision for every underpriviledged child in every such part of the word with a passion to STEM to come together and contribute
+whatever they can for others alike to learn from, through this medium. 
 
-- If you don’t want to use personal info, use a temporary email generator.
-- Verify the account through the inbox link.
-- Please test core authenticated flows: posting, replying, groups, notifications, profile links, and settings.
+---
+<img width="1881" height="1008" alt="image" src="https://github.com/user-attachments/assets/c144f444-eff1-47db-b25e-a45d1adb59e1" />
 
-Most of the work and platform value is in the authenticated part of STEMNet, so testing only the public view won’t reflect the real product.
+## The vision
 
-<img width="1895" height="1005" alt="image" src="https://github.com/user-attachments/assets/7411cc41-4fd3-4239-8abf-cfa13a3ea384" />
+* Every student can post about their own projects, ask for help, help others and talk even about their passion and find co-workers to build something incredible in a team.
+* Every student can start a group, essentialy a groupchat, about anything they'd like to discuss.
+* Every student can join any group they are interested in joining.
+* Every student can post about an STEM or STEAM event they have heard of, acompaned with basic info about when/where it takes place and who is eligible for it.
+* Every student can add affiliate links to their bio to network and connect with fellow aspirants.
+* Every student can acces the STEM EXTRAS page with open/free resources to actually start building and learning about their stem passion.
 
-Hi, I’m **prodevmod** — a student developer from Greece, and I built this as my **CS50 final project**.  
-Not just to finish the course, but to solve a real problem: in Greece, access to STEM clubs, robotics culture, and even electronic components can be very limited for students.
+---
+<img width="1878" height="1012" alt="image" src="https://github.com/user-attachments/assets/96710c33-350c-48fe-adcb-0b88d58435fc" />
 
-That’s why I made **STEMNet.gr**: a platform where students can learn in public, find collaborators, share projects, ask for help, and discover STEM opportunities.
 
-<img width="792" height="1013" alt="image" src="https://github.com/user-attachments/assets/2396bc0f-a341-4a11-a019-1e0d060a81f7" />
+## Basic structure
+This project is still an MVP so although it is functional and can probably handle a couple handred of users it is not using the most viable and efficient framework:
 
-## Why this project exists
-STEMNet is for students who are motivated but under-supported.  
-My vision is simple: give young builders one place to connect, create, and grow — first in Greece, then globally.
+### FRONTEND
+* HTML 5
+* CSS 3
+* JAVASCRIPT
+* Jinja
 
-## 🤮 OLD framework (MVP)
-**Frontend:** HTML + CSS  
-**Backend:** Flask (Python)  
-**Database:** SQLite (local compatibility)
+### BACKEND
+* Python
+* Flask
+* PostgreSQL (for online use)
+* SQLite (for local testing)
 
-<img width="270" height="480" alt="DisappointedManGIF" src="https://github.com/user-attachments/assets/c0d4e0b4-b24a-4ea8-893e-2f9120a6ab0c" />
+## app.py structure
+1. Imports and Environment Setup:
+    - Import necessary libraries and modules.
+    - Load environment variables from a .env file.
+2. Flask App Initialization:
+    - Create a Flask application instance.
+    - Configure session management and security settings.
+3. Database Configuration:
+    - Define database paths and connection settings for SQLite and PostgreSQL.
+    - Implement a wrapper to make PostgreSQL behave like SQLite for compatibility.
+4. Utility Functions:
+    - Functions for CSRF protection, email verification, and link sanitization.
+5. Before Request Handlers:
+    - Upgrade the database schema if necessary.
+6. User Session Management:
+    - Load the current user from the session before each request.
+7. Routes:
+    - /register: User registration with reCAPTCHA v3 and email verification.
+    - /login: User login with reCAPTCHA v3 and brute force mitigation.
+    - /logout: User logout.
+    - /create: Create a new post, including replies and group posts.
+    - /group/create: Create a new group (requires login).
+    - /group/<int:group_id>: View group details and posts.
+    - /stem-extras: Additional STEM resources page.
 
-<img width="1878" height="1015" alt="image" src="https://github.com/user-attachments/assets/7b18a8fe-cc21-4929-b079-e197a605cebc" />
+---
+<img width="1884" height="1006" alt="image" src="https://github.com/user-attachments/assets/4945168e-81cd-43df-a7c1-d6dc4a890c13" />
 
-## Current framework (V1)
-**Frontend:** React + JavaScript + CSS  
-**Backend:** Flask (Python)  
-**Database:** PostgreSQL (production), SQLite (local compatibility)
 
-<img width="1875" height="1019" alt="image" src="https://github.com/user-attachments/assets/f84df3b3-30ba-4def-8a4f-117931423e82" />
+## Installation
 
-### Key system points
-- Full auth flow: register/login/logout + verification tokens
-- reCAPTCHA protection and SQL-injection-safe query patterns
-- Posts, replies, likes, groups, profile links, events
-- Notifications system with unread indicator logic
-- Search endpoints + pagination utilities
-- URL/domain blocklist moderation
-- Media validation + image resize pipeline
-- Soft-delete for posts with replies (thread integrity)
-- Settings foundation: appearance, account actions, email/password flows (in progress)
+1. Open your terminal or command prompt.
+2. Clone the repository directly to your PC:
+   ```bash
+   git clone https://github.com/prodevmod/STEMNet.gr
+   ```
+---
 
-<img width="1869" height="1001" alt="image" src="https://github.com/user-attachments/assets/7f0fec5b-3fd6-44b6-a363-03e4742eb5e4" />
+## Usage
 
-## What I learned
-- Real software is about user flows, not isolated pages.
-- Small route/method mismatches can cost hours (and teach discipline).
-- Notifications require both schema design and clean frontend state wiring.
-- Security is layered: verification, sanitization, anti-bot, rate control mindset.
-- Shipping fast matters, but maintainable structure matters more.
+This project is currently not intended for local Usage...
 
-<img width="1873" height="993" alt="image" src="https://github.com/user-attachments/assets/52da582e-4d58-414e-a805-c8a38c1c1218" />
+---
 
-## Next steps
-- Close all the ISSUES place by viewers and testers
+## Contributing
 
-<img width="1880" height="1011" alt="image" src="https://github.com/user-attachments/assets/71cdf3f3-4053-47b6-a50e-57e4905c2c21" />
+Pull requests are welcome. For major changes, please open an issue first
+to discuss what you would like to change.
 
-## Contributions & License
-Pull requests are welcome after issue discussion for major changes.  
-Copyright (c) 2026 prodevmod. All rights reserved.  
-Proprietary project; contributions are for this repository only.
+Please make sure to update tests as appropriate.
 
-<img width="1861" height="1007" alt="image" src="https://github.com/user-attachments/assets/fb348c6f-9089-4136-9e10-544c3e2ca3d9" />
+## License
 
-## Closing
-If you test my app, please test logged-in features deeply and suggest ideas via GitHub Issues:  
-https://github.com/prodevmod/STEMNet.gr/issues
+Copyright (c) 2026 prodevmod. All rights reserved.
+
+TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION
+
+1. Proprietary Rights
+This project, including all source code, design elements, layouts, logic, and documentation, is the exclusive intellectual property of the copyright holder (prodevmod). 
+
+2. Permitted Actions (Pull Requests & Forking)
+Permission is granted to public users to view the source code and fork this repository strictly within the GitHub platform for the sole purpose of submitting contributions, bug fixes, or enhancements back to the original project via Pull Requests (PRs). 
+
+3. Strict Prohibitions (No Recreation or Derivation)
+You are strictly prohibited from:
+- Recreating, cloning, copying, or duplicating the project, its core ideas, or its codebase to launch a separate product, service, website, or platform.
+- Creating derivative works based on this project.
+- Modifying and redistributing the source code outside of direct contributions to the original repository.
+- Using any part of this project for commercial purposes.
+
+4. Title to Contributions
+By submitting a Pull Request, you agree to grant the copyright holder a perpetual, worldwide, non-exclusive, no-charge, royalty-free, irrevocable license to use, modify, and integrate your code contributions into the main project.
+
+THIS SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY.
