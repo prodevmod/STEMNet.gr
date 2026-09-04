@@ -1381,7 +1381,19 @@ def edit_profile():
     grade = data.get("grade", "").strip()
     interest = data.get("interest", "").strip()
     bio = data.get("bio", "").strip()
-    github_user = data.get("github_user", "").strip()
+
+    raw_github = data.get("github_user", "").strip()
+    github_user = ""
+    if raw_github:
+        raw_github = raw_github.lstrip("@")
+        
+        if "github.com/" in raw_github:
+            raw_github = raw_github.split("github.com/")[-1]
+
+        raw_github = raw_github.strip("/").split("/")[0].split("?")[0].split("#")[0]
+
+        github_user = raw_github.strip()
+
     linkedin_url = data.get("linkedin_url", "").strip()
     custom_link_1 = data.get("custom_link_1", "").strip()
     custom_link_2 = data.get("custom_link_2", "").strip()
@@ -1389,7 +1401,9 @@ def edit_profile():
     custom_link_4 = data.get("custom_link_4", "").strip()
     custom_link_5 = data.get("custom_link_5", "").strip()
 
-    for link_key, link_value in [("github_user", github_user), ("linkedin_url", linkedin_url),
+    github_check_url = f"https://github.com/{github_user}" if github_user else ""
+    
+    for link_key, link_value in [("github_user", github_check_url), ("linkedin_url", linkedin_url),
                                   ("custom_link_1", custom_link_1), ("custom_link_2", custom_link_2),
                                   ("custom_link_3", custom_link_3), ("custom_link_4", custom_link_4),
                                   ("custom_link_5", custom_link_5)]:
@@ -1454,36 +1468,6 @@ def edit_profile():
     user_dict.pop("password_hash", None)
 
     return jsonify({"success": True, "user": user_dict}), 200
-
-@app.route("/api/follow/<int:user_id>", methods=["POST"])
-@login_required
-def follow(user_id):
-    db = get_db()
-    if g.user["id"] == user_id:
-        return jsonify({"error": "Cannot follow yourself"}), 400
-
-    try:
-        existing = db.execute(
-            "SELECT 1 FROM follows WHERE follower_id = ? AND following_id = ?",
-            (g.user["id"], user_id)
-        ).fetchone()
-
-        if not existing:
-            db.execute(
-                "INSERT INTO follows (follower_id, following_id, created_at) VALUES (?, ?, CURRENT_TIMESTAMP)",
-                (g.user["id"], user_id)
-            )
-
-            db.execute(
-                "INSERT INTO notifications (user_id, actor_id, type, post_id) VALUES (?, ?, 'follow', NULL)",
-                (user_id, g.user["id"])
-            )
-            db.commit()
-
-        return jsonify({"success": True}), 200
-    except Exception as e:
-        print(f"Follow error: {e}")
-        return jsonify({"error": "Database error"}), 500
 
 @app.route("/api/unfollow/<int:user_id>", methods=["POST"])
 @login_required
