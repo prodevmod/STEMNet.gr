@@ -13,17 +13,19 @@ export default function ImageCropper({ file, onCancel, onCropped }) {
     const [imageLoaded, setImageLoaded] = useState(false);
     const [scale, setScale] = useState(1);
     const [minScale, setMinScale] = useState(1);
+    const [maxScale, setMaxScale] = useState(4);
     const [pos, setPos] = useState({ x: 0, y: 0 });
     const [dragging, setDragging] = useState(false);
     const [processing, setProcessing] = useState(false);
     const [processingLabel, setProcessingLabel] = useState('');
+
     const dragStart = useRef({ x: 0, y: 0, posX: 0, posY: 0 });
-    const imgRef = useRef(null);
     const gifFramesRef = useRef(null);
 
     useEffect(() => {
         const url = URL.createObjectURL(file);
         setImgUrl(url);
+        setImageLoaded(false);
         return () => URL.revokeObjectURL(url);
     }, [file]);
 
@@ -41,7 +43,10 @@ export default function ImageCropper({ file, onCancel, onCropped }) {
         return () => { cancelled = true; };
     }, [file, isGif]);
 
+    // Clamp the top-left position (in container px, at the given scale) so the
+    // scaled image never leaves a gap inside the circular crop container.
     const clampPos = useCallback((x, y, s, size) => {
+        if (!size.w || !size.h) return { x, y };
         const dispW = size.w * s;
         const dispH = size.h * s;
         const minX = Math.min(0, CONTAINER_SIZE - dispW);
@@ -55,12 +60,23 @@ export default function ImageCropper({ file, onCancel, onCropped }) {
     const handleImageLoad = (e) => {
         const w = e.target.naturalWidth;
         const h = e.target.naturalHeight;
-        const initialMin = Math.max(CONTAINER_SIZE / w, CONTAINER_SIZE / h);
         const size = { w, h };
+        // The minimum zoom that still fully covers the circular container
+        // on its shorter axis (so no empty gap ever shows).
+        const initialMin = Math.max(CONTAINER_SIZE / w, CONTAINER_SIZE / h);
+
         setNaturalSize(size);
         setMinScale(initialMin);
+        setMaxScale(initialMin * 4);
         setScale(initialMin);
-        setPos(clampPos((CONTAINER_SIZE - w * initialMin) / 2, (CONTAINER_SIZE - h * initialMin) / 2, initialMin, size));
+        setPos(
+            clampPos(
+                (CONTAINER_SIZE - w * initialMin) / 2,
+                (CONTAINER_SIZE - h * initialMin) / 2,
+                initialMin,
+                size
+            )
+        );
         setImageLoaded(true);
     };
 
@@ -81,8 +97,10 @@ export default function ImageCropper({ file, onCancel, onCropped }) {
     const handlePointerUp = () => setDragging(false);
 
     const handleZoomChange = (e) => {
-        if (!imageLoaded || naturalSize.w === 0) return;
+        if (!imageLoaded) return;
         const newScale = parseFloat(e.target.value);
+        // Keep the point currently at the center of the container fixed
+        // while zooming, so zooming feels anchored rather than jumpy.
         const centerSourceX = (CONTAINER_SIZE / 2 - pos.x) / scale;
         const centerSourceY = (CONTAINER_SIZE / 2 - pos.y) / scale;
         const newX = CONTAINER_SIZE / 2 - centerSourceX * newScale;
@@ -91,6 +109,8 @@ export default function ImageCropper({ file, onCancel, onCropped }) {
         setPos(clampPos(newX, newY, newScale, naturalSize));
     };
 
+    // Everything downstream (both the static-image and GIF crop paths) reads
+    // the crop rectangle in *source image pixel space* from this one place.
     const getCropGeometry = () => {
         const sourceX = -pos.x / scale;
         const sourceY = -pos.y / scale;
@@ -100,19 +120,23 @@ export default function ImageCropper({ file, onCancel, onCropped }) {
 
     const handleConfirmStatic = () => {
         const { sourceX, sourceY, sourceSize } = getCropGeometry();
-        const canvas = document.createElement('canvas');
-        canvas.width = OUTPUT_SIZE;
-        canvas.height = OUTPUT_SIZE;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(imgRef.current, sourceX, sourceY, sourceSize, sourceSize, 0, 0, OUTPUT_SIZE, OUTPUT_SIZE);
+        const img = new Image();
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = OUTPUT_SIZE;
+            canvas.height = OUTPUT_SIZE;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, sourceX, sourceY, sourceSize, sourceSize, 0, 0, OUTPUT_SIZE, OUTPUT_SIZE);
 
-        const mimeType = file.type && file.type.startsWith('image/') ? file.type : 'image/jpeg';
-        const quality = mimeType === 'image/jpeg' ? 0.92 : undefined;
+            const mimeType = file.type && file.type.startsWith('image/') ? file.type : 'image/jpeg';
+            const quality = mimeType === 'image/jpeg' ? 0.92 : undefined;
 
-        canvas.toBlob((blob) => {
-            if (!blob) return;
-            onCropped(new File([blob], file.name, { type: mimeType }));
-        }, mimeType, quality);
+            canvas.toBlob((blob) => {
+                if (!blob) return;
+                onCropped(new File([blob], file.name, { type: mimeType }));
+            }, mimeType, quality);
+        };
+        img.src = imgUrl;
     };
 
     const handleConfirmGif = async () => {
@@ -123,6 +147,9 @@ export default function ImageCropper({ file, onCancel, onCropped }) {
         const { frames, logicalWidth, logicalHeight } = gifFramesRef.current;
         const { sourceX, sourceY, sourceSize } = getCropGeometry();
 
+        // The <img> we display may be scaled by the browser relative to the
+        // GIF's logical (LSD) dimensions if they differ — convert crop
+        // coordinates from displayed-image space into logical GIF space.
         const dispScaleX = naturalSize.w / logicalWidth;
         const dispScaleY = naturalSize.h / logicalHeight;
 
@@ -142,7 +169,6 @@ export default function ImageCropper({ file, onCancel, onCropped }) {
             width: OUTPUT_SIZE,
             height: OUTPUT_SIZE,
             workerScript: '/gif-worker/gif.worker.js',
-            transparent: 'auto' in frames[0] ? undefined : null,
         });
 
         setProcessingLabel(`Cropping ${frames.length} frames...`);
@@ -218,19 +244,21 @@ export default function ImageCropper({ file, onCancel, onCropped }) {
                 >
                     {imgUrl && (
                         <img
-                            ref={imgRef}
                             src={imgUrl}
                             alt="Crop preview"
                             onLoad={handleImageLoad}
                             draggable={false}
                             style={{
                                 position: 'absolute',
-                                left: `${pos.x}px`,
-                                top: `${pos.y}px`,
-                                width: imageLoaded ? `${naturalSize.w * scale}px` : 'auto',
-                                height: imageLoaded ? `${naturalSize.h * scale}px` : 'auto',
+                                left: 0,
+                                top: 0,
+                                width: naturalSize.w || 'auto',
+                                height: naturalSize.h || 'auto',
+                                transform: `translate(${pos.x}px, ${pos.y}px) scale(${scale})`,
+                                transformOrigin: '0 0',
                                 userSelect: 'none',
                                 pointerEvents: 'none',
+                                visibility: imageLoaded ? 'visible' : 'hidden',
                             }}
                         />
                     )}
@@ -246,8 +274,8 @@ export default function ImageCropper({ file, onCancel, onCropped }) {
                     <input
                         type="range"
                         min={minScale}
-                        max={minScale * 4}
-                        step={imageLoaded ? (minScale * 3) / 100 : 0.01}
+                        max={maxScale}
+                        step={imageLoaded ? (maxScale - minScale) / 100 : 0.01}
                         value={scale}
                         onChange={handleZoomChange}
                         disabled={!imageLoaded}
