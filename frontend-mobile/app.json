@@ -1,0 +1,17 @@
+{
+  "expo": {
+    "name": "STEMNet",
+    "slug": "stemnet",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "scheme": "stemnet",
+    "platforms": ["ios", "android"],
+    "experiments": { "typedRoutes": true },
+    "ios": { "supportsTablet": true, "bundleIdentifier": "gr.stemnet.app" },
+    "android": { "package": "gr.stemnet.app", "adaptiveIcon": { "backgroundColor": "#0f172a" } },
+    "web": { "bundler": "metro" },
+    "plugins": ["expo-router"],
+    "extra": { "eas": { "projectId": "REPLACE_WITH_EAS_PROJECT_ID" } }
+  }
+}

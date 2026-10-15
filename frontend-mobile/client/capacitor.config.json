@@ -1,0 +1,9 @@
+{
+  "appId": "stemnet.app",
+  "appName": "STEMNET",
+  "webDir": "dist",
+  "server": {
+    "url": "https://stemnet.app",
+    "cleartext": false
+  }
+}
