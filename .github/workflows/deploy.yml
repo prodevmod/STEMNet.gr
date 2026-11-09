@@ -20,22 +20,16 @@ jobs:
           script: |
             cd /root/stemnet
             git pull origin react_version
-            
-            # Navigate to your actual frontend directory (update path if needed)
+
             cd frontend-web
-            
-            # Install dependencies and build
+
             npm ci
             
-            # Inject your reCAPTCHA or build environment variables if stored in a server .env file or GitHub secret
-            # e.g., echo "VITE_RECAPTCHA_SITE_KEY=${{ secrets.VITE_RECAPTCHA_SITE_KEY }}" > .env
             
             npm run build
-            
-            # Move files to Nginx web root
+
             cp -r dist/* /var/www/stemnet/
-            
-            # Test and reload Nginx
+
             nginx -t && systemctl reload nginx
             
             echo "Deployment complete!"
