@@ -11,20 +11,25 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Deploy via SSH & Build on Server
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USERNAME }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          port: 22
-          script: |
-            cd /root/stemnet
-            git pull origin react_version
-            cd frontend-web
-            npm ci
-            echo "VITE_RECAPTCHA_SITE_KEY=${{ secrets.VITE_RECAPTCHA_SITE_KEY }}" > .env
-            npm run build
-            cp -r dist/* /var/www/stemnet/
-            nginx -t && systemctl reload nginx
+      - name: Configure SSH and Deploy
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          
+          # Add server to known hosts
+          ssh-keyscan -t ed25519 -p 22 2a01:4f9:3a:276e::1493 >> ~/.ssh/known_hosts
+          
+          # Execute remote deployment commands securely via native IPv6 SSH
+          ssh -i ~/.ssh/id_ed25519 root@[2a01:4f9:3a:276e::1493] '
+            cd /root/stemnet &&
+            git pull origin react_version &&
+            cd frontend-web &&
+            npm ci &&
+            echo "VITE_RECAPTCHA_SITE_KEY=${{ secrets.VITE_RECAPTCHA_SITE_KEY }}" > .env &&
+            npm run build &&
+            cp -r dist/* /var/www/stemnet/ &&
+            nginx -t &&
+            systemctl reload nginx &&
             echo "Deployment complete!"
+          '
