@@ -17,18 +17,14 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22
           script: |
             cd /root/stemnet
             git pull origin react_version
-
             cd frontend-web
-
             npm ci
-            
+            echo "VITE_RECAPTCHA_SITE_KEY=${{ secrets.VITE_RECAPTCHA_SITE_KEY }}" > .env
             npm run build
-
             cp -r dist/* /var/www/stemnet/
-
             nginx -t && systemctl reload nginx
-            
             echo "Deployment complete!"
